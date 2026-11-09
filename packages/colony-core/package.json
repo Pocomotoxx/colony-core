@@ -11,7 +11,7 @@
   },
   "scripts": {
     "build": "tsc",
-    "test": "node --test dist/**/*.test.js"
+    "test": "node scripts/run-tests.mjs"
   },
   "keywords": [
     "agent-colony",
