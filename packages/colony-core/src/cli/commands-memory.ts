@@ -9,7 +9,7 @@ import { CliError, CommandContext, CommandResult, Handler } from './context.js';
 export const memoryHandlers: Record<string, Handler> = {};
 
 async function handle_profile(ctx: CommandContext): Promise<CommandResult> {
-  const { values, positionals, command, sub, dir, boot, session, hub, warnings, log, reply, deputyNotes } = ctx;
+  const { values, positionals, sub, dir, session, warnings, log, reply } = ctx;
   let result;
   try {
     result = await runProfile({ file: path.join(dir, STATE_DIR, 'profile.json'), sub, args: positionals.slice(2), section: values.section, skip: Boolean(values.skip), now: Date.now() });
@@ -27,7 +27,7 @@ async function handle_profile(ctx: CommandContext): Promise<CommandResult> {
 memoryHandlers['profile'] = handle_profile;
 
 async function handle_memory(ctx: CommandContext): Promise<CommandResult> {
-  const { values, positionals, command, sub, dir, boot, session, hub, warnings, log, reply, deputyNotes } = ctx;
+  const { values, positionals, sub, session, hub, warnings, log, reply } = ctx;
   const text = positionals[2];
   if (sub === 'add') {
     if (!text?.trim()) throw new CliError('memory add needs non-empty text');

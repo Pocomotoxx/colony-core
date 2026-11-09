@@ -1,4 +1,4 @@
-import { ColonyMember, ColonyTask, ReviewRecord, TaskPriority, TaskStatus, AgentRole, TaskVerification } from '../types.js';
+import { ColonyMember, ColonyTask, ReviewRecord, TaskPriority, AgentRole, TaskVerification } from '../types.js';
 import { MAX_KEPT_REVIEWS, maxRoundsOf, REVIEW_LIMIT_HOLDER, reviewBlocksCompletion, validateMaxRounds } from '../chief/review.js';
 import { ColonyRegistry } from './colony-registry.js';
 import { OutcomeReport, validateQuality } from '../chief/outcome.js';

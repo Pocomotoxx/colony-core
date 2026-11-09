@@ -14,13 +14,13 @@ export interface ProposalOptions<T = unknown> {
   timeoutMs?: number;
 }
 
-export type SerializedProposal = Omit<ConsensusProposal<any>, 'votes'> & { votes: ConsensusVote[] };
+export type SerializedProposal = Omit<ConsensusProposal<unknown>, 'votes'> & { votes: ConsensusVote[] };
 
 /**
  * Robust, model-agnostic consensus engine supporting quorum and confidence-weighted voting
  */
 export class ConsensusEngine {
-  private proposals = new Map<string, ConsensusProposal<any>>();
+  private proposals = new Map<string, ConsensusProposal<unknown>>();
   private messageBus: MessageBus;
 
   constructor(messageBus: MessageBus) {
@@ -73,7 +73,7 @@ export class ConsensusEngine {
   public async castVote(
     proposalId: string,
     vote: { voterId: string; approve: boolean; confidence?: number; reason?: string }
-  ): Promise<ConsensusProposal<any>> {
+  ): Promise<ConsensusProposal<unknown>> {
     const proposal = this.proposals.get(proposalId);
     if (!proposal) {
       throw new Error(`Proposal '${proposalId}' not found`);
@@ -111,7 +111,7 @@ export class ConsensusEngine {
     return proposal;
   }
 
-  private evaluateProposal(proposal: ConsensusProposal<any>): void {
+  private evaluateProposal(proposal: ConsensusProposal<unknown>): void {
     const votes = Array.from(proposal.votes.values());
     const approvals = votes.filter((v) => v.approve);
     const rejections = votes.filter((v) => !v.approve);
@@ -141,11 +141,11 @@ export class ConsensusEngine {
     }
   }
 
-  public getProposal(proposalId: string): ConsensusProposal<any> | undefined {
+  public getProposal(proposalId: string): ConsensusProposal<unknown> | undefined {
     return this.proposals.get(proposalId);
   }
 
-  public listProposals(): ConsensusProposal<any>[] {
+  public listProposals(): ConsensusProposal<unknown>[] {
     return Array.from(this.proposals.values());
   }
 

@@ -4,6 +4,7 @@ import path from 'node:path';
 import { IVectorStore, MemoryDocument, SearchOptions, SearchResult } from './types.js';
 import { cosineSimilarity } from './vector-store.js';
 import { HnswIndex } from './hnsw-index.js';
+import { errorCode, errorMessage } from '../errors.js';
 
 /** On-disk row: like MemoryDocument, but the vector may be a base64 Float32 string (v2). */
 type StoredDocument = Omit<MemoryDocument, 'vector'> & { vector?: number[] | string };
@@ -23,7 +24,10 @@ export interface FileVectorStoreOptions {
   storagePath: string; // File path e.g. .colony/memory.json
   /**
    * Search strategy. `linear` is exact. `hnsw` is approximate and fast on large memories.
-   * `auto` (default) searches linearly until the memory holds `hnswThreshold` vectors.
+   * `auto` (default) searches linearly until the memory holds `hnswThreshold` vectors (default 100000).
+   * Measured: the graph is built in memory on first use, so a short-lived process (one CLI command)
+   * pays that cost every time: about 1.2 s at 1000 documents and 55 s at 20000, while the exact scan
+   * takes 3 ms and 27 ms. Choose `hnsw` explicitly only for a long-running host that keeps the store open.
    */
   index?: 'linear' | 'hnsw' | 'auto';
   hnswThreshold?: number;
@@ -48,7 +52,7 @@ export class FileVectorStore implements IVectorStore {
   constructor(options: FileVectorStoreOptions) {
     this.storagePath = options.storagePath;
     this.mode = options.index ?? 'auto';
-    this.hnswThreshold = options.hnswThreshold ?? 500;
+    this.hnswThreshold = options.hnswThreshold ?? 100_000;
   }
 
   private wantsIndex(): boolean {
@@ -99,9 +103,9 @@ export class FileVectorStore implements IVectorStore {
       for (const row of rows) {
         this.docs.set(row.id, decodeDocument(row));
       }
-    } catch (err: any) {
-      if (err.code !== 'ENOENT') {
-        console.warn(`[FileVectorStore] Warning reading ${this.storagePath}:`, err.message);
+    } catch (err) {
+      if (errorCode(err) !== 'ENOENT') {
+        console.warn(`[FileVectorStore] Warning reading ${this.storagePath}:`, errorMessage(err));
       }
       this.docs.clear();
     }

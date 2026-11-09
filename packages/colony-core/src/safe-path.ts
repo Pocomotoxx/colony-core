@@ -12,6 +12,7 @@
 
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { errorCode } from './errors.js';
 
 export class SafePathError extends Error {
   constructor(public readonly code: 'EMPTY' | 'NUL' | 'TOO_LONG' | 'OUTSIDE', message: string) {
@@ -25,8 +26,8 @@ const MAX_PATH = 4096;
 export async function canonicalize(target: string): Promise<string> {
   try {
     return await fs.realpath(target);
-  } catch (err: any) {
-    if (err?.code !== 'ENOENT' && err?.code !== 'ENOTDIR') return target;
+  } catch (err) {
+    if (errorCode(err) !== 'ENOENT' && errorCode(err) !== 'ENOTDIR') return target;
   }
   const parent = path.dirname(target);
   if (parent === target) return target;

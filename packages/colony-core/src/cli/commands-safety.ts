@@ -10,7 +10,7 @@ import { CliError, CommandContext, CommandResult, Handler } from './context.js';
 export const safetyHandlers: Record<string, Handler> = {};
 
 async function handle_check(ctx: CommandContext): Promise<CommandResult> {
-  const { values, positionals, command, sub, dir, boot, session, hub, warnings, log, reply, deputyNotes } = ctx;
+  const { values, dir, session, warnings, log } = ctx;
   if (!values.command && !values.text && !values.file && !values.tool) {
     throw new CliError('check needs at least one of --command, --text, --file, --tool');
   }
@@ -58,7 +58,7 @@ async function handle_check(ctx: CommandContext): Promise<CommandResult> {
 safetyHandlers['check'] = handle_check;
 
 async function handle_scan(ctx: CommandContext): Promise<CommandResult> {
-  const { values, positionals, command, sub, dir, boot, session, hub, warnings, log, reply, deputyNotes } = ctx;
+  const { values, dir, session, warnings, log } = ctx;
   if (!values.text && !values.file) throw new CliError('scan needs --text or --file');
   if (values.text && values.file) throw new CliError('pass either --text or --file, not both');
   let content = values.text ?? '';
@@ -92,7 +92,7 @@ async function handle_scan(ctx: CommandContext): Promise<CommandResult> {
 safetyHandlers['scan'] = handle_scan;
 
 async function handle_redact(ctx: CommandContext): Promise<CommandResult> {
-  const { values, positionals, command, sub, dir, boot, session, hub, warnings, log, reply, deputyNotes } = ctx;
+  const { values, dir, session, log, reply } = ctx;
   if (!values.text && !values.file) throw new CliError('redact needs --text or --file');
   if (values.text && values.file) throw new CliError('pass either --text or --file, not both');
   const hashKinds = values.hash ? values.hash.split(',').map((s) => s.trim()).filter(Boolean) : [];

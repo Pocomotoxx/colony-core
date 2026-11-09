@@ -14,6 +14,7 @@ import type { AuditAnchor, AuditEntry } from '../audit-log.js';
 import type { RouterState } from '../neural/moe-router.js';
 import type { ColonyMember, ColonyTask } from '../types.js';
 import { DEFAULT_MANIFEST, DEFAULT_RULES } from './default-rules.js';
+import { errorCode, errorMessage } from '../errors.js';
 
 export const STATE_DIR = '.colony';
 const RULES_DIR = 'rules';
@@ -68,8 +69,8 @@ export async function loadRules(dir: string): Promise<{ rules: LoadedRule[]; pro
   try {
     const manifest = JSON.parse(await fs.readFile(path.join(rulesDir, MANIFEST_FILE), 'utf-8'));
     mandatory = manifest?.mandatory;
-  } catch (err: any) {
-    return { rules, problems: [`${RULES_DIR}/${MANIFEST_FILE}: ${err.message}`] };
+  } catch (err) {
+    return { rules, problems: [`${RULES_DIR}/${MANIFEST_FILE}: ${errorMessage(err)}`] };
   }
   if (!Array.isArray(mandatory) || mandatory.some((m) => typeof m !== 'string')) {
     return { rules, problems: [`${RULES_DIR}/${MANIFEST_FILE}: 'mandatory' must be an array of file names`] };
@@ -81,7 +82,7 @@ export async function loadRules(dir: string): Promise<{ rules: LoadedRule[]; pro
       full = (await resolveInside(rulesDir, name)).resolved;
     } catch (err) {
       if (!(err instanceof SafePathError)) throw err;
-      problems.push(`${name}: ${err.code === 'OUTSIDE' ? 'outside the rules directory' : err.message}`);
+      problems.push(`${name}: ${errorCode(err) === 'OUTSIDE' ? 'outside the rules directory' : errorMessage(err)}`);
       continue;
     }
     try {
@@ -91,8 +92,8 @@ export async function loadRules(dir: string): Promise<{ rules: LoadedRule[]; pro
         continue;
       }
       rules.push({ path: `${STATE_DIR}/${RULES_DIR}/${name}`, sha256: sha256(text), bytes: Buffer.byteLength(text), text });
-    } catch (err: any) {
-      problems.push(`${name}: ${err.message}`);
+    } catch (err) {
+      problems.push(`${name}: ${errorMessage(err)}`);
     }
   }
   return { rules, problems };
@@ -109,7 +110,7 @@ async function seedRules(dir: string): Promise<boolean> {
     await fs.mkdir(rulesDir, { recursive: true });
     for (const [name, text] of Object.entries(DEFAULT_RULES)) {
       await fs.writeFile(path.join(rulesDir, name), text, { encoding: 'utf-8', flag: 'wx' }).catch((err) => {
-        if (err.code !== 'EEXIST') throw err;
+        if (errorCode(err) !== 'EEXIST') throw err;
       });
     }
     await fs.writeFile(manifestPath, JSON.stringify(DEFAULT_MANIFEST, null, 2), 'utf-8');
@@ -137,8 +138,8 @@ export function resolveRevision(dir: string): Revision {
 async function readIfExists(file: string): Promise<string | null> {
   try {
     return await fs.readFile(file, 'utf-8');
-  } catch (err: any) {
-    if (err.code === 'ENOENT') return null;
+  } catch (err) {
+    if (errorCode(err) === 'ENOENT') return null;
     throw err;
   }
 }
@@ -280,8 +281,8 @@ export class ColonySession {
       try {
         const text = await readIfExists(path.join(stateDir, file));
         if (text !== null) evidence.push({ path: `${STATE_DIR}/${file}`, sha256: sha256(text), bytes: Buffer.byteLength(text) });
-      } catch (err: any) {
-        problems.push(`${file}: ${err.message}`);
+      } catch (err) {
+        problems.push(`${file}: ${errorMessage(err)}`);
       }
     }
 
@@ -289,8 +290,8 @@ export class ColonySession {
     if (problems.length === 0) {
       try {
         session = await ColonySession.open(dir);
-      } catch (err: any) {
-        problems.push(err.message);
+      } catch (err) {
+        problems.push(errorMessage(err));
       }
     }
 

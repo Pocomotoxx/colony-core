@@ -9,13 +9,14 @@ import { buildBriefing } from './briefing.js';
 import { parseTimeout, verifyTaskCommand } from './verify-command.js';
 import { redactText } from '../redact.js';
 import { CliError, CommandContext, CommandResult, Handler, OPEN_STATUSES, PRIORITIES, PRIORITY_RANK, ROLES, resolveMembers, summarizeTask } from './context.js';
+import { errorMessage } from '../errors.js';
 
 // Commands: task, next, done, fail, review, hold, plan, score, verify, rate
 
 export const tasksHandlers: Record<string, Handler> = {};
 
 async function handle_task(ctx: CommandContext): Promise<CommandResult> {
-  const { values, positionals, command, sub, dir, boot, session, hub, warnings, log, reply, deputyNotes } = ctx;
+  const { values, positionals, sub, session, hub, log, reply } = ctx;
   if (sub !== 'add') throw new CliError('usage: task add <title> <description>');
   const [, , title, description] = positionals;
   if (!title || !description) throw new CliError('task add needs a title and a description');
@@ -32,8 +33,8 @@ async function handle_task(ctx: CommandContext): Promise<CommandResult> {
   if (values['max-review-rounds'] !== undefined) {
     try {
       maxReviewRounds = validateMaxRounds(Number(values['max-review-rounds']));
-    } catch (err: any) {
-      throw new CliError(`--max-review-rounds: ${err.message}`);
+    } catch (err) {
+      throw new CliError(`--max-review-rounds: ${errorMessage(err)}`);
     }
   }
   const { task, routeDecision } = await hub.submitAdaptiveTask({
@@ -55,7 +56,7 @@ async function handle_task(ctx: CommandContext): Promise<CommandResult> {
 tasksHandlers['task'] = handle_task;
 
 async function handle_next(ctx: CommandContext): Promise<CommandResult> {
-  const { values, positionals, command, sub, dir, boot, session, hub, warnings, log, reply, deputyNotes } = ctx;
+  const { values, dir, session, hub, warnings, log, reply } = ctx;
   const members = resolveMembers(session, values.as);
   const ids = new Set(members.map((m) => m.id));
   for (const t of hub.orchestrator.getAllTasks()) {
@@ -105,7 +106,7 @@ async function handle_next(ctx: CommandContext): Promise<CommandResult> {
 tasksHandlers['next'] = handle_next;
 
 async function handle_done(ctx: CommandContext): Promise<CommandResult> {
-  const { values, positionals, command, sub, dir, boot, session, hub, warnings, log, reply, deputyNotes } = ctx;
+  const { values, command, sub, session, hub, log, reply, deputyNotes } = ctx;
   const taskId = sub;
   const task = taskId ? hub.orchestrator.getTask(taskId) : undefined;
   if (!task) throw new CliError(`task '${taskId ?? ''}' not found`);
@@ -149,7 +150,7 @@ tasksHandlers['done'] = handle_done;
 tasksHandlers['fail'] = handle_done;
 
 async function handle_review(ctx: CommandContext): Promise<CommandResult> {
-  const { values, positionals, command, sub, dir, boot, session, hub, warnings, log, reply, deputyNotes } = ctx;
+  const { values, sub, session, hub, log, reply } = ctx;
   const task = sub ? hub.orchestrator.getTask(sub) : undefined;
   if (!task) throw new CliError(`task '${sub ?? ''}' not found`);
   if (values.approve === values.reject) throw new CliError('pass exactly one of --approve or --reject');
@@ -178,7 +179,7 @@ async function handle_review(ctx: CommandContext): Promise<CommandResult> {
 tasksHandlers['review'] = handle_review;
 
 async function handle_hold(ctx: CommandContext): Promise<CommandResult> {
-  const { values, positionals, command, sub, dir, boot, session, hub, warnings, log, reply, deputyNotes } = ctx;
+  const { values, positionals, sub, session, hub, log, reply } = ctx;
   const releasing = sub === 'release';
   const taskId = releasing ? positionals[2] : sub;
   const task = taskId ? hub.orchestrator.getTask(taskId) : undefined;
@@ -214,7 +215,7 @@ async function handle_hold(ctx: CommandContext): Promise<CommandResult> {
 tasksHandlers['hold'] = handle_hold;
 
 async function handle_plan(ctx: CommandContext): Promise<CommandResult> {
-  const { values, positionals, command, sub, dir, boot, session, hub, warnings, log, reply, deputyNotes } = ctx;
+  const { values, sub, session, hub, log, reply } = ctx;
   const task = sub ? hub.orchestrator.getTask(sub) : undefined;
   if (!task) throw new CliError(`task '${sub ?? ''}' not found`);
   if (values.kind !== undefined && !TASK_KINDS.includes(values.kind as TaskKind)) throw new CliError(`unknown kind '${values.kind}' (use ${TASK_KINDS.join(', ')})`);
@@ -260,7 +261,7 @@ async function handle_plan(ctx: CommandContext): Promise<CommandResult> {
 tasksHandlers['plan'] = handle_plan;
 
 async function handle_score(ctx: CommandContext): Promise<CommandResult> {
-  const { values, positionals, command, sub, dir, boot, session, hub, warnings, log, reply, deputyNotes } = ctx;
+  const { sub, hub, reply } = ctx;
   const task = sub ? hub.orchestrator.getTask(sub) : undefined;
   if (!task) throw new CliError(`task '${sub ?? ''}' not found`);
   return reply({
@@ -273,12 +274,12 @@ async function handle_score(ctx: CommandContext): Promise<CommandResult> {
 tasksHandlers['score'] = handle_score;
 
 async function handle_verify(ctx: CommandContext): Promise<CommandResult> {
-  const { values, positionals, command, sub, dir, boot, session, hub, warnings, log, reply, deputyNotes } = ctx;
+  const { values, positionals, sub, dir, session, hub, log, reply } = ctx;
   let result;
   try {
     result = await verifyTaskCommand(hub, sub, positionals.slice(2), dir, parseTimeout(values['timeout-sec']));
   } catch (err) {
-    throw err instanceof Error ? new CliError(err.message) : err;
+    throw err instanceof Error ? new CliError(errorMessage(err)) : err;
   }
   log('task.verified', sub!, result.audit);
   await session.save();
@@ -288,12 +289,12 @@ async function handle_verify(ctx: CommandContext): Promise<CommandResult> {
 tasksHandlers['verify'] = handle_verify;
 
 async function handle_rate(ctx: CommandContext): Promise<CommandResult> {
-  const { values, positionals, command, sub, dir, boot, session, hub, warnings, log, reply, deputyNotes } = ctx;
+  const { values, sub, session, hub, log, reply } = ctx;
   let rated;
   try {
     rated = await rateTask(hub, sub, parseQuality(values.quality));
   } catch (err) {
-    throw err instanceof Error ? new CliError(err.message) : err;
+    throw err instanceof Error ? new CliError(errorMessage(err)) : err;
   }
   log('task.rated', rated.id, { quality: rated.quality, status: rated.status });
   await session.save();

@@ -35,6 +35,9 @@ jobs:
       - name: Build (strict TypeScript)
         working-directory: packages/colony-core
         run: pnpm build
+      - name: Lint
+        working-directory: packages/colony-core
+        run: pnpm lint
       - name: Test
         working-directory: packages/colony-core
         run: pnpm test

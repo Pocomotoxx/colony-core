@@ -7,7 +7,7 @@ import { CliError, CommandContext, CommandResult, Handler, resolveMembers } from
 export const claimsHandlers: Record<string, Handler> = {};
 
 async function handle_claim(ctx: CommandContext): Promise<CommandResult> {
-  const { values, positionals, command, sub, dir, boot, session, hub, warnings, log, reply, deputyNotes } = ctx;
+  const { values, positionals, sub, session, hub, log, reply } = ctx;
   const now = Date.now();
   const taskId = positionals[2] ?? '';
   const needTask = () => {

@@ -2,6 +2,7 @@ import fs from 'node:fs/promises';
 import { writeFileAtomic } from '../atomic-write.js';
 import { scanText } from '../injection-scan.js';
 import { redactText } from '../redact.js';
+import { errorCode } from '../errors.js';
 
 /**
  * Developer profile: what the user says about how they work. Declared by the user, answer by
@@ -150,11 +151,11 @@ export async function loadProfile(file: string): Promise<ProfileState> {
   let text: string;
   try {
     text = await fs.readFile(file, 'utf-8');
-  } catch (err: any) {
-    if (err?.code === 'ENOENT') return emptyProfile();
+  } catch (err) {
+    if (errorCode(err) === 'ENOENT') return emptyProfile();
     throw err;
   }
-  let parsed: any;
+  let parsed: { version?: unknown; answers?: unknown } | null;
   try {
     parsed = JSON.parse(text);
   } catch {

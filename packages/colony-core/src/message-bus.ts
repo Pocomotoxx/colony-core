@@ -6,7 +6,10 @@ export type EventHandler<T = unknown> = (event: ColonyEvent<T>) => void | Promis
  * High-performance, topic-based asynchronous event bus for Colony members
  */
 export class MessageBus {
+  // Handlers for different topics take different payload types, so the stores cannot name one.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private handlers = new Map<string, Set<EventHandler<any>>>();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private wildcardHandlers = new Set<EventHandler<any>>();
   private eventHistory: ColonyEvent[] = [];
   private maxHistory: number;

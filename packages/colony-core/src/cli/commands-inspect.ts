@@ -1,4 +1,3 @@
-import path from 'node:path';
 import type { AgentRole } from '../types.js';
 import { buildTopology, isFullyConnected, shortestPath, TOPOLOGY_TYPES, TopologyType } from '../topology.js';
 import { CliError, CommandContext, CommandResult, Handler, ROLES, serializeProposal, summarizeTask } from './context.js';
@@ -8,7 +7,7 @@ import { CliError, CommandContext, CommandResult, Handler, ROLES, serializePropo
 export const inspectHandlers: Record<string, Handler> = {};
 
 async function handle_status(ctx: CommandContext): Promise<CommandResult> {
-  const { values, positionals, command, sub, dir, boot, session, hub, warnings, log, reply, deputyNotes } = ctx;
+  const { hub, reply } = ctx;
   const tasks = hub.orchestrator.getAllTasks();
   return reply({
     colony: hub.getSnapshot(),
@@ -21,7 +20,7 @@ async function handle_status(ctx: CommandContext): Promise<CommandResult> {
 inspectHandlers['status'] = handle_status;
 
 async function handle_topology(ctx: CommandContext): Promise<CommandResult> {
-  const { values, positionals, command, sub, dir, boot, session, hub, warnings, log, reply, deputyNotes } = ctx;
+  const { values, hub, reply } = ctx;
   const type = (values.type ?? 'star') as TopologyType;
   if (!TOPOLOGY_TYPES.includes(type)) throw new CliError(`unknown topology '${values.type}' (use ${TOPOLOGY_TYPES.join(', ')})`);
   const fanout = values.fanout ? Number(values.fanout) : undefined;
@@ -40,7 +39,7 @@ async function handle_topology(ctx: CommandContext): Promise<CommandResult> {
 inspectHandlers['topology'] = handle_topology;
 
 async function handle_watch(ctx: CommandContext): Promise<CommandResult> {
-  const { values, positionals, command, sub, dir, boot, session, hub, warnings, log, reply, deputyNotes } = ctx;
+  const { values, boot, hub, reply } = ctx;
   if (values.task && !hub.orchestrator.getTask(values.task)) throw new CliError(`task '${values.task}' not found`);
   const report = hub.watch({ focusTaskId: values.task, anchor: boot.audit });
   return reply({
@@ -52,7 +51,7 @@ async function handle_watch(ctx: CommandContext): Promise<CommandResult> {
 inspectHandlers['watch'] = handle_watch;
 
 async function handle_health(ctx: CommandContext): Promise<CommandResult> {
-  const { values, positionals, command, sub, dir, boot, session, hub, warnings, log, reply, deputyNotes } = ctx;
+  const { values, hub, reply } = ctx;
   const numeric = (name: 'queue-depth' | 'long-wait-min', raw: string | undefined): number | undefined => {
     if (raw === undefined) return undefined;
     const n = Number(raw);
@@ -69,7 +68,7 @@ async function handle_health(ctx: CommandContext): Promise<CommandResult> {
 inspectHandlers['health'] = handle_health;
 
 async function handle_member(ctx: CommandContext): Promise<CommandResult> {
-  const { values, positionals, command, sub, dir, boot, session, hub, warnings, log, reply, deputyNotes } = ctx;
+  const { positionals, sub, session, hub, log, reply } = ctx;
   if (sub === 'list') {
     return reply({ members: hub.registry.getAllMembers().map((m) => ({ id: m.id, role: m.role, status: m.status, tasks: m.currentTaskIds, maxConcurrentTasks: m.capabilities.maxConcurrentTasks })) });
   }
@@ -86,7 +85,7 @@ async function handle_member(ctx: CommandContext): Promise<CommandResult> {
 inspectHandlers['member'] = handle_member;
 
 async function handle_route(ctx: CommandContext): Promise<CommandResult> {
-  const { values, positionals, command, sub, dir, boot, session, hub, warnings, log, reply, deputyNotes } = ctx;
+  const { values, positionals, sub, session, hub, log, reply } = ctx;
   if (sub === 'stats') return reply({ load: hub.router.getLoadBalance(), learning: hub.router.getStats() });
   const text = positionals[2];
   if (sub !== 'test' && sub !== 'teach') throw new CliError('usage: route test <text> | route teach <text> --role R [--reward -1..1] | route stats');
@@ -105,7 +104,7 @@ async function handle_route(ctx: CommandContext): Promise<CommandResult> {
 inspectHandlers['route'] = handle_route;
 
 async function handle_audit(ctx: CommandContext): Promise<CommandResult> {
-  const { values, positionals, command, sub, dir, boot, session, hub, warnings, log, reply, deputyNotes } = ctx;
+  const { values, sub, boot, hub, reply } = ctx;
   if (sub === 'verify') {
     const chain = hub.audit.verify();
     const anchor = boot.audit;

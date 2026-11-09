@@ -35,13 +35,13 @@ test('a lock left by a dead process is taken over; a busy lock times out with a 
   await fs.mkdir(dir, { recursive: true });
   const lock = path.join(dir, 'state.lock');
 
-  await fs.writeFile(lock, JSON.stringify({ pid: 2_000_000_000, host: os.hostname(), at: Date.now() }));
+  await fs.writeFile(lock, JSON.stringify({ pid: 2_000_000_000, host: os.hostname(), at: Date.now(), token: 'test-token' }));
   assert.equal(await withStateLock(dir, async () => 'took over'), 'took over');
 
-  await fs.writeFile(lock, JSON.stringify({ pid: process.pid, host: os.hostname(), at: Date.now() })); // alive, and fresh
+  await fs.writeFile(lock, JSON.stringify({ pid: process.pid, host: os.hostname(), at: Date.now(), token: 'test-token' })); // alive, and fresh
   await assert.rejects(withStateLock(dir, async () => 'no', { timeoutMs: 100, pollMs: 10 }), LockTimeoutError);
 
-  await fs.writeFile(lock, JSON.stringify({ pid: process.pid, host: 'other-machine', at: Date.now() - 120_000 })); // old
+  await fs.writeFile(lock, JSON.stringify({ pid: process.pid, host: 'other-machine', at: Date.now() - 120_000, token: 'test-token' })); // old
   assert.equal(await withStateLock(dir, async () => 'stale by age'), 'stale by age');
 });
 

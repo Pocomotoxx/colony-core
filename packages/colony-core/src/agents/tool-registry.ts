@@ -24,6 +24,8 @@ export interface ColonyTool<TInput = unknown, TOutput = unknown> {
  * Registry for Colony tools and MCP integration
  */
 export class ColonyToolRegistry {
+  // Tools of different input and output types live in one map.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private tools = new Map<string, ColonyTool<any, any>>();
 
   public register<TInput, TOutput>(tool: ColonyTool<TInput, TOutput>): void {

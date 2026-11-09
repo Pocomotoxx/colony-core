@@ -104,12 +104,16 @@ const SEVERITY_ORDER: Record<ThreatSeverity, number> = { critical: 0, high: 1, m
 export function normalizeForScan(input: string): string {
   return input
     .normalize('NFKC')
+    // eslint-disable-next-line no-irregular-whitespace
     .replace(/[​-‏‪-‮⁠-⁤⁦-⁩᠎﻿\u{E0000}-\u{E007F}]/gu, '')
+    // eslint-disable-next-line no-irregular-whitespace
     .replace(/[ \t\f\v ]+/g, ' ')
     .replace(/ ?\r?\n ?/g, '\n')
     .trim();
 }
 
+// The characters in this class are invisible on purpose: they are what the scan looks for.
+// eslint-disable-next-line no-irregular-whitespace
 const HIDDEN = /[​-‏‪-‮⁠-⁤⁦-⁩᠎﻿]/u;
 const TAGS = /[\u{E0000}-\u{E007F}]/u;
 

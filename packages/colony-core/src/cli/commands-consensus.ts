@@ -6,7 +6,7 @@ import { CliError, CommandContext, CommandResult, Handler, resolveMembers, seria
 export const consensusHandlers: Record<string, Handler> = {};
 
 async function handle_propose(ctx: CommandContext): Promise<CommandResult> {
-  const { values, positionals, command, sub, dir, boot, session, hub, warnings, log, reply, deputyNotes } = ctx;
+  const { values, positionals, sub, session, hub, log, reply } = ctx;
   const [, , topic] = positionals;
   const task = sub ? hub.orchestrator.getTask(sub) : undefined;
   if (!task) throw new CliError(`task '${sub ?? ''}' not found`);
@@ -43,7 +43,7 @@ async function handle_propose(ctx: CommandContext): Promise<CommandResult> {
 consensusHandlers['propose'] = handle_propose;
 
 async function handle_vote(ctx: CommandContext): Promise<CommandResult> {
-  const { values, positionals, command, sub, dir, boot, session, hub, warnings, log, reply, deputyNotes } = ctx;
+  const { values, sub, session, hub, log, reply } = ctx;
   if (values.approve === values.reject) throw new CliError('pass exactly one of --approve or --reject');
   if (!values.reason?.trim()) throw new CliError('--reason <text> is required');
   const confidence = values.confidence === undefined ? 1 : Number(values.confidence);

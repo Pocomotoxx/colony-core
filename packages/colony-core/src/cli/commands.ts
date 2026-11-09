@@ -11,6 +11,7 @@ import { consensusHandlers } from './commands-consensus.js';
 import { inspectHandlers } from './commands-inspect.js';
 import { safetyHandlers } from './commands-safety.js';
 import { memoryHandlers } from './commands-memory.js';
+import { errorMessage } from '../errors.js';
 
 export type { CommandResult } from './context.js';
 
@@ -71,8 +72,8 @@ const PROTOCOL = [
 export async function runCommand(argv: string[], cwd: string): Promise<CommandResult> {
   try {
     return await dispatch(argv, cwd);
-  } catch (err: any) {
-    return { code: err instanceof CliError ? err.code : 1, output: { ok: false, error: err.message } };
+  } catch (err) {
+    return { code: err instanceof CliError ? err.code : 1, output: { ok: false, error: errorMessage(err) } };
   }
 }
 
@@ -85,8 +86,8 @@ async function dispatch(argv: string[], cwd: string): Promise<CommandResult> {
       strict: true,
       options: OPTIONS,
     });
-  } catch (err: any) {
-    throw new CliError(`${err.message}\n${USAGE}`);
+  } catch (err) {
+    throw new CliError(`${errorMessage(err)}\n${USAGE}`);
   }
 
   const { values, positionals } = parsed;

@@ -1,5 +1,14 @@
 import { VectorCodex } from '../memory/vector-codex.js';
 
+/** What the bank stores in a document's metadata (all optional: older entries lack some). */
+interface PatternMeta {
+  role?: string;
+  score?: number;
+  verified?: boolean;
+  problem?: string;
+  solution?: string;
+}
+
 export interface ReasoningPattern {
   id: string;
   problem: string;
@@ -86,7 +95,7 @@ export class ReasoningBank {
     const patterns: ReasoningPattern[] = [];
 
     for (const res of searchResults) {
-      const meta = res.document.metadata as any;
+      const meta = res.document.metadata as PatternMeta | undefined;
       if (options.role && meta?.role && meta.role !== options.role) {
         continue;
       }
