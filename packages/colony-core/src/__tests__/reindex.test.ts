@@ -1,0 +1,56 @@
+import { test, before, after } from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
+import { VectorCodex } from '../memory/vector-codex.js';
+import { FileVectorStore } from '../memory/file-vector-store.js';
+import { PositionalCharEmbeddingProvider } from '../memory/embedding-providers.js';
+import { runCommand } from '../cli/commands.js';
+
+let root: string;
+before(async () => {
+  root = await fs.mkdtemp(path.join(os.tmpdir(), 'colony-reindex-'));
+});
+after(async () => {
+  await fs.rm(root, { recursive: true, force: true });
+});
+
+test('memory written by the old embedding is re-embedded once, keeps its text, and is searchable', async () => {
+  const file = path.join(root, 'memory.json');
+  const old = new VectorCodex({ embeddingProvider: new PositionalCharEmbeddingProvider(), vectorStore: new FileVectorStore({ storagePath: file }) });
+  await old.storeDocuments([{ id: 'x', text: 'read invoice rows from the csv feed', namespace: 'ops' }]);
+  // an old file has no embedder field
+  const raw = JSON.parse(await fs.readFile(file, 'utf-8'));
+  for (const d of raw) delete d.embedder;
+  await fs.writeFile(file, JSON.stringify(raw));
+
+  const fresh = new VectorCodex({ vectorStore: new FileVectorStore({ storagePath: file }) });
+  assert.deepEqual(await fresh.search('invoice csv rows', { minScore: -1 }), []); // stale vector: skipped, not a crash
+  assert.equal(await fresh.reindex(), 1);
+  assert.equal(await fresh.reindex(), 0); // already current
+
+  const hits = await fresh.search('invoice csv rows', { minScore: 0.2 });
+  assert.equal(hits[0].document.id, 'x');
+  assert.equal(hits[0].document.text, 'read invoice rows from the csv feed');
+  assert.equal(hits[0].document.embedder, 'deterministic-local-v2');
+  assert.equal(JSON.parse(await fs.readFile(file, 'utf-8'))[0].vector.length, 512);
+});
+
+test('the CLI re-embeds an older memory file when a project is opened', async () => {
+  const dir = path.join(root, 'project');
+  await fs.mkdir(dir);
+  await runCommand(['boot'], dir);
+  await runCommand(['memory', 'add', 'deploy pipeline uses blue green releases'], dir);
+  const memFile = path.join(dir, '.colony', 'memory.json');
+  const raw = JSON.parse(await fs.readFile(memFile, 'utf-8'));
+  for (const d of raw) {
+    d.vector = d.vector.slice(0, 128); // the old size
+    delete d.embedder;
+  }
+  await fs.writeFile(memFile, JSON.stringify(raw));
+
+  const hit = (await runCommand(['memory', 'search', 'blue green deployment'], dir)).output as any;
+  assert.equal(hit.results.length, 1);
+  assert.match(hit.results[0].text, /blue green/);
+});

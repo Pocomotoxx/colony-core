@@ -1,0 +1,9 @@
+{
+  "name": "colony",
+  "private": true,
+  "description": "Colony: host-driven, model-independent colony core.",
+  "scripts": {
+    "build": "pnpm --dir packages/colony-core build",
+    "test": "pnpm --dir packages/colony-core build && pnpm --dir packages/colony-core test"
+  }
+}
