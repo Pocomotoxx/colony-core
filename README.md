@@ -151,6 +151,6 @@ A gyökérből `pnpm test` lefordítja és futtatja a `colony-core` tesztjeit.
 - A beépített tagok (11 szerep) fixek; a `member preset standard` csak pótolja a hiányzókat. Egyedi tag felvétele és az ideiglenes tagok még nincsenek (P9 a [tervben](docs/QUEEN-PORT-PLAN.md)).
 - A `plant.md` V. és VI. fázisa nincs leírva, és nincs bennük kész kód.
 
-## Eredet és licenc
+## Licenc
 
-A `colony-core` saját, újraírt kód.
+MIT, lásd a [LICENSE](LICENSE) fájlt.

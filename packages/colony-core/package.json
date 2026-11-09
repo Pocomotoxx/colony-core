@@ -2,6 +2,7 @@
   "name": "colony-core",
   "version": "1.0.0",
   "description": "Host-driven colony core: ledger, routing, consensus and local vector memory. No LLM provider, no API key.",
+  "license": "MIT",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
