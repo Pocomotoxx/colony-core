@@ -192,8 +192,10 @@ export class ColonySession {
     }
 
     const memoryText = await readIfExists(path.join(stateDir, MEMORY_FILE));
-    if (memoryText !== null && !Array.isArray(JSON.parse(memoryText))) {
-      throw new Error(`${MEMORY_FILE} must be a JSON array`);
+    if (memoryText !== null) {
+      const parsed = JSON.parse(memoryText);
+      const ok = Array.isArray(parsed) || (parsed?.v === 2 && Array.isArray(parsed.docs));
+      if (!ok) throw new Error(`${MEMORY_FILE} must be a JSON array (legacy) or a v2 document file`);
     }
 
     const session = new ColonySession(dir, hub);

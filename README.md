@@ -105,11 +105,11 @@ Csak értékelt (`--quality`, `rate`) munka kerül a tanulási memóriába; a mi
 A `check` egy ellenőrzés, amit a host kedve szerint hív meg. Ha a host támogat eszközhívás-horgot (például Claude Code `PreToolUse`), a `colony hook pretool` ezt kikényszeríti: a hívás **előtt** megkapja az eszközhívást, és
 megtagadhatja (`deny`) vagy rákérdeztetheti a felhasználóra (`ask`):
 
-- shellparancs: romboló művelet, titok;
+- shellparancs: romboló művelet, titok, írás vagy törlés a `.colony/` és `.git/` alatt (átirányítás, `tee`, `sed -i`, `cp`/`mv`, `rm` is), nyers lemezírás; rákérdezés tömeges törlésre (`find -delete`), munkát eldobó gitre (`checkout --`, `restore`), letöltött kód azonnali futtatására (`curl | sh`), rekurzív jogosultságcserére és fájlt író interpreter-egysorosokra (`node -e`, `python -c`);
 - fájlírás és -szerkesztés: a projekten kívüli út, a `.colony/` (állapot, szabályok) és a `.git/` közvetlen szerkesztése, titok, nagyon nagy írás (csak jegyzet).
 
 A hook soha nem ad engedélyt (`allow` esetén nem ír semmit), csak elvehet; olvashatatlan bemenetnél megtagad (2-es kód). Beállítás: `colony hook install` kiírja a `.claude/settings.json` részletét (nem ír fájlt).
-Korlát: csak azokat az eszközöket fedi, amelyeket a host a horoghoz kötött, és azt látja, ami az eszközhívásban benne van (futás közben összeállított parancsot vagy egy szkript belsejét nem).
+Korlát: ez szövegminta-alapú visszatartás, nem homokozó. Csak azokat az eszközöket fedi, amelyeket a host a horoghoz kötött, és azt látja, ami az eszközhívás szövegében benne van: egy szkriptfájl belsejét, egy aliast vagy egy futás közben összeállított parancsot nem. Aki kerülő utat keres, talál; a cél a gyakori hibák és a leggyakoribb kerülők megfogása.
 
 ### Párhuzamos hostok és a keresés minősége
 

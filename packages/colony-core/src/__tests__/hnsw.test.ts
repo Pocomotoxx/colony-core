@@ -200,6 +200,6 @@ test('concurrent upserts on a fresh store keep every document, in memory and on 
     await Promise.all(data.map((d) => store.upsert([d])));
     assert.equal(await store.count(), 6);
     const onDisk = JSON.parse(await fs.readFile((store as unknown as { storagePath: string }).storagePath, 'utf-8'));
-    assert.deepEqual(onDisk.map((d: { id: string }) => d.id).sort(), data.map((d) => d.id).sort());
+    assert.deepEqual(onDisk.docs.map((d: { id: string }) => d.id).sort(), data.map((d) => d.id).sort());
   });
 });

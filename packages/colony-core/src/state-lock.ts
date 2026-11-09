@@ -71,7 +71,23 @@ export async function withStateLock<T>(stateDir: string, work: () => Promise<T>,
     const sameHost = held?.host === info.host;
     const stale = held === null ? await ageOf(file) > staleMs : (sameHost && !processAlive(held.pid)) || Date.now() - held.at > staleMs;
     if (stale) {
-      await fs.rm(file, { force: true });
+      // Claim the stale lock by RENAMING it: rename is atomic, so of several waiters that all saw
+      // the same stale lock, exactly one succeeds; a plain rm here could delete a NEW lock that a
+      // faster waiter had already created in its place.
+      const claimed = path.join(stateDir, `${LOCK_FILE}.stale.${process.pid}.${Date.now()}`);
+      try {
+        await fs.rename(file, claimed);
+        // The lock could have changed hands between the read and the rename: only discard it when
+        // it is still the lock that was judged stale; a fresh one goes back.
+        const moved = await readInfo(claimed);
+        if (held !== null && (moved?.pid !== held.pid || moved?.at !== held.at)) {
+          await fs.rename(claimed, file).catch(() => fs.rm(claimed, { force: true }));
+        } else {
+          await fs.rm(claimed, { force: true });
+        }
+      } catch {
+        // someone else claimed it first: fall through and contend for the fresh lock
+      }
       continue;
     }
     if (Date.now() >= deadline) {

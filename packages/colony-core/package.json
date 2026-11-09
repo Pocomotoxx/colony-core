@@ -21,9 +21,6 @@
     "typescript",
     "esm"
   ],
-  "dependencies": {
-    "zod": "^3.23.8"
-  },
   "devDependencies": {
     "@types/node": "^22.0.0",
     "typescript": "^5.5.4"

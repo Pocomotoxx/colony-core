@@ -1,15 +1,22 @@
-import { z } from 'zod';
-
 export interface ColonyToolExecutionContext {
   agentId: string;
   taskId?: string;
   extra?: Record<string, unknown>;
 }
 
-export interface ColonyTool<TInput = any, TOutput = any> {
+/**
+ * What a tool's parameter schema must do: turn unknown input into validated input or throw.
+ * Structurally compatible with a zod schema (`z.ZodType` has `parse`), so a project that uses zod
+ * can pass its schemas unchanged; the core itself carries no validation library.
+ */
+export interface ToolSchema<TInput> {
+  parse(input: unknown): TInput;
+}
+
+export interface ColonyTool<TInput = unknown, TOutput = unknown> {
   name: string;
   description: string;
-  parameters: z.ZodType<TInput>;
+  parameters: ToolSchema<TInput>;
   execute(params: TInput, context: ColonyToolExecutionContext): Promise<TOutput>;
 }
 
@@ -17,7 +24,7 @@ export interface ColonyTool<TInput = any, TOutput = any> {
  * Registry for Colony tools and MCP integration
  */
 export class ColonyToolRegistry {
-  private tools = new Map<string, ColonyTool>();
+  private tools = new Map<string, ColonyTool<any, any>>();
 
   public register<TInput, TOutput>(tool: ColonyTool<TInput, TOutput>): void {
     if (this.tools.has(tool.name)) {

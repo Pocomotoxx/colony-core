@@ -5,6 +5,20 @@ import { IVectorStore, MemoryDocument, SearchOptions, SearchResult } from './typ
 import { cosineSimilarity } from './vector-store.js';
 import { HnswIndex } from './hnsw-index.js';
 
+/** On-disk row: like MemoryDocument, but the vector may be a base64 Float32 string (v2). */
+type StoredDocument = Omit<MemoryDocument, 'vector'> & { vector?: number[] | string };
+
+function encodeDocument(doc: MemoryDocument): StoredDocument {
+  if (!doc.vector || doc.vector.length === 0) return { ...doc, vector: undefined };
+  return { ...doc, vector: Buffer.from(new Float32Array(doc.vector).buffer).toString('base64') };
+}
+
+function decodeDocument(row: StoredDocument): MemoryDocument {
+  if (typeof row.vector !== 'string') return row as MemoryDocument;
+  const buf = Buffer.from(row.vector, 'base64');
+  return { ...row, vector: Array.from(new Float32Array(buf.buffer, buf.byteOffset, buf.byteLength / 4)) };
+}
+
 export interface FileVectorStoreOptions {
   storagePath: string; // File path e.g. .colony/memory.json
   /**
@@ -78,10 +92,12 @@ export class FileVectorStore implements IVectorStore {
 
     try {
       const data = await fs.readFile(this.storagePath, 'utf-8');
-      const parsed: MemoryDocument[] = JSON.parse(data);
+      const parsed = JSON.parse(data);
+      // v2: { v: 2, docs: [...] } with base64 Float32 vectors. Legacy: a plain array with number[] vectors.
+      const rows: StoredDocument[] = Array.isArray(parsed) ? parsed : parsed?.v === 2 && Array.isArray(parsed.docs) ? parsed.docs : [];
       this.docs.clear();
-      for (const doc of parsed) {
-        this.docs.set(doc.id, doc);
+      for (const row of rows) {
+        this.docs.set(row.id, decodeDocument(row));
       }
     } catch (err: any) {
       if (err.code !== 'ENOENT') {
@@ -95,13 +111,14 @@ export class FileVectorStore implements IVectorStore {
   /**
    * Write the file. Writes run one after another, each saving the state as it is when its turn
    * comes, so concurrent upserts cannot interleave their writes or overwrite each other with an
-   * older snapshot.
+   * older snapshot. Vectors are kept as base64 Float32 (v2), about a tenth of the pretty-printed
+   * number list the store wrote before; the old format is still read.
    */
   private persist(): Promise<void> {
     const write = async () => {
       const dir = path.dirname(this.storagePath);
       await fs.mkdir(dir, { recursive: true });
-      const serialized = JSON.stringify(Array.from(this.docs.values()), null, 2);
+      const serialized = JSON.stringify({ v: 2, docs: Array.from(this.docs.values(), encodeDocument) });
       await writeFileAtomic(this.storagePath, serialized);
     };
     const next = this.writeChain.then(write, write);

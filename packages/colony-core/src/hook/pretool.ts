@@ -1,6 +1,7 @@
 import path from 'node:path';
 import { aggregateDecision, checkDestructive, checkDiffSize, checkSecrets, GateResult } from '../gates.js';
 import { resolveInside, SafePathError } from '../safe-path.js';
+import { scanBashCommand } from './bash-rules.js';
 
 /**
  * The gates as an interceptor. A host that supports tool hooks (Claude Code's PreToolUse) calls
@@ -56,10 +57,16 @@ export async function evaluatePreToolUse(input: HookInput, projectDir: string): 
   const reasons: string[] = [];
   let deny = false;
 
+  let ask = false;
   if (tool === 'Bash') {
     const command = asString(args.command) ?? '';
     add(checkDestructive(command));
     add(checkSecrets(command));
+    for (const finding of scanBashCommand(command)) {
+      if (finding.decision === 'deny') deny = true;
+      else ask = true;
+      reasons.push(finding.reason);
+    }
   } else if (tool === 'Write' || tool === 'Edit' || tool === 'MultiEdit') {
     const file = asString(args.file_path);
     if (!file) {
@@ -93,7 +100,7 @@ export async function evaluatePreToolUse(input: HookInput, projectDir: string): 
 
   let decision: HookDecision = 'allow';
   if (deny || gateDecision === 'block') decision = 'deny';
-  else if (gateDecision === 'require-confirmation') decision = 'ask';
+  else if (ask || gateDecision === 'require-confirmation') decision = 'ask';
 
   return {
     decision,
