@@ -149,7 +149,8 @@ export interface ConsensusProposal<T = unknown> {
 export interface ConsensusVote {
   voterId: string;
   approve: boolean;
-  confidence: number; // 0.0 - 1.0
+  /** Validated 0..1, advisory: it is stored and reported but does not change the quorum count. */
+  confidence: number;
   reason?: string;
   timestamp: number;
 }

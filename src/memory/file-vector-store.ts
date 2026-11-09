@@ -20,6 +20,9 @@ function decodeDocument(row: StoredDocument): MemoryDocument {
   return { ...row, vector: Array.from(new Float32Array(buf.buffer, buf.byteOffset, buf.byteLength / 4)) };
 }
 
+/** Documents above which the `auto` index mode switches from the exact scan to the HNSW graph. */
+export const DEFAULT_HNSW_THRESHOLD = 100_000;
+
 export interface FileVectorStoreOptions {
   storagePath: string; // File path e.g. .colony/memory.json
   /**
@@ -52,7 +55,7 @@ export class FileVectorStore implements IVectorStore {
   constructor(options: FileVectorStoreOptions) {
     this.storagePath = options.storagePath;
     this.mode = options.index ?? 'auto';
-    this.hnswThreshold = options.hnswThreshold ?? 100_000;
+    this.hnswThreshold = options.hnswThreshold ?? DEFAULT_HNSW_THRESHOLD;
   }
 
   private wantsIndex(): boolean {

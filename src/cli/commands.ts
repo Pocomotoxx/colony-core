@@ -57,7 +57,7 @@ export const USAGE = `colony <command> [options]    (every command prints JSON; 
   claim release <taskId> --as <member>    give the task up (anyone may take it over at once)
   claim steal <taskId> --as <member>      take over a stealable claim (after its grace period)
   claim handoff <taskId> --as <member> --to <member> --reason <text> | claim accept|reject <taskId> --as <member>
-  vote <proposalId> --as <member> (--approve|--reject) --reason <text> [--confidence 0..1]
+  vote <proposalId> --as <member> (--approve|--reject) --reason <text> [--confidence 0..1]   (advisory: stored and reported, never counted as a weight)
   memory add <text>                       [--ns NAMESPACE] [--allow-risky]   hostile text is refused unless --allow-risky
   memory search <query>                   [--k N] [--ns NAMESPACE]
 

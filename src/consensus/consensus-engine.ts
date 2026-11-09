@@ -17,7 +17,10 @@ export interface ProposalOptions<T = unknown> {
 export type SerializedProposal = Omit<ConsensusProposal<unknown>, 'votes'> & { votes: ConsensusVote[] };
 
 /**
- * Robust, model-agnostic consensus engine supporting quorum and confidence-weighted voting
+ * Model-agnostic quorum engine. The decision counts approvals against the quorum. A vote's
+ * `confidence` (0..1) is validated, stored and reported, but it does not change the count: a
+ * self-reported weight would let any voter outweigh the others, and the Byzantine quorum is defined
+ * on counts.
  */
 export class ConsensusEngine {
   private proposals = new Map<string, ConsensusProposal<unknown>>();
@@ -74,6 +77,10 @@ export class ConsensusEngine {
     proposalId: string,
     vote: { voterId: string; approve: boolean; confidence?: number; reason?: string }
   ): Promise<ConsensusProposal<unknown>> {
+    const confidence = vote.confidence ?? 1.0;
+    if (!Number.isFinite(confidence) || confidence < 0 || confidence > 1) {
+      throw new Error('confidence must be a finite number between 0 and 1');
+    }
     const proposal = this.proposals.get(proposalId);
     if (!proposal) {
       throw new Error(`Proposal '${proposalId}' not found`);
@@ -96,7 +103,7 @@ export class ConsensusEngine {
     proposal.votes.set(vote.voterId, {
       voterId: vote.voterId,
       approve: vote.approve,
-      confidence: vote.confidence ?? 1.0,
+      confidence,
       reason: vote.reason,
       timestamp: Date.now(),
     });
@@ -104,7 +111,7 @@ export class ConsensusEngine {
     await this.messageBus.publish('consensus:vote_cast', vote.voterId, {
       proposalId,
       approve: vote.approve,
-      confidence: vote.confidence ?? 1.0,
+      confidence,
     });
 
     this.evaluateProposal(proposal);
@@ -116,7 +123,7 @@ export class ConsensusEngine {
     const approvals = votes.filter((v) => v.approve);
     const rejections = votes.filter((v) => !v.approve);
 
-    // Calculate confidence-weighted approval
+    // Informational only (reported in the event): the decision below counts approvals, not weights.
     const totalWeightedApproval = approvals.reduce((sum, v) => sum + v.confidence, 0);
 
     if (approvals.length >= proposal.quorum) {
