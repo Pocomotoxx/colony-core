@@ -45,7 +45,7 @@ colony-core/ (vagy packages/)
 
 ### I. Fázis: Projekt Környezet & Alapok Inicializálása (Bun / ESM)
 - [x] **1.1 Csomag és projektstruktúra**:
-  - `packages/colony-core/package.json` kialakítása: Bun és Node ESM támogatás, TypeScript `tsconfig.json` optimalizálás.
+  - A `package.json` kialakítása: Bun és Node ESM támogatás, TypeScript `tsconfig.json` optimalizálás.
   - Alapvető utility-k és függőségek beállítása (zod, @types/node, typescript).
 - [x] **1.2 Közös típusok és interfészek (`types.ts`)**:
   - Feladatállapotok, ágens-állapotok, eseménybusz (`MessageBus`) és szavazási típusdefiníciók.

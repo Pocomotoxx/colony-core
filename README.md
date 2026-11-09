@@ -2,7 +2,7 @@
 
 Modellfüggetlen **Colony-mag** TypeScriptben. Nem hív LLM-et és nem kér API-kulcsot: a **host** (például a Cowork) maga a modell, a Colony pedig a főkönyve. Egy paranccsal (`colony boot`) betölti a rendszert, utána a host parancsokon keresztül dolgozik: feladatot vesz fel, kér, teljesít, szavaz, és a Colony vektoros memóriájába ír. Az állapot a repóban él (`.colony/`).
 
-> **Állapot:** a projekt egy korábbi, rajalapú architektúrából indult, amelynek kódja már nincs a repóban. Az aktív mag a [`packages/colony-core`](packages/colony-core). A hátralévő munka terve: [plant.md](plant.md) és [docs/QUEEN-PORT-PLAN.md](docs/QUEEN-PORT-PLAN.md).
+> **Állapot:** a projekt egy korábbi, rajalapú architektúrából indult, amelynek kódja már nincs a repóban. Az aktív mag a [`src`](src) mappa. A hátralévő munka terve: [plant.md](plant.md) és [docs/QUEEN-PORT-PLAN.md](docs/QUEEN-PORT-PLAN.md).
 
 ## Fogalmak
 
@@ -37,7 +37,6 @@ A korábbi „raj” (swarm) helyett mindenhol **Colony** a terminológia.
 Szükséges: Node.js 20+ és pnpm.
 
 ```bash
-cd packages/colony-core
 pnpm install
 pnpm build
 pnpm test
@@ -134,7 +133,9 @@ A kötelező szabályokat a `.colony/rules/manifest.json` sorolja fel (`mandator
 ## Repó felépítése
 
 ```
-packages/colony-core/      az új mag (TypeScript, ESM, strict)
+src/                       a mag (TypeScript, ESM, strict) és tesztjei
+scripts/                   segédszkriptek (tesztfuttató)
+.github/workflows/         CI: build, lint, teszt
 START_HERE.md              indítóutasítás hostoknak
 AGENTS.md                  rövid belépő hostoknak
 plant.md                   migrációs terv

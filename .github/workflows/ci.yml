@@ -28,16 +28,12 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
           cache: pnpm
-          cache-dependency-path: packages/colony-core/pnpm-lock.yaml
+          cache-dependency-path: pnpm-lock.yaml
       - name: Install
-        working-directory: packages/colony-core
         run: pnpm install --frozen-lockfile
       - name: Build (strict TypeScript)
-        working-directory: packages/colony-core
         run: pnpm build
       - name: Lint
-        working-directory: packages/colony-core
         run: pnpm lint
       - name: Test
-        working-directory: packages/colony-core
         run: pnpm test

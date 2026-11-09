@@ -1,10 +1,32 @@
 {
-  "name": "colony",
-  "private": true,
-  "description": "Colony: host-driven, model-independent colony core.",
+  "name": "colony-core",
+  "version": "1.0.0",
+  "description": "Host-driven colony core: ledger, routing, consensus and local vector memory. No LLM provider, no API key.",
   "license": "MIT",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "colony": "dist/cli.js"
+  },
   "scripts": {
-    "build": "pnpm --dir packages/colony-core build",
-    "test": "pnpm --dir packages/colony-core build && pnpm --dir packages/colony-core test"
+    "build": "tsc",
+    "test": "node scripts/run-tests.mjs",
+    "lint": "eslint ."
+  },
+  "keywords": [
+    "agent-colony",
+    "orchestrator",
+    "consensus",
+    "vector-memory",
+    "typescript",
+    "esm"
+  ],
+  "devDependencies": {
+    "@eslint/js": "^9.39.5",
+    "@types/node": "^22.0.0",
+    "eslint": "^9.39.5",
+    "typescript": "^5.5.4",
+    "typescript-eslint": "^8.72.2"
   }
 }
