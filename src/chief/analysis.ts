@@ -1,7 +1,7 @@
 /**
  * Task analysis, decomposition and the execution plan.
  *
- * Rewritten from the Queen's `analyzeTask` (legacy `queen-coordinator`). A pure function of the
+ * Rewritten from the legacy central coordinator's `analyzeTask`. A pure function of the
  * task and a small context the hub gathers (matching patterns, measured durations), so the same
  * input always gives the same plan. The colony only PROPOSES the plan; applying it is a separate,
  * explicit step (`plan --apply`).

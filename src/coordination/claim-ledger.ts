@@ -6,7 +6,7 @@
  * current time as an argument, so a host-driven colony can replay and test it exactly.
  *
  * Deliberate differences from the legacy code:
- * - There is no contest window and no queen/human arbiter. A steal is final; the colony's
+ * - There is no contest window and no central-coordinator/human arbiter. A steal is final; the colony's
  *   consensus engine is the place for a vote if one is wanted.
  * - A high progress value does not make a stale claim unstealable: a dead host session at 80%
  *   would otherwise block the task forever. The stolen progress is recorded for the new holder.

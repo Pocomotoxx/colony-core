@@ -4,10 +4,10 @@
 
 ## 1. Áttekintés és Célok
 
-A projekt célja a régi, rajalapú architektúra teljes átültetése egy **tiszta, modern TypeScript / ESM / Bun** alapú keretrendszerbe, megszüntetve a közvetlen Claude-függőségeket, miközben a működési logikát, metódusokat és robusztusságot hiánytalanul megőrizzük.
+A projekt célja a régi, elosztott ágensrendszer-alapú architektúra teljes átültetése egy **tiszta, modern TypeScript / ESM / Bun** alapú keretrendszerbe, megszüntetve a közvetlen Claude-függőségeket, miközben a működési logikát, metódusokat és robusztusságot hiánytalanul megőrizzük.
 
 ### Alapelvek:
-1. **Név- és fogalomkonverzió**: A korábbi "Swarm" (raj) architektúra helyett egységesen a **"Colony" (Colony)** fogalmat és terminológiát alkalmazzuk (pl. ColonyHub, ColonyCoordinator, ColonyMember/Worker, QueenCoordinator helyett ColonyDirector/Controller).
+1. **Név- és fogalomkonverzió**: A korábbi elosztott ágensrendszer-architektúra helyett egységesen a **"Colony" (Colony)** fogalmat és terminológiát alkalmazzuk (pl. ColonyHub, ColonyCoordinator, ColonyMember/Worker, a központi koordinátor helyett ColonyDirector/Controller).
 2. **Platform & Runtime**: Modern ESM, Bun / Node modern runtime kompatibilitás, TypeScript strict mode, zéró felesleges Claude-specifikus lock-in.
 3. **Modell-függetlenség (LLM & Embeddings)**: Provider-agnosztikus interfészek (OpenAI, Gemini/Google AI, Anthropic, Ollama, Helyi modellek / ONNX / transformers).
 4. **Független és moduláris rétegek**: Clean Architecture / Domain Driven Design (DDD) minta követése: Domain -> Application -> Infrastructure -> Interfaces.
@@ -18,7 +18,7 @@ A projekt célja a régi, rajalapú architektúra teljes átültetése egy **tis
 
 ```
 colony-core/ (vagy packages/)
-├── colony/                # Korábbi Swarm - Colony raj- és ágenskoordináció
+├── colony/                # Korábbi elosztott ágensrendszer - Colony ágenskoordináció
 │   ├── coordination/      # Feladat delegálás, Agent registry, ColonyHub
 │   ├── consensus/         # Byzantine fault tolerance, Raft, Gossip protokollok
 │   ├── attention/         # Attention / prioritás koordinátor

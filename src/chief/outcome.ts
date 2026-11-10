@@ -1,7 +1,7 @@
 /**
  * Outcome reports and the reward the colony learns from.
  *
- * Rewritten from the Queen's `recordOutcome` / `learnFromOutcome` (legacy `queen-coordinator`).
+ * Rewritten from the legacy central coordinator's `recordOutcome` / `learnFromOutcome`.
  * The legacy reward was `quality * 0.8 + 0.2` on success and `quality * 0.3` on failure. The
  * second branch never goes below zero, so a failed task still pushed the learner TOWARDS the role
  * that failed it. Here a failure is negative: `-(1 - 0.3 * quality)`, from -1 down to -0.7 for a

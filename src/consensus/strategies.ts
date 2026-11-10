@@ -1,7 +1,7 @@
 /**
  * Quorum rules for colony voting. Pure functions, no network, no timers.
  *
- * Ported in spirit from the legacy swarm consensus (Raft majority, Byzantine 3f+1), without
+ * Ported in spirit from the legacy distributed-agent-system consensus (Raft majority, Byzantine 3f+1), without
  * the replication protocol: the colony has one ledger, so only the decision rules are needed.
  */
 

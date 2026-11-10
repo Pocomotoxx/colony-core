@@ -2,16 +2,16 @@
 
 Modellfüggetlen **Colony-mag** TypeScriptben. Nem hív LLM-et és nem kér API-kulcsot: a **host** (például a Cowork) maga a modell, a Colony pedig a főkönyve. Egy paranccsal (`colony boot`) betölti a rendszert, utána a host parancsokon keresztül dolgozik: feladatot vesz fel, kér, teljesít, szavaz, és a Colony vektoros memóriájába ír. Az állapot a repóban él (`.colony/`).
 
-> **Állapot:** a projekt egy korábbi, rajalapú architektúrából indult, amelynek kódja már nincs a repóban. Az aktív mag a [`src`](src) mappa. A hátralévő munka terve: [plant.md](plant.md) és [docs/QUEEN-PORT-PLAN.md](docs/QUEEN-PORT-PLAN.md).
+> **Állapot:** a projekt egy korábbi, elosztott ágensrendszer-alapú architektúrából indult, amelynek kódja már nincs a repóban. Az aktív mag a [`src`](src) mappa. A hátralévő munka terve: [plant.md](plant.md) és [docs/COORDINATOR-PORT-PLAN.md](docs/COORDINATOR-PORT-PLAN.md).
 
 ## Fogalmak
 
-A korábbi „raj” (swarm) helyett mindenhol **Colony** a terminológia.
+A korábbi elosztott ágensrendszer-terminológia helyett mindenhol **Colony** a terminológia.
 
 | Régi | Új |
 |---|---|
-| Swarm | Colony |
-| Queen / coordinator | `ColonyHub` (vezérlő) |
+| Elosztott ágensrendszer | Colony |
+| Központi koordinátor | `ColonyHub` (vezérlő) |
 | Agent registry | `ColonyRegistry` |
 | Task orchestration | `ColonyTaskOrchestrator` |
 | Worker agent | a host (Cowork), a `next` és `done` parancsokon át |
@@ -171,7 +171,7 @@ A gyökérből `pnpm test` lefordítja és futtatja a `colony-core` tesztjeit.
 - A szabályok csak kötelező készletből állnak, és mind a bootban töltődnek be. Feladathoz kötött szabálybetöltésre (útválasztóra) szándékosan nincs szükség.
 - A kezdő szabálykészlet rövid, és a projekt igényeihez kell igazítani.
 - Az ellenőrzések (`verify`) és az őrszem csak azt látják, amit a host megmutat vagy lefuttat; a Colony nem lát a host belsejébe. Az értékelés végső forrása a felhasználó.
-- A beépített tagok (11 szerep) fixek; a `member preset standard` csak pótolja a hiányzókat. Egyedi tag felvétele és az ideiglenes tagok még nincsenek (P9 a [tervben](docs/QUEEN-PORT-PLAN.md)).
+- A beépített tagok (11 szerep) fixek; a `member preset standard` csak pótolja a hiányzókat. Egyedi tag felvétele és az ideiglenes tagok még nincsenek (P9 a [tervben](docs/COORDINATOR-PORT-PLAN.md)).
 - A `plant.md` V. és VI. fázisa nincs leírva, és nincs bennük kész kód.
 
 ## Licenc
