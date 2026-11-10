@@ -36,11 +36,11 @@ test('boot seeds the built-in members once and reports UNVERIFIABLE outside git'
   assert.equal(first.code, 0);
   assert.equal(first.out.boot.status, 'UNVERIFIABLE');
   assert.equal(first.out.boot.revision, 'unknown');
-  assert.equal(first.out.colony.totalMembers, 11);
+  assert.equal(first.out.colony.totalMembers, 12);
   assert.ok(first.out.protocol.length > 0);
 
   const second = await run('boot');
-  assert.equal(second.out.colony.totalMembers, 11);
+  assert.equal(second.out.colony.totalMembers, 12);
   assert.ok(second.out.boot.evidence.some((e: any) => e.path === '.colony/ledger.json' && /^[0-9a-f]{64}$/.test(e.sha256)));
 });
 
@@ -177,7 +177,7 @@ test('topology prints the graph, finds paths and validates its options', async (
 
   const star = await run('topology');
   assert.equal(star.out.topology.leader, 'member_director');
-  assert.equal(star.out.topology.edges.length, 10);
+  assert.equal(star.out.topology.edges.length, 11);
   assert.equal(star.out.connected, true);
 
   const tree = await run('topology', '--type', 'tree', '--fanout', '2', '--from', 'member_security', '--to', 'member_tester');

@@ -23,7 +23,7 @@ async function handle_propose(ctx: CommandContext): Promise<CommandResult> {
   if (quorum !== undefined && (!Number.isInteger(quorum) || quorum < 1)) throw new CliError('--quorum must be a positive integer');
   if (!(timeoutMin > 0)) throw new CliError('--timeout-min must be positive');
   // Eligible voters: every member that is neither offline nor in error.
-  const voters = hub.registry.getAllMembers().filter((m) => m.status !== 'offline' && m.status !== 'error' && m.role !== 'exobiologist').length;
+  const voters = hub.registry.getAllMembers().filter((m) => m.status !== 'offline' && m.status !== 'error' && m.role !== 'exobiologist' && m.role !== 'dissenter').length;
 
   const proposal = await hub.consensus.submitProposal({
     taskId: task.id,
@@ -76,6 +76,7 @@ async function handle_vote(ctx: CommandContext): Promise<CommandResult> {
   if (!sub) throw new CliError('usage: vote <proposalId> --as <member> ...');
   const [voter] = resolveMembers(session, values.as);
   if (voter.role === 'exobiologist') throw new CliError('the exobiologist is an advisory role and does not vote; its hypotheses go through `anomaly`');
+  if (voter.role === 'dissenter') throw new CliError('the dissenter does not vote; its objection goes through `debate ... dissent`');
   const proposal = await hub.consensus.castVote(sub, { voterId: voter.id, approve: Boolean(values.approve), confidence, reason: values.reason });
   log('proposal.vote', proposal.id, { voterId: voter.id, approve: Boolean(values.approve), confidence, status: proposal.status });
   if (proposal.status !== 'open') warnings.push(...independenceWarnings(Array.from(proposal.votes.values())));

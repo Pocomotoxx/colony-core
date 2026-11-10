@@ -30,6 +30,7 @@ export const ROLE_GROUP: Record<AgentRole, HealthGroup> = {
   security: 'leadership',
   researcher: 'research',
   exobiologist: 'research',
+  dissenter: 'quality',
   analyst: 'analysis',
   architect: 'delivery',
   engineer: 'delivery',

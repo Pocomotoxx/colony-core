@@ -209,7 +209,7 @@ test('health: runs after boot, reports, and validates its options', async () => 
   const r = await run('health');
   assert.equal(r.code, 0);
   assert.equal(r.out.report.heuristic, true);
-  assert.equal(r.out.report.metrics.members, 11);
+  assert.equal(r.out.report.metrics.members, 12);
   assert.equal(r.out.report.groups.length, 5);
   assert.match(r.out.note, /heuristic/);
 
