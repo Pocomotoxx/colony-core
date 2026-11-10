@@ -12,11 +12,18 @@ if (process.argv[2] === 'hook') {
   const { runHook } = await import('./hook/cli.js');
   const sub = process.argv[3];
   const dirIndex = process.argv.indexOf('--dir');
-  const stdinText = sub === 'pretool' ? await readStdin() : '';
-  const run = await runHook(sub, stdinText, process.cwd(), dirIndex > 0 ? process.argv[dirIndex + 1] : undefined);
-  process.stdout.write(run.stdout);
-  process.stderr.write(run.stderr);
-  process.exitCode = run.code;
+  try {
+    const stdinText = sub === 'pretool' ? await readStdin() : '';
+    const run = await runHook(sub, stdinText, process.cwd(), dirIndex > 0 ? process.argv[dirIndex + 1] : undefined);
+    process.stdout.write(run.stdout);
+    process.stderr.write(run.stderr);
+    process.exitCode = run.code;
+  } catch (err) {
+    // fail closed: an uncaught crash would exit 1, which a host treats as a non-blocking error
+    process.stderr.write(`Colony guard: the hook failed (${err instanceof Error ? err.message : String(err)}), so the tool call is refused.
+`);
+    process.exitCode = 2;
+  }
 } else {
   const { code, output } = await runCommand(process.argv.slice(2), process.cwd());
   const text = JSON.stringify(output, null, 2);

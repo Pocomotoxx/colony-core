@@ -3,18 +3,18 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { MoERouter, tokenize } from '../neural/moe-router.js';
+import { MoERouter, routingWords } from '../neural/moe-router.js';
 import { ColonyHub } from '../colony-hub.js';
 import { runCommand } from '../cli/commands.js';
 
 // No rule keyword occurs in it, not even as a substring (the keyword match is a plain substring test).
 const TEXT = 'quarterly invoice ledger sums';
 
-test('tokenize: unique lowercase words of 3+ characters, any script', () => {
-  assert.deepEqual(tokenize('Fix the Bug, fix THE bug!'), ['fix', 'the', 'bug']);
-  assert.deepEqual(tokenize('a b cd'), []);
-  assert.deepEqual(tokenize('Számla egyeztetés 2026'), ['számla', 'egyeztetés', '2026']);
-  assert.equal(tokenize(Array.from({ length: 200 }, (_, i) => `word${i}`).join(' ')).length, 64);
+test('routingWords: unique lowercase words of 3+ characters, any script', () => {
+  assert.deepEqual(routingWords('Fix the Bug, fix THE bug!'), ['fix', 'the', 'bug']);
+  assert.deepEqual(routingWords('a b cd'), []);
+  assert.deepEqual(routingWords('Számla egyeztetés 2026'), ['számla', 'egyeztetés', '2026']);
+  assert.equal(routingWords(Array.from({ length: 200 }, (_, i) => `word${i}`).join(' ')).length, 64);
 });
 
 test('without learning the router behaves as before', () => {
@@ -171,5 +171,22 @@ test('a ledger written before the router learned still loads', async () => {
   const ledger = JSON.parse(await fs.readFile(file, 'utf-8'));
   delete ledger.router;
   await fs.writeFile(file, JSON.stringify(ledger), 'utf-8');
+  // a hand-edited ledger stands for a state from before the integrity record: drop it
+  await fs.rm(path.join(path.dirname(file), 'integrity.json'), { force: true });
   assert.equal((await run('route', 'stats')).out.learning.outcomes, 0);
+});
+
+test('keywords match at a word start: "pricing" is not "pr", "latest" is not "test", "author" is not "auth"', () => {
+  const router = new MoERouter();
+  const role = (text: string) => router.routeTask(text, { record: false });
+  for (const text of ['improve the pricing process', 'print the invoice', 'the author wrote a classic', 'latest contest results']) {
+    const d = role(text);
+    assert.equal(d.targetRole, 'engineer', text); // nothing matched: the fallback
+    assert.deepEqual(d.matchedKeywords, [], text);
+  }
+  assert.equal(role('open a PR for the change').targetRole, 'reviewer'); // the whole word still counts
+  assert.equal(role('add unit tests and a qa pass').targetRole, 'tester');
+  assert.deepEqual(role('check the auth flow for the token').matchedKeywords.sort(), ['auth', 'token']); // whole short words still match
+  assert.equal(role('fix the authentication flow').targetRole, 'security'); // a long keyword may be a prefix
+  assert.equal(role('implementation of the parser').targetRole, 'engineer');
 });

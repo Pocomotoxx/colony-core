@@ -43,8 +43,25 @@ export interface RouterLearningOptions {
 
 const MAX_TOKENS_PER_TEXT = 64;
 
+const keywordCache = new Map<string, RegExp>();
+/**
+ * A keyword matches at the start of a word. A short keyword (5 letters or fewer: "pr", "qa", "auth", "class",
+ * "test", "code") must be the whole word, with at most a plural or past ending, so "pricing" is not
+ * "pr", "latest" is not "test" and "author" is not "auth". A longer keyword may be a prefix
+ * ("implement" matches "implementation").
+ */
+function keywordRegex(keyword: string): RegExp {
+  let re = keywordCache.get(keyword);
+  if (!re) {
+    const escaped = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    re = keyword.length <= 5 ? new RegExp(`(?<![\\p{L}\\p{N}])${escaped}(?:s|es|ed|ing)?(?![\\p{L}\\p{N}])`, 'u') : new RegExp(`(?<![\\p{L}\\p{N}])${escaped}`, 'u');
+    keywordCache.set(keyword, re);
+  }
+  return re;
+}
+
 /** Unique lowercase words of 3+ letters/digits (any script), at most 64. */
-export function tokenize(text: string): string[] {
+export function routingWords(text: string): string[] {
   const words = text.toLowerCase().match(/[\p{L}\p{N}]{3,}/gu) ?? [];
   return Array.from(new Set(words)).slice(0, MAX_TOKENS_PER_TEXT);
 }
@@ -66,37 +83,37 @@ export class MoERouter {
     {
       role: 'security',
       keywords: ['vulnerability', 'cve', 'security', 'auth', 'sanitize', 'injection', 'permission', 'token', 'exploit'],
-      patterns: [/secur(e|ity)/i, /vulnerab/i, /cve-\d+/i, /auth(enticat|oriz)/i],
+      patterns: [/\bsecur(e|ity)/i, /\bvulnerab/i, /\bcve-\d+/i, /\bauth(enticat|oriz)/i],
       baseWeight: 1.2, // Higher sensitivity for security topics
     },
     {
       role: 'architect',
       keywords: ['architecture', 'design', 'spec', 'ddd', 'pattern', 'structure', 'boundary', 'modular', 'system'],
-      patterns: [/architect/i, /system design/i, /spec(ification)?/i, /interfac(e|es)/i],
+      patterns: [/\barchitect/i, /system design/i, /\bspec(ification)?\b/i, /\binterfac(e|es)\b/i],
       baseWeight: 1.0,
     },
     {
       role: 'tester',
       keywords: ['test', 'qa', 'e2e', 'unit test', 'coverage', 'benchmark', 'assert', 'mock', 'fuzz'],
-      patterns: [/test(ing|s)?/i, /qa/i, /benchmark/i, /assert/i],
+      patterns: [/\btest(ing|s|ed)?\b/i, /\bqa\b/i, /\bbenchmark/i, /\bassert/i],
       baseWeight: 1.0,
     },
     {
       role: 'reviewer',
       keywords: ['review', 'audit', 'evaluate', 'inspect', 'lint', 'pr', 'code review', 'check'],
-      patterns: [/review/i, /audit/i, /inspect/i, /code review/i],
+      patterns: [/\breview/i, /\baudit/i, /\binspect/i, /\bcode review/i],
       baseWeight: 1.0,
     },
     {
       role: 'engineer',
       keywords: ['implement', 'code', 'build', 'create', 'refactor', 'fix', 'bug', 'typescript', 'esm', 'function', 'class'],
-      patterns: [/implement/i, /code/i, /build/i, /refactor/i, /develop/i],
+      patterns: [/\bimplement/i, /\bcode/i, /\bbuild/i, /\brefactor/i, /\bdevelop/i],
       baseWeight: 1.0,
     },
     {
       role: 'director',
       keywords: ['plan', 'roadmap', 'milestone', 'strategy', 'goal', 'supervise', 'coordinate', 'project'],
-      patterns: [/plan/i, /roadmap/i, /strategy/i, /coordinat/i],
+      patterns: [/\bplan/i, /\broadmap/i, /\bstrateg/i, /\bcoordinat/i],
       baseWeight: 0.9,
     },
   ];
@@ -125,7 +142,7 @@ export class MoERouter {
    */
   public routeTask(taskDescription: string, options: { record?: boolean } = {}): RouteDecision {
     const text = taskDescription.toLowerCase();
-    const tokens = tokenize(taskDescription);
+    const tokens = routingWords(taskDescription);
     let bestRole: AgentRole = 'engineer'; // Default fallback
     let bestScore = 0;
     let bestLearned = 0;
@@ -137,7 +154,7 @@ export class MoERouter {
       const matchedKeywords: string[] = [];
 
       for (const kw of rule.keywords) {
-        if (text.includes(kw)) {
+        if (keywordRegex(kw).test(text)) {
           score += 1.0;
           matchedKeywords.push(kw);
         }
@@ -195,7 +212,7 @@ export class MoERouter {
   public recordOutcome(taskDescription: string, role: AgentRole, reward: number): void {
     if (!Number.isFinite(reward)) throw new Error('reward must be a finite number');
     const clamped = Math.max(-1, Math.min(1, reward));
-    for (const token of tokenize(taskDescription)) {
+    for (const token of routingWords(taskDescription)) {
       let perRole = this.weights.get(token);
       if (!perRole) {
         if (this.weights.size >= this.maxWords) continue;

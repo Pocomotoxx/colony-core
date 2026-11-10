@@ -1,7 +1,7 @@
 import { ColonyMember, ColonyTask, ReviewRecord, TaskPriority, AgentRole, TaskVerification } from '../types.js';
 import { MAX_KEPT_REVIEWS, maxRoundsOf, REVIEW_LIMIT_HOLDER, reviewBlocksCompletion, validateMaxRounds } from '../chief/review.js';
 import { ColonyRegistry } from './colony-registry.js';
-import { OutcomeReport, validateQuality } from '../chief/outcome.js';
+import { checkResultSize, OutcomeReport, validateQuality } from '../chief/outcome.js';
 import { MessageBus } from '../message-bus.js';
 
 export interface CreateTaskOptions {
@@ -34,6 +34,9 @@ export interface SplitPart {
  */
 /** A failed colony check lowers a reported quality to at most this. */
 export const VERIFY_FAIL_QUALITY_CAP = 0.3;
+
+/** The states in which a task is being worked on: only these can be progressed, completed, failed or reassigned. */
+const OPEN: readonly string[] = ['assigned', 'in_progress', 'review', 'consensus'];
 
 export class ColonyTaskOrchestrator {
   private tasks = new Map<string, ColonyTask>();
@@ -273,8 +276,14 @@ export class ColonyTaskOrchestrator {
   public async reassignTask(taskId: string, newAgentId: string): Promise<void> {
     const task = this.tasks.get(taskId);
     if (!task) throw new Error(`Task '${taskId}' not found`);
-    if (!['assigned', 'in_progress', 'review', 'consensus'].includes(task.status)) {
+    if (!OPEN.includes(task.status)) {
       throw new Error(`Task '${taskId}' is ${task.status}, not open`);
+    }
+    const target = this.registry.getMember(newAgentId);
+    if (!target) throw new Error(`Member '${newAgentId}' not found`);
+    if (target.status === 'offline' || target.status === 'error') throw new Error(`Member '${newAgentId}' is ${target.status}: it cannot take over a task`);
+    if (!target.currentTaskIds.includes(taskId) && target.currentTaskIds.length >= target.capabilities.maxConcurrentTasks) {
+      throw new Error(`Member '${newAgentId}' is at capacity`);
     }
     const previous = task.assignedAgentId;
     if (previous) this.registry.completeTask(previous, taskId);
@@ -290,6 +299,7 @@ export class ColonyTaskOrchestrator {
   ): Promise<void> {
     const task = this.tasks.get(taskId);
     if (!task) throw new Error(`Task '${taskId}' not found`);
+    if (!OPEN.includes(task.status)) throw new Error(`Task '${taskId}' is ${task.status}: only an open task can change its progress`);
 
     task.status = status;
     await this.messageBus.publish(`task:${status}`, agentId, { taskId });
@@ -299,6 +309,8 @@ export class ColonyTaskOrchestrator {
     const task = this.tasks.get(taskId);
     if (!task) throw new Error(`Task '${taskId}' not found`);
     if (report.quality !== undefined) validateQuality(report.quality);
+    checkResultSize(outputResult, 'the result');
+    this.requireHolder(task, taskId, agentId, 'completed');
     if (task.hold) throw new Error(`Task '${taskId}' is on hold (${task.hold.by}): it cannot be completed until the hold is released`);
     const reviewBlock = reviewBlocksCompletion(task);
     if (reviewBlock) throw new Error(`Task '${taskId}' cannot be completed: ${reviewBlock}`);
@@ -356,10 +368,20 @@ export class ColonyTaskOrchestrator {
     await this.messageBus.publish('task:rated', 'orchestrator', { taskId, success: task.status === 'completed' });
   }
 
+  /** A task is closed once, by the member that holds it, while it is being worked on. */
+  private requireHolder(task: ColonyTask, taskId: string, agentId: string, verb: string): void {
+    if (!OPEN.includes(task.status)) throw new Error(`Task '${taskId}' is ${task.status}: only an open task can be ${verb}`);
+    if (task.assignedAgentId !== undefined && task.assignedAgentId !== agentId) {
+      throw new Error(`Task '${taskId}' is held by '${task.assignedAgentId}', not '${agentId}'`);
+    }
+  }
+
   public async failTask(taskId: string, agentId: string, error: string, report: OutcomeReport = {}): Promise<void> {
     const task = this.tasks.get(taskId);
     if (!task) throw new Error(`Task '${taskId}' not found`);
     if (report.quality !== undefined) validateQuality(report.quality);
+    checkResultSize(error, 'the error text');
+    this.requireHolder(task, taskId, agentId, 'failed');
 
     task.status = 'failed';
     task.error = error;

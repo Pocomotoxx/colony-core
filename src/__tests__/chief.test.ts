@@ -4,7 +4,8 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { computeMemberStats } from '../chief/member-stats.js';
-import { DEFAULT_SCORE_WEIGHTS, ineligibleReason, rankMembers } from '../chief/scoring.js';
+import { DEFAULT_SCORE_WEIGHTS, rankMembers } from '../chief/scoring.js';
+import { ineligibleReason } from '../coordination/colony-registry.js';
 import { ColonyHub } from '../colony-hub.js';
 import { ColonyRegistry } from '../coordination/colony-registry.js';
 import { BUILTIN_AGENT_PROFILES } from '../agents/agent-profiles.js';
@@ -224,6 +225,8 @@ test('member preset standard adds the missing roles to an older colony, once', a
   const old = ['director', 'architect', 'coder', 'reviewer', 'tester', 'security'].map((k) => `member_${k}`);
   ledger.members = ledger.members.filter((m: any) => old.includes(m.id));
   await fs.writeFile(file, JSON.stringify(ledger), 'utf-8');
+  // a hand-edited ledger stands for a state from before the integrity record: drop it
+  await fs.rm(path.join(path.dirname(file), 'integrity.json'), { force: true });
   assert.equal((await run('member', 'list')).out.members.length, 6);
 
   const first = await run('member', 'preset', 'standard');
@@ -262,9 +265,27 @@ test('a stale claim names the best other member as the takeover', async () => {
   const ledger = JSON.parse(await fs.readFile(file, 'utf-8'));
   for (const c of ledger.claims) c.lastActivityAt -= 60 * 60_000;
   await fs.writeFile(file, JSON.stringify(ledger), 'utf-8');
+  // a hand-edited ledger stands for a state from before the integrity record: drop it
+  await fs.rm(path.join(path.dirname(file), 'integrity.json'), { force: true });
 
   // Only one engineer exists, so nobody else can take it over: the suggestion is empty, not invented.
   const swept = await run('claim', 'sweep');
   assert.equal(swept.out.markedStealable[0].taskId, id);
   assert.equal(swept.out.markedStealable[0].suggestedTakeover, null);
+});
+
+test('stats: a completed task whose check the colony saw fail counts against the member, one that passed does not', () => {
+  const member = { id: 'm1', name: 'm1', role: 'engineer', status: 'idle', capabilities: { tools: [], maxConcurrentTasks: 3, languages: [], specializations: [], contextWindowLimit: 1 }, currentTaskIds: [], metadata: {}, createdAt: 0, lastActiveAt: 0 } as unknown as Parameters<typeof computeMemberStats>[0][number];
+  const done = (id: string, verification?: { passed: boolean }) => ({
+    id, title: id, description: id, priority: 'normal', status: 'completed', assignedAgentId: 'm1', dependencies: [], requiredCapabilities: [], inputData: {}, consensusRequired: false, minConsensusQuorum: 2, createdAt: 0, startedAt: 0, completedAt: 1,
+    ...(verification ? { verification: { command: 'x', exitCode: verification.passed ? 0 : 1, timedOut: false, durationMs: 1, at: 0, outputHash: 'h', outputBytes: 0, ...verification } } : {}),
+  }) as unknown as Parameters<typeof computeMemberStats>[1][number];
+  const plain = computeMemberStats([member], [done('a'), done('b')], []).get('m1')!;
+  const failing = computeMemberStats([member], [done('a', { passed: false }), done('b', { passed: false })], []).get('m1')!;
+  const passing = computeMemberStats([member], [done('a', { passed: true }), done('b', { passed: true })], []).get('m1')!;
+  assert.equal(plain.successRate, 0.75); // (2 + 1) / (2 + 2)
+  assert.equal(failing.checkFailed, 2);
+  assert.equal(failing.successRate, 0.25); // (2 - 2 + 1) / (2 + 2): "done" that the colony's own run contradicted
+  assert.equal(passing.checkPassed, 2);
+  assert.equal(passing.successRate, 0.75);
 });

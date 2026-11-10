@@ -20,7 +20,7 @@ A korábbi „raj” (swarm) helyett mindenhol **Colony** a terminológia.
 
 - **Koordináció:** ágensnyilvántartás (kapacitás, `idle`/`busy`/`offline`), feladatbontás függőségekkel, automatikus delegálás, eseménybusz témákkal és wildcarddal.
 - **Konszenzus:** kvórumos szavazás. A döntést a jóváhagyások **darabszáma** adja; a szavazat `confidence` értéke (0 és 1 közötti, ellenőrzött) tájékoztató adat, nem súly: egy önbevallott érték nem billentheti a kvórumot. A kvórum rögzíthető, vagy stratégiából jön a szavazók számából: `majority`, `supermajority`, `byzantine` (3f+1), `unanimous`. Ha a kvórum már nem érhető el, a javaslat azonnal elutasítva lesz.
-- **Foglalások (claims):** a `next` foglalást nyit a feladatra, a `done` / `fail` lezárja. Ha a gazdagép-munkamenet elhal, a foglalás elavul, és másik tag átveheti, vagy a gazda átadhatja. Az idő mindig paraméter, nincs időzítő és véletlen, ezért az egész visszajátszható.
+- **Foglalások (claims):** a `next` foglalást nyit a feladatra, a `done` / `fail` lezárja. Ha a gazdagép-munkamenet elhal, a foglalás elavul, és másik tag átveheti, vagy a gazda átadhatja. A claim-ledger tiszta: az idő paraméter, nincs időzítő és véletlen, ezért ez a rész pontosan visszajátszható. A feladatok, javaslatok és memóriabejegyzések azonosítója és időbélyege viszont `Date.now()` és `Math.random()` alapú, tehát a teljes colony futása nem játszható vissza bitre azonosan.
 - **Topológia:** a tagok kapcsolati gráfja (`mesh`, `star`, `tree`, `hybrid`), determinisztikusan: ugyanazokból a tagokból mindig ugyanaz a gráf. Vezetőválasztás, szomszédok, legrövidebb út.
 - **Memória (Vector Codex):** szolgáltatófüggetlen embedding-felület, koszinusz-hasonlóságú vektortár névterekkel, fájlalapú perzisztencia a `.colony/memory.json` fájlban. A keresés alapból pontos (lineáris); az `auto` mód csak 100 000 vektor fölött használ determinisztikus HNSW-gráfot (`index: 'linear' | 'hnsw' | 'auto'`). A gráf nincs mentve, a tárolt dokumentumokból épül újra a folyamat indulásakor: egy rövid életű CLI-parancsnál ez lassabb a pontos keresésnél (mérve: 1000 dokumentumnál 1,2 s a gráf, 3 ms a pontos keresés), ezért a `hnsw` mód hosszan élő hostnak való, kifejezett választás.
 - **Ágensek:** 11 beépített profil (Director, Architect, Coder, Reviewer, Tester, Security, Auditor, Researcher, Analyst, Writer, Exobiologist) és típusbiztos eszköztár (a paraméterséma bármilyen `parse(input)` felületű objektum lehet, például egy zod-séma; a mag nem függ a zod-tól). Az Auditor és az Exobiologist **tanácsadó** szerep: csak olyan feladatot kap, amely név szerint kéri, a kiosztás nem teszi rájuk magától. Az Exobiologist nem szavaz. A profil `sampling` mezője (hőmérséklet, Top-P) csak javaslat a hostnak: a mag nem hív modellt, így nem tudja beállítani, és nem tudja ellenőrizni, hogy betartották-e.
@@ -57,7 +57,8 @@ node dist/cli.js done <taskId> --result "mit csináltam" # valós, nem üres ere
 
 | Parancs | Mit csinál |
 |---|---|
-| `boot` | Betölti és ellenőrzi az állapotot, beregisztrálja a beépített tagokat, kiírja a protokollt. |
+| `boot [--accept-changes]` | Betölti és ellenőrzi az állapotot, beregisztrálja a beépített tagokat, kiírja a protokollt. Blokkol, ha a főkönyv vagy az audit az utolsó mentés óta a colony kívül változott, ha a szabályjegyzék nem sorol fel kötelező szabályt, vagy ha egy szabályfájl hibás. A `--accept-changes` az átnézett külső változást elfogadja (auditálva). |
+| `anomaly add <szöveg> --as <tag> [--task id]`, `anomaly list` | Amit zajként félretettél, azt itt rögzítsd: tárolódik, és feladat lesz az exobiológusnak (`next --as exobiologist`). A szöveg átmegy az injekciószűrőn és a kitakaráson. |
 | `status` | Tagok, feladatok, nyitott javaslatok. |
 | `task add <cím> <leírás>` | Új feladat (`--role`, `--after id,id`, `--priority`, `--consensus <kvórum>`). Szerep nélkül a MoE-router választ. |
 | `next --as <szerep\|tag>` | A szerepnek kiosztott következő feladat, a szerep utasításával és a releváns memóriával. |
@@ -77,8 +78,8 @@ node dist/cli.js done <taskId> --result "mit csináltam" # valós, nem üres ere
 | `claim steal <feladat> --as <tag>` | Stealable foglalás átvétele a türelmi idő (10 perc) után, a tag kapacitásán belül. A feladat új gazdát kap. |
 | `claim handoff <feladat> --as <tag> --to <tag> --reason <szöveg>`, `claim accept\|reject <feladat> --as <tag>` | Átadás: a címzett elfogadja vagy bármelyik fél elutasítja. |
 | `check` | Kapuk, **mielőtt** a host cselekszik: `--command` (romboló parancs, titok), `--text`, `--file` (titokkeresés, `--diff-lines`, `--threshold`), `--tool` + `--allow` (eszköz-engedélylista). Döntés: `allow`, `warn`, `require-confirmation`, `block` (kilépési kód 3). A talált titkot soha nem írja ki. |
-| `redact --text\|--file` | Mielőtt valami elhagyja a projektet (jelentés, kommentár): e-mail, bankkártya (Luhn), IBAN (mod 97), nemzetközi telefonszám, IP, JWT, adatbázis-URL és titkok cseréje helyőrzőre. `--hash kind,kind --salt S` sózott hash a helyőrző helyett (titokra soha). A nevet és a postai címet **nem** ismeri fel, olvasd át az eredményt. |
-| `scan --text\|--file` | Prompt-injection megfogalmazás, rejtett karakterek (nulla szélességű, kétirányú vezérlők, Unicode címkék) és személyes adat keresése. Verdikt: `clean`, `suspicious`, `hostile` (kilépési kód 3). A személyes adatot fajta és darabszám szerint adja vissza, az értéket soha. A `memory add` a `hostile` szöveget elutasítja (`--allow-risky` felülírja), mert a memória később kontextusként kerül a host elé. |
+| `redact --text\|--file` | Mielőtt valami elhagyja a projektet (jelentés, kommentár): e-mail, bankkártya (Luhn), IBAN (mod 97), telefonszám (nemzetközi és hazai `06…` alak), IP, JWT, adatbázis-URL és titkok, valamint magyar bankszámlaszám (8-8-8), adószám és TAJ-szám (ellenőrzőszámjeggyel) cseréje helyőrzőre. A TAJ-alakú, az ellenőrzőszámjegyet átmenő kilencjegyű szám (kb. minden tizedik) is kitakarásra kerül: kitakarásnál a téves találat a biztonságos hiba. `--hash kind,kind --salt S` sózott hash a helyőrző helyett (titokra soha). A nevet és a postai címet **nem** ismeri fel, olvasd át az eredményt. |
+| `scan --text\|--file` | Prompt-injection megfogalmazás, rejtett karakterek (nulla szélességű, kétirányú vezérlők, Unicode címkék) és személyes adat keresése. Verdikt: `clean`, `suspicious`, `hostile` (kilépési kód 3). A személyes adatot fajta és darabszám szerint adja vissza, az értéket soha. A `memory add` a `hostile` szöveget elutasítja (`--allow-risky` felülírja), mert a memória később kontextusként kerül a host elé. A fejlesztői szókincs (`system prompt`, `debug mode`, `jailbreak` mint téma, `disable the spam filters`) nem hostile: csak a kérés ("reveal your system prompt", "you are now a …", "ignore previous instructions") az. Az egyértelműen kétesélyes alak ("enable debug mode") csak `suspicious`. |
 | `route test\|teach\|stats` | A MoE-router: `test <szöveg>` megmutatja, melyik szerepet választaná (nincs mellékhatás), `teach <szöveg> --role R [--reward -1..1]` tanítja, `stats` a szerepek terhelését (Gini) és a tanultakat. A router a `done` (+0,5, mert csak jelentett) és a `fail` (-1) kimenetből is tanul. |
 | `audit list\|verify` | A `.colony/audit.jsonl` hash-láncolt napló: ki mit tett (feladat, foglalás, szavazat, kapu-döntés). A `verify` a láncot és azt ellenőrzi, hogy a napló még tartalmazza az utolsó bootkor rögzített bejegyzést. |
 | `vote <javaslat> --as <tag> --approve\|--reject --reason <szöveg>` | Szavaz. Indoklás kötelező. A `--confidence 0..1` tájékoztató adat, nem számít a kvórumba. |
@@ -102,12 +103,12 @@ Csak értékelt (`--quality`, `rate`) munka kerül a tanulási memóriába; a mi
 ### Őrszem: a kapuk kikényszerítése
 
 A `check` egy ellenőrzés, amit a host kedve szerint hív meg. Ha a host támogat eszközhívás-horgot (például Claude Code `PreToolUse`), a `colony hook pretool` ezt kikényszeríti: a hívás **előtt** megkapja az eszközhívást, és
-megtagadhatja (`deny`) vagy rákérdeztetheti a felhasználóra (`ask`):
+megtagadhatja (`deny`) vagy rákérdeztetheti a felhasználóra (`ask`). A `.colony/` és `.git/` védelménél a parancs **feloldott útvonalakkal** dolgozik (követi a `cd`-t, a `$PWD`-t, a `./`, `..` és abszolút alakot, a kis- és nagybetűt), nem a szövegre illeszt:
 
 - shellparancs: romboló művelet, titok, írás vagy törlés a `.colony/` és `.git/` alatt (átirányítás, `tee`, `sed -i`, `cp`/`mv`, `rm` is), nyers lemezírás; rákérdezés tömeges törlésre (`find -delete`), munkát eldobó gitre (`checkout --`, `restore`), letöltött kód azonnali futtatására (`curl | sh`), rekurzív jogosultságcserére és fájlt író interpreter-egysorosokra (`node -e`, `python -c`);
 - fájlírás és -szerkesztés: a projekten kívüli út, a `.colony/` (állapot, szabályok) és a `.git/` közvetlen szerkesztése, titok, nagyon nagy írás (csak jegyzet).
 
-A hook soha nem ad engedélyt (`allow` esetén nem ír semmit), csak elvehet; olvashatatlan bemenetnél megtagad (2-es kód). Beállítás: `colony hook install` kiírja a `.claude/settings.json` részletét (nem ír fájlt).
+A hook soha nem ad engedélyt (`allow` esetén nem ír semmit), csak elvehet; olvashatatlan bemenetnél **és bármilyen belső hibánál** megtagad (2-es kód), mert egy összeomlás (1-es kód) a host szemében nem blokkoló hiba volna. Beállítás: `colony hook install` kiírja a `.claude/settings.json` részletét (nem ír fájlt).
 Korlát: ez szövegminta-alapú visszatartás, nem homokozó. Csak azokat az eszközöket fedi, amelyeket a host a horoghoz kötött, és azt látja, ami az eszközhívás szövegében benne van: egy szkriptfájl belsejét, egy aliast vagy egy futás közben összeállított parancsot nem. Aki kerülő utat keres, talál; a cél a gyakori hibák és a leggyakoribb kerülők megfogása.
 
 ### Párhuzamos hostok és a keresés minősége
@@ -121,6 +122,13 @@ A boot állapotai (a Colony bootlogikája):
 - `BLOCKED`: egy állapotfájl hibás, vagy egy kötelező szabályfájl hiányzik, üres vagy a szabálykönyvtáron kívülre mutat. A boot ezt rögzíti, és a munkaparancsok megtagadják a futást, amíg a hiba ki nincs javítva. Hibás állapotfájlt a rendszer soha nem ír felül csendben.
 
 Ha a git-revízió megváltozott a boot óta, a parancsok figyelmeztetnek, hogy újra kell bootolni.
+
+### Integritás és azonosság: mit bizonyít a colony, és mit nem
+
+- **Főkönyv és audit.** Minden mentés rögzíti a `ledger.json` hash-ét és az audit fejét (`.colony/integrity.json`). A következő parancs összeveti: kézzel átírt főkönyv (egy feladat `completed`-re, a minőség 1-re), levágott vagy átírt audit esetén a parancsok megállnak (2-es kód); a csak olvasó `audit` és `watch` fut tovább, és jelzi a baj, de nem ír rá a bizonyítékra. Az elfogadás kifejezett: `boot --accept-changes` (az audit rögzíti). Korlát: a rekord nincs aláírva. Aki a főkönyvet **és** ezt a fájlt is át tudja írni, megkerüli; a védelem a véletlen és az ügynök közvetlen szerkesztése ellen szól.
+- **Szavazás.** A colony nem tudja megkülönböztetni a tagokat: a `vote --as <tag>` tetszőleges tag nevében szavaz, így **egy host az összes szavazatot leadhatja**, a `byzantine` kvórum is csak tagneveket számol. Ezért a szavazás munkafolyamat-ellenőrzés (minden szerepnek indokolnia kell), nem hibatűrés. Két árulkodó jelet megnevez: azonos szó szerinti indoklást és sok szavazatot néhány másodpercen belül.
+- **Szabályok.** A szabályfájl addig kötelező, amíg a host nem tudja átírni; az átírás után a következő `boot` az új szöveget kötelezővé teszi. A hook védi a `.colony/` mappát, de a védelem szövegolvasás, nem homokozó.
+- **Méretkorlát.** Egy eredmény vagy hibaszöveg legfeljebb 100 000 karakter: a főkönyv minden parancsnál teljes egészében betöltődik és íródik.
 
 ### Szabályok
 

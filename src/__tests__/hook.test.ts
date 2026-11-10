@@ -142,3 +142,60 @@ test('ordinary shell work is untouched by the bash rules', async () => {
     assert.equal(v.decision, 'allow', command);
   }
 });
+
+test('protected paths are found however the shell command spells them', async () => {
+  const project = root;
+  const deny = [
+    'echo {} > ./.colony/ledger.json',
+    'echo {} > "./.colony/ledger.json"',
+    `echo {} > ${project}/.colony/ledger.json`,
+    'echo {} > src/../.colony/ledger.json',
+    'cd .colony && echo {} > ledger.json',
+    'cd src; cd ../.colony; echo {} > ledger.json',
+    'printf x | dd of=.colony/ledger.json',
+    'cat evil >> $PWD/.colony/audit.jsonl',
+    'cat evil >> ${PWD}/.colony/audit.jsonl',
+    'mv evil .colony',
+    'mv .colony/ledger.json /tmp/gone',
+    'rm -rf .colony',
+    'ln -sf /etc/passwd .colony/x',
+    'cp evil.json .colony/ledger.json',
+    'install -m 600 evil .colony/ledger.json',
+    'touch .colony/state.lock',
+    'tee -a .colony/audit.jsonl < evil',
+    "sed -i 's/a/b/' .colony/rules/00-protocol.md",
+    'echo x > .GIT/config',
+    'echo x >> .git/hooks/pre-commit',
+    'Set-Content -Path .colony/ledger.json -Value x',
+    'Remove-Item -Recurse .colony',
+    `python3 -c "open('.colony/ledger.json','w').write('{}')"`,
+    `node -e "require('fs').writeFileSync('.colony/ledger.json','{}')"`,
+    'git config core.hooksPath /tmp/evil',
+    'git config alias.st "!rm -rf ."',
+    'git -c core.fsmonitor=evil status',
+  ];
+  for (const command of deny) {
+    const v = await call('Bash', { command });
+    assert.equal(v.decision, 'deny', command);
+  }
+});
+
+test('reading the colony state, or writing next to it, is not blocked', async () => {
+  const allow = [
+    'cat .colony/ledger.json',
+    'ls -la .colony',
+    'grep -r task .colony/audit.jsonl',
+    'cp .colony/ledger.json backup/ledger.json',
+    'cat .colony/ledger.json > build/copy.json',
+    'echo x > build/.colonyish.txt',
+    'echo x > .colonyrc',
+    'cd src && echo x > out.txt',
+    'git log --oneline -5',
+    'git config --get user.name',
+    'node dist/cli.js status',
+  ];
+  for (const command of allow) {
+    const v = await call('Bash', { command });
+    assert.equal(v.decision, 'allow', command);
+  }
+});

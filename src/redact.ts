@@ -13,6 +13,10 @@
  *   mod-97 check. The legacy patterns took any digit group.
  * - The US-only SSN, street-suffix and "Mr./Dr." name patterns are gone: they do not fit this
  *   project's data and mostly produced false hits. Names and postal addresses are NOT detected.
+ * - Hungarian forms are covered: the domestic phone number (06 ...), bank account numbers (8-8-8),
+ *   tax numbers (8-1-2) and TAJ numbers (9 digits with the check digit). A TAJ-shaped number that
+ *   happens to pass the check digit (about one in ten nine-digit numbers) is redacted too: for a
+ *   redactor, a false hit is the safe error.
  * - A hash needs a salt to mean anything: without one, a hashed phone number or e-mail address can
  *   be recovered by trying candidates. `hash` is pseudonymization, not anonymization.
  *
@@ -25,10 +29,10 @@ import { createHmac } from 'node:crypto';
 import { findSecretSpans } from './gates.js';
 import { luhnValid } from './injection-scan.js';
 
-export type RedactKind = 'email' | 'credit_card' | 'iban' | 'phone' | 'ip_address' | 'jwt' | 'database_url' | 'secret';
+export type RedactKind = 'email' | 'credit_card' | 'iban' | 'phone' | 'ip_address' | 'jwt' | 'database_url' | 'secret' | 'bank_account' | 'tax_id' | 'taj';
 export type RedactAction = 'redact' | 'hash';
 
-export const REDACT_KINDS: readonly RedactKind[] = ['email', 'credit_card', 'iban', 'phone', 'ip_address', 'jwt', 'database_url', 'secret'];
+export const REDACT_KINDS: readonly RedactKind[] = ['email', 'credit_card', 'iban', 'phone', 'ip_address', 'jwt', 'database_url', 'secret', 'bank_account', 'tax_id', 'taj'];
 
 export interface RedactOptions {
   /** Kinds to replace by a salted hash instead of a placeholder. Secrets are always redacted. */
@@ -62,6 +66,15 @@ function ibanValid(raw: string): boolean {
   return remainder === 1;
 }
 
+/** Hungarian TAJ (social security) number: nine digits, the last is a check digit (weights 3 and 7 alternating over the first eight, mod 10). */
+function tajValid(raw: string): boolean {
+  const d = raw.replace(/\D/g, '');
+  if (d.length !== 9) return false;
+  let sum = 0;
+  for (let i = 0; i < 8; i++) sum += Number(d[i]) * (i % 2 === 0 ? 3 : 7);
+  return sum % 10 === Number(d[8]);
+}
+
 const ipv4Valid = (value: string): boolean => value.split('.').every((o) => /^\d{1,3}$/.test(o) && Number(o) <= 255);
 
 function collect(text: string): Span[] {
@@ -78,6 +91,15 @@ function collect(text: string): Span[] {
   add('iban', /\b[A-Z]{2}\d{2}(?:\s?[A-Z0-9]{4}){2,7}(?:\s?[A-Z0-9]{1,4})?\b/g, ibanValid);
   // International form only (leading +): a bare digit run is far too often an id or a date.
   add('phone', /\+\d[\d\s().-]{7,17}\d/g, (v) => v.replace(/\D/g, '').length >= 8);
+  // Hungarian domestic form: 06 30 123 4567, 06-1-234-5678, 06301234567
+  add('phone', /(?<![\d-])06[\s-]?\(?\d{1,2}\)?[\s-]?\d{3}[\s-]?\d{3,4}(?![\d-])/g, (v) => {
+    const n = v.replace(/\D/g, '').length;
+    return n === 10 || n === 11;
+  });
+  // Hungarian bank account numbers (8-8 or 8-8-8), tax numbers (8-1-2), TAJ numbers (9 digits with a check digit)
+  add('bank_account', /(?<![\d-])\d{8}-\d{8}(?:-\d{8})?(?![\d-])/g);
+  add('tax_id', /(?<![\d-])\d{8}-[1-5]-\d{2}(?![\d-])/g);
+  add('taj', /(?<![\d-])\d{3}[\s-]?\d{3}[\s-]?\d{3}(?![\d-])/g, tajValid);
   add('ip_address', /\b(?:\d{1,3}\.){3}\d{1,3}\b/g, ipv4Valid);
   add('jwt', /\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\b/g);
   add('database_url', /\b(?:postgres(?:ql)?|mysql|mongodb(?:\+srv)?|redis):\/\/[^\s'"]+/g);

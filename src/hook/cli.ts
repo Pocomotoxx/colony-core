@@ -15,7 +15,8 @@ export interface HookRun {
  * - ask   -> JSON with permissionDecision "ask" (the host asks the user).
  * - allow -> NOTHING on stdout. An explicit "allow" would also skip the host's own permission
  *   prompts; the guard may only take permissions away, never grant them.
- * - unreadable input -> exit 2: a guard that cannot read its input must not let the tool through.
+ * - unreadable input, or any internal failure -> exit 2: a guard that cannot do its job must not let
+ *   the tool through. (An uncaught crash would exit 1, which a host treats as a non-blocking error.)
  */
 export async function runHook(sub: string | undefined, stdinText: string, defaultDir: string, dirArg?: string): Promise<HookRun> {
   if (sub === 'install') return install(defaultDir);
@@ -30,7 +31,13 @@ export async function runHook(sub: string | undefined, stdinText: string, defaul
     return { code: 2, stdout: '', stderr: 'Colony guard: the hook input is not valid JSON, so the tool call is refused.\n' };
   }
   const projectDir = path.resolve(dirArg ?? (typeof input.cwd === 'string' ? input.cwd : defaultDir));
-  const verdict = await evaluatePreToolUse(input, projectDir);
+  let verdict;
+  try {
+    verdict = await evaluatePreToolUse(input, projectDir);
+  } catch (err) {
+    return { code: 2, stdout: '', stderr: `Colony guard: the check failed (${err instanceof Error ? err.message : String(err)}), so the tool call is refused.
+` };
+  }
   const stderr = verdict.notes.length > 0 ? `Colony guard notes: ${verdict.notes.join('; ')}\n` : '';
   if (verdict.decision === 'allow') return { code: 0, stdout: '', stderr };
   const body = { hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: verdict.decision, permissionDecisionReason: verdict.reason } };

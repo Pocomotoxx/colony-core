@@ -18,6 +18,8 @@ export interface MemberStats {
   open: number;
   /**
    * Laplace-smoothed share of finished tasks that were completed: (completed + 1) / (finished + 2).
+   * A completed task whose check the COLONY ran and saw fail counts as a failure here: the colony's
+   * own evidence outranks the member's "done".
    * A member with no history gets 0.5 instead of an invented 0 or 1, and one result barely moves it.
    */
   successRate: number;
@@ -29,6 +31,10 @@ export interface MemberStats {
   qualityReports: number;
   /** Completed tasks the host labelled as backed by a test run (the host's statement, not checked). */
   verifiedCompleted: number;
+  /** Completed tasks whose check the colony ran itself and saw pass. */
+  checkPassed: number;
+  /** Completed tasks whose check the colony ran itself and saw fail. */
+  checkFailed: number;
   /** Claims the member holds that have gone stealable. */
   staleClaims: number;
   lastActivityAt: number;
@@ -55,6 +61,8 @@ export function computeMemberStats(
       avgQuality: null,
       qualityReports: 0,
       verifiedCompleted: 0,
+      checkPassed: 0,
+      checkFailed: 0,
       staleClaims: 0,
       lastActivityAt: m.lastActiveAt,
     });
@@ -69,6 +77,8 @@ export function computeMemberStats(
     if (task.status === 'completed') {
       s.completed++;
       if (task.verifiedByTest) s.verifiedCompleted++;
+      if (task.verification?.passed === true) s.checkPassed++;
+      if (task.verification?.passed === false) s.checkFailed++;
       if (task.startedAt !== undefined && task.completedAt !== undefined && task.completedAt >= task.startedAt) {
         durations.get(s.memberId)!.push(task.completedAt - task.startedAt);
       }
@@ -87,7 +97,7 @@ export function computeMemberStats(
   }
 
   for (const s of stats.values()) {
-    s.successRate = (s.completed + 1) / (s.completed + s.failed + 2);
+    s.successRate = (s.completed - s.checkFailed + 1) / (s.completed + s.failed + 2);
     const d = durations.get(s.memberId)!;
     s.avgDurationMs = d.length === 0 ? null : Math.round(d.reduce((a, b) => a + b, 0) / d.length);
     const q = qualities.get(s.memberId)!;

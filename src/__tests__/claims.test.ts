@@ -190,6 +190,8 @@ async function project(name: string) {
     const ledger = JSON.parse(await fs.readFile(ledgerPath, 'utf-8'));
     edit(ledger);
     await fs.writeFile(ledgerPath, JSON.stringify(ledger), 'utf-8');
+    // a hand-edited ledger stands for a state from before the integrity record: drop it
+    await fs.rm(path.join(path.dirname(ledgerPath), 'integrity.json'), { force: true });
   };
   await run('boot');
   return { run, editLedger };

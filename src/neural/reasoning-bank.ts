@@ -1,5 +1,7 @@
 import { VectorCodex } from '../memory/vector-codex.js';
 
+const SOLUTION_GIST_CHARS = 2000;
+
 /** What the bank stores in a document's metadata (all optional: older entries lack some). */
 interface PatternMeta {
   role?: string;
@@ -59,7 +61,10 @@ export class ReasoningBank {
       createdAt: Date.now(),
     };
 
-    const documentText = `[ROLE: ${pattern.role}] Problem: ${pattern.problem}\nReported Solution Strategy:${pattern.solution}`;
+    // The full solution lives in the metadata; the document text (what is embedded) keeps its start only,
+    // so a long result is not stored twice.
+    const gist = pattern.solution.length > SOLUTION_GIST_CHARS ? `${pattern.solution.slice(0, SOLUTION_GIST_CHARS)}…` : pattern.solution;
+    const documentText = `[ROLE: ${pattern.role}] Problem: ${pattern.problem}\nReported Solution Strategy:${gist}`;
 
     await this.codex.storeDocuments([
       {

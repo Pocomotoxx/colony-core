@@ -33,7 +33,7 @@ test('a second valid IBAN and the validity checks', () => {
   assert.equal(redactText('HU42 1177 3016 1111 1018 0000 0001').changed, false); // wrong checksum
   assert.equal(redactText('card 4539 5787 6362 1487').changed, false); // wrong Luhn
   assert.equal(redactText('ip 999.1.1.1 and 300.2.3.4').changed, false); // not addresses
-  assert.equal(redactText('call 06 30 123 4567 or 123456789').changed, false); // no international prefix: not guessed
+  assert.equal(redactText('call 06 30 123 4567 or 123456789').text, 'call [REDACTED:phone] or 123456789'); // the domestic number is a phone; a bare nine digits with a wrong check digit is not a TAJ
 });
 
 test('secrets are always redacted, never hashed', () => {
@@ -120,4 +120,19 @@ test('the audit log records what was redacted, not the text', async () => {
   assert.ok(raw.includes('"type":"redact"'));
   assert.ok(!raw.includes('anna@example.org'));
   assert.ok(!raw.includes(fakeKey));
+});
+
+test('Hungarian formats: domestic phone, bank account, tax number and TAJ with a valid check digit', () => {
+  const text = 'Tel: 06 30 123 4567, 06301234567, 06-1-234-5678; számla: 11773016-11111018-00000000; adószám 12345678-1-42; TAJ 123 456 788 és 123456788';
+  const r = redactText(text);
+  assert.equal(
+    r.text,
+    'Tel: [REDACTED:phone], [REDACTED:phone], [REDACTED:phone]; számla: [REDACTED:bank_account]; adószám [REDACTED:tax_id]; TAJ [REDACTED:taj] és [REDACTED:taj]',
+  );
+  assert.deepEqual(r.findings, [{ kind: 'phone', count: 3 }, { kind: 'bank_account', count: 1 }, { kind: 'tax_id', count: 1 }, { kind: 'taj', count: 2 }]);
+});
+
+test('ordinary numbers are left alone: versions, dates, postal codes, an order number with a wrong check digit', () => {
+  const text = 'verzió 1.2.3, dátum 2026-11-10, irsz 1051, rendelés 123456789, 12 345 678 forint';
+  assert.equal(redactText(text).changed, false);
 });

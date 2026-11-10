@@ -11,11 +11,15 @@ import { consensusHandlers } from './commands-consensus.js';
 import { inspectHandlers } from './commands-inspect.js';
 import { safetyHandlers } from './commands-safety.js';
 import { memoryHandlers } from './commands-memory.js';
+import { anomalyHandlers } from './commands-anomaly.js';
 import { errorMessage } from '../errors.js';
 
 export type { CommandResult } from './context.js';
 
-const HANDLERS: Record<string, Handler> = { ...tasksHandlers, ...claimsHandlers, ...consensusHandlers, ...inspectHandlers, ...safetyHandlers, ...memoryHandlers };
+const HANDLERS: Record<string, Handler> = { ...tasksHandlers, ...claimsHandlers, ...consensusHandlers, ...inspectHandlers, ...safetyHandlers, ...memoryHandlers, ...anomalyHandlers };
+
+/** Read-only commands that may run on a state whose integrity check failed. */
+const DIAGNOSTIC_COMMANDS: ReadonlySet<string> = new Set(['audit', 'watch']);
 
 export const USAGE = `colony <command> [options]    (every command prints JSON; run \`colony boot\` first)
 
@@ -34,6 +38,7 @@ export const USAGE = `colony <command> [options]    (every command prints JSON; 
   profile answer <questionId> <value>     [--skip = no preference]   store an answer; returns the next question
   profile show | profile reset            your answers so far / start over
   verify <taskId> [--timeout-sec N] -- <command> [args...]   the colony runs the check itself and records the evidence; a failed run lowers the quality
+  boot [--accept-changes]                 load the state; --accept-changes takes a ledger/audit edited outside the colony as it is (after you reviewed it)
   rate <taskId> --quality 0..1            rate a finished task after the fact; the colony memory learns from your rating
   fail <taskId> --error <text>            mark a task failed  [--quality 0..1: how far it got]
   propose <taskId> <topic> --as <member>  [--quorum N | --strategy majority|supermajority|byzantine|unanimous] [--timeout-min M] [--data text]
@@ -58,6 +63,8 @@ export const USAGE = `colony <command> [options]    (every command prints JSON; 
   claim steal <taskId> --as <member>      take over a stealable claim (after its grace period)
   claim handoff <taskId> --as <member> --to <member> --reason <text> | claim accept|reject <taskId> --as <member>
   vote <proposalId> --as <member> (--approve|--reject) --reason <text> [--confidence 0..1]   (advisory: stored and reported, never counted as a weight)
+  anomaly add <text> --as <member> [--task <fromTaskId>]   record something set aside as noise; it becomes a task for the exobiologist
+  anomaly list [--k N]                    the recorded anomalies
   memory add <text>                       [--ns NAMESPACE] [--allow-risky]   hostile text is refused unless --allow-risky
   memory search <query>                   [--k N] [--ns NAMESPACE]
 
@@ -99,7 +106,7 @@ async function dispatch(argv: string[], cwd: string): Promise<CommandResult> {
   return withStateLock(path.join(dir, STATE_DIR), async (): Promise<CommandResult> => {
 
     if (command === 'boot') {
-      const { record, session, rules } = await ColonySession.boot(dir);
+      const { record, session, rules } = await ColonySession.boot(dir, { acceptExternalChanges: Boolean(values['accept-changes']) });
       const ok = record.status !== 'BLOCKED';
       return {
         code: ok ? 0 : 2,
@@ -130,6 +137,11 @@ async function dispatch(argv: string[], cwd: string): Promise<CommandResult> {
 
     const session = await ColonySession.open(dir);
     const { hub } = session;
+    if (session.integrityProblems.length > 0) {
+      // The read-only diagnostics still run, so the damage can be looked at; everything else stops.
+      if (!DIAGNOSTIC_COMMANDS.has(command)) throw new CliError(session.integrityProblems.join('; '), 2);
+      warnings.push(...session.integrityProblems);
+    }
     /** What the Deputy's watch says about this task, right after it was closed. Advice, not a gate. */
     const deputyNotes = (taskId: string) =>
       hub

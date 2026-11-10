@@ -307,6 +307,8 @@ test('plan warns when no member holds a role a step needs', async () => {
   const ledger = JSON.parse(await fs.readFile(file, 'utf-8'));
   ledger.members.find((m: any) => m.id === 'member_researcher').status = 'offline';
   await fs.writeFile(file, JSON.stringify(ledger), 'utf-8');
+  // a hand-edited ledger stands for a state from before the integrity record: drop it
+  await fs.rm(path.join(path.dirname(file), 'integrity.json'), { force: true });
   const warned = await run('plan', id);
   assert.ok(warned.out.planWarnings.some((w: string) => /researcher/.test(w)));
 });

@@ -1,5 +1,20 @@
 import { ADVISORY_ROLES, AgentRole, AgentStatus, ColonyMember, ColonyAgentCapabilities } from '../types.js';
 
+/**
+ * Why `member` cannot take a task that asks for `needs`, or null when it can. The single source of
+ * eligibility: `findCandidates` filters with it and the scoring explains with it, so the two
+ * cannot drift apart.
+ */
+export function ineligibleReason(needs: { requiredRole?: AgentRole; requiredCapabilities?: readonly string[] }, member: ColonyMember): string | null {
+  if (member.status === 'offline' || member.status === 'error') return `member is ${member.status}`;
+  if (needs.requiredRole && member.role !== needs.requiredRole) return `role is ${member.role}, the task needs ${needs.requiredRole}`;
+  if (!needs.requiredRole && ADVISORY_ROLES.includes(member.role)) return `${member.role} only takes a task that asks for that role`;
+  if (member.currentTaskIds.length >= member.capabilities.maxConcurrentTasks) return 'member is at capacity';
+  const missing = (needs.requiredCapabilities ?? []).filter((c) => !member.capabilities.tools.includes(c) && !member.capabilities.specializations?.includes(c));
+  if (missing.length > 0) return `missing capabilities: ${missing.join(', ')}`;
+  return null;
+}
+
 export interface RegisterMemberOptions {
   id?: string;
   name: string;
@@ -46,6 +61,10 @@ export class ColonyRegistry {
   }
 
   public unregister(id: string): boolean {
+    const member = this.members.get(id);
+    if (member && member.currentTaskIds.length > 0) {
+      throw new Error(`Member '${id}' still holds ${member.currentTaskIds.length} open task(s): hand them over first`);
+    }
     return this.members.delete(id);
   }
 
@@ -82,7 +101,10 @@ export class ColonyRegistry {
     if (!member.currentTaskIds.includes(taskId)) {
       member.currentTaskIds.push(taskId);
     }
-    member.status = member.currentTaskIds.length >= member.capabilities.maxConcurrentTasks ? 'busy' : 'idle';
+    // An offline or failed member stays that way: taking a task does not bring it back.
+    if (member.status !== 'offline' && member.status !== 'error') {
+      member.status = member.currentTaskIds.length >= member.capabilities.maxConcurrentTasks ? 'busy' : 'idle';
+    }
     member.lastActiveAt = Date.now();
   }
 
@@ -91,7 +113,9 @@ export class ColonyRegistry {
     if (!member) return;
 
     member.currentTaskIds = member.currentTaskIds.filter((id) => id !== taskId);
-    member.status = member.currentTaskIds.length === 0 ? 'idle' : 'busy';
+    if (member.status !== 'offline' && member.status !== 'error') {
+      member.status = member.currentTaskIds.length === 0 ? 'idle' : 'busy';
+    }
     member.lastActiveAt = Date.now();
   }
 
@@ -102,37 +126,8 @@ export class ColonyRegistry {
     role?: AgentRole;
     requiredCapabilities?: string[];
   }): ColonyMember[] {
-    return this.getAllMembers().filter((member) => {
-      // Must not be in error or offline status
-      if (member.status === 'offline' || member.status === 'error') {
-        return false;
-      }
-
-      // Check role if specified
-      if (requirements.role && member.role !== requirements.role) {
-        return false;
-      }
-
-      // Advisory roles are never an implicit candidate: the task has to ask for them
-      if (!requirements.role && ADVISORY_ROLES.includes(member.role)) {
-        return false;
-      }
-
-      // Check capacity
-      if (member.currentTaskIds.length >= member.capabilities.maxConcurrentTasks) {
-        return false;
-      }
-
-      // Check specific tools/capabilities if requested
-      if (requirements.requiredCapabilities && requirements.requiredCapabilities.length > 0) {
-        const hasAllCapabilities = requirements.requiredCapabilities.every((cap) =>
-          member.capabilities.tools.includes(cap) ||
-          member.capabilities.specializations?.includes(cap)
-        );
-        if (!hasAllCapabilities) return false;
-      }
-
-      return true;
-    }).sort((a, b) => a.currentTaskIds.length - b.currentTaskIds.length); // Least busy first
+    return this.getAllMembers()
+      .filter((member) => ineligibleReason({ requiredRole: requirements.role, requiredCapabilities: requirements.requiredCapabilities }, member) === null)
+      .sort((a, b) => a.currentTaskIds.length - b.currentTaskIds.length); // Least busy first
   }
 }

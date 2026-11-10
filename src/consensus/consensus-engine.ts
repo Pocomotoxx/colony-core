@@ -35,13 +35,15 @@ export class ConsensusEngine {
    */
   public async submitProposal<T = unknown>(options: ProposalOptions<T>): Promise<ConsensusProposal<T>> {
     const id = `prop_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
-    const timeoutMs = options.timeoutMs || 30000;
+    if (options.timeoutMs !== undefined && !(Number.isFinite(options.timeoutMs) && options.timeoutMs > 0)) throw new Error('timeoutMs must be a positive number of milliseconds');
+    if (options.quorum !== undefined && !(Number.isInteger(options.quorum) && options.quorum >= 1)) throw new Error('quorum must be a positive integer');
+    const timeoutMs = options.timeoutMs ?? 30000;
 
     if (options.strategy !== undefined) {
       if (options.quorum !== undefined) throw new Error('pass either a quorum or a strategy, not both');
       if (options.voters === undefined) throw new Error('a strategy needs the number of eligible voters');
     }
-    const quorum = options.strategy ? requiredApprovals(options.strategy, options.voters!) : options.quorum || 2;
+    const quorum = options.strategy ? requiredApprovals(options.strategy, options.voters!) : options.quorum ?? 2;
 
     const proposal: ConsensusProposal<T> = {
       id,
@@ -116,6 +118,22 @@ export class ConsensusEngine {
 
     this.evaluateProposal(proposal);
     return proposal;
+  }
+
+  /**
+   * Close every open proposal that is past its deadline. Without this a proposal nobody votes on
+   * stays `open` for ever; the deadline was only noticed when someone happened to vote.
+   */
+  public async expireDue(now: number = Date.now()): Promise<number> {
+    let closed = 0;
+    for (const proposal of this.proposals.values()) {
+      if (proposal.status === 'open' && now > proposal.expiresAt) {
+        proposal.status = 'timeout';
+        closed++;
+        await this.messageBus.publish('consensus:proposal_timeout', 'consensus_engine', { proposalId: proposal.id });
+      }
+    }
+    return closed;
   }
 
   private evaluateProposal(proposal: ConsensusProposal<unknown>): void {

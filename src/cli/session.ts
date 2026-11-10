@@ -23,8 +23,29 @@ const LEDGER_FILE = 'ledger.json';
 const AUDIT_FILE = 'audit.jsonl';
 const MEMORY_FILE = 'memory.json';
 const BOOT_FILE = 'boot.json';
+const INTEGRITY_FILE = 'integrity.json';
 
 export type BootStatus = 'LOADED' | 'UNVERIFIABLE' | 'BLOCKED';
+
+/**
+ * What the colony wrote at its last save: the hash of the ledger file and the head of the audit
+ * log. The next command compares them with what it finds, so a ledger edited by hand (a task set
+ * to completed, a quality set to 1) is noticed instead of believed.
+ * Honest limit: the record is not signed. Someone who can edit the ledger AND this file defeats the
+ * check; it catches accidental edits, an agent's direct edit, and a ledger that does not match the
+ * audit log, not a determined attacker with write access to the whole directory.
+ */
+interface IntegrityRecord {
+  v: 1;
+  ledger: string;
+  audit: AuditAnchor;
+  savedAt: number;
+}
+
+export interface OpenOptions {
+  /** Take the ledger as it is now, after the user reviewed an outside change (`colony boot --accept-changes`). */
+  acceptExternalChanges?: boolean;
+}
 
 interface LedgerFile {
   version: 1;
@@ -74,6 +95,9 @@ export async function loadRules(dir: string): Promise<{ rules: LoadedRule[]; pro
   }
   if (!Array.isArray(mandatory) || mandatory.some((m) => typeof m !== 'string')) {
     return { rules, problems: [`${RULES_DIR}/${MANIFEST_FILE}: 'mandatory' must be an array of file names`] };
+  }
+  if (mandatory.length === 0) {
+    return { rules, problems: [`${RULES_DIR}/${MANIFEST_FILE}: 'mandatory' lists no rule file; binding rules need at least one`] };
   }
 
   for (const name of mandatory as string[]) {
@@ -146,6 +170,17 @@ async function readIfExists(file: string): Promise<string | null> {
 
 const sha256 = (text: string): string => createHash('sha256').update(text).digest('hex');
 
+async function readIntegrity(stateDir: string): Promise<IntegrityRecord | null> {
+  const text = await readIfExists(path.join(stateDir, INTEGRITY_FILE));
+  if (text === null) return null; // a state from before this check: the next save writes one
+  try {
+    const parsed = JSON.parse(text);
+    return parsed?.v === 1 && typeof parsed.ledger === 'string' && typeof parsed.audit?.entries === 'number' && typeof parsed.audit?.head === 'string' ? (parsed as IntegrityRecord) : null;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * A Colony working session: the hub plus its persisted state under `<dir>/.colony/`.
  * The host (an LLM or a human) drives the colony through it; the session never calls a model.
@@ -159,22 +194,30 @@ export class ColonySession {
     public readonly hub: ColonyHub
   ) {}
 
+  /** Differences between the state files and what the colony wrote at its last save. Empty when they agree. */
+  public integrityProblems: string[] = [];
+
   private get stateDir(): string {
     return path.join(this.dir, STATE_DIR);
   }
 
   /** Load state. Throws on unreadable or malformed state files instead of silently resetting them. */
-  public static async open(dir: string): Promise<ColonySession> {
+  public static async open(dir: string, options: OpenOptions = {}): Promise<ColonySession> {
     const stateDir = path.join(dir, STATE_DIR);
     const codex = new VectorCodex({ vectorStore: new FileVectorStore({ storagePath: path.join(stateDir, MEMORY_FILE) }) });
     const hub = new ColonyHub({ name: 'Colony', codex });
     await codex.reindex(); // memory written by an older embedding is re-embedded once
 
+    const integrityProblems: string[] = [];
     const ledgerText = await readIfExists(path.join(stateDir, LEDGER_FILE));
     if (ledgerText !== null) {
       const ledger = JSON.parse(ledgerText) as LedgerFile;
       if (ledger.version !== 1 || !Array.isArray(ledger.members) || !Array.isArray(ledger.tasks) || !Array.isArray(ledger.proposals)) {
         throw new Error(`${LEDGER_FILE} has an unsupported shape`);
+      }
+      const integrity = await readIntegrity(stateDir);
+      if (integrity && !options.acceptExternalChanges && integrity.ledger !== sha256(ledgerText)) {
+        integrityProblems.push(`${LEDGER_FILE} was changed outside the colony since its last save (its hash differs from the one recorded). Review the change, then run \`colony boot --accept-changes\` to take it as it is.`);
       }
       hub.registry.restore(ledger.members);
       hub.orchestrator.restore(ledger.tasks);
@@ -200,6 +243,7 @@ export class ColonySession {
     }
 
     const session = new ColonySession(dir, hub);
+    session.integrityProblems = integrityProblems;
     const auditText = await readIfExists(path.join(stateDir, AUDIT_FILE));
     if (auditText !== null) {
       const entries = auditText
@@ -215,10 +259,17 @@ export class ColonySession {
       hub.audit.restore(entries); // throws when the hash chain is broken
       session.auditPersisted = entries.length;
     }
+    const integrity = await readIntegrity(stateDir);
+    if (integrity && !options.acceptExternalChanges && !hub.audit.contains(integrity.audit)) {
+      session.integrityProblems.push(`${AUDIT_FILE} no longer holds the entries recorded at the last save (cut short or rewritten). Review it, then run \`colony boot --accept-changes\` to take it as it is.`);
+    }
+    await hub.consensus.expireDue(); // a proposal past its deadline is closed now, not at the next vote
     return session;
   }
 
   public async save(): Promise<void> {
+    // A state that failed its integrity check is not written over: that would accept the change silently.
+    if (this.integrityProblems.length > 0) return;
     const ledger: LedgerFile = {
       version: 1,
       members: this.hub.registry.snapshot(),
@@ -235,6 +286,10 @@ export class ColonySession {
       await fs.appendFile(path.join(this.stateDir, AUDIT_FILE), fresh.map((e) => JSON.stringify(e)).join('\n') + '\n', 'utf-8');
       this.auditPersisted += fresh.length;
     }
+
+    const ledgerText = await fs.readFile(path.join(this.stateDir, LEDGER_FILE), 'utf-8');
+    const integrity: IntegrityRecord = { v: 1, ledger: sha256(ledgerText), audit: this.hub.audit.anchor(), savedAt: Date.now() };
+    await writeFileAtomic(path.join(this.stateDir, INTEGRITY_FILE), JSON.stringify(integrity));
   }
 
   /** Register the built-in profiles as members when the colony has none yet. */
@@ -269,7 +324,7 @@ export class ColonySession {
    * LOADED = state valid and revision resolved; UNVERIFIABLE = state valid, revision unknown
    * (content work allowed, repository mutation not); BLOCKED = a state file is unreadable or malformed.
    */
-  public static async boot(dir: string): Promise<{ record: BootRecord; session: ColonySession | null; rules: LoadedRule[] }> {
+  public static async boot(dir: string, options: OpenOptions = {}): Promise<{ record: BootRecord; session: ColonySession | null; rules: LoadedRule[] }> {
     const stateDir = path.join(dir, STATE_DIR);
     const revision = resolveRevision(dir);
     const evidence: BootRecord['evidence'] = [];
@@ -289,7 +344,9 @@ export class ColonySession {
     let session: ColonySession | null = null;
     if (problems.length === 0) {
       try {
-        session = await ColonySession.open(dir);
+        session = await ColonySession.open(dir, options);
+        problems.push(...session.integrityProblems);
+        if (options.acceptExternalChanges) session.hub.audit.append({ type: 'integrity.accepted', aggregateId: 'integrity', actor: 'user' }, Date.now());
       } catch (err) {
         problems.push(errorMessage(err));
       }

@@ -225,13 +225,14 @@ export class ColonyHub {
     routeDecision?: RouteDecision;
   }> {
     let routeDecision: RouteDecision | undefined;
+    const taskOptions = { ...options }; // the caller's object is not changed
 
-    if (!options.requiredRole) {
-      routeDecision = this.router.routeTask(`${options.title} ${options.description}`);
-      options.requiredRole = routeDecision.targetRole;
+    if (!taskOptions.requiredRole) {
+      routeDecision = this.router.routeTask(`${taskOptions.title} ${taskOptions.description}`);
+      taskOptions.requiredRole = routeDecision.targetRole;
     }
 
-    const task = await this.orchestrator.createTask(options);
+    const task = await this.orchestrator.createTask(taskOptions);
     return { task, routeDecision };
   }
 

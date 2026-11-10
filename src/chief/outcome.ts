@@ -18,6 +18,25 @@ export interface OutcomeReport {
   verifiedByTest?: boolean;
 }
 
+/**
+ * The longest result or error text the ledger keeps. Every command loads and rewrites the whole
+ * ledger, and the memory holds the text too, so a megabyte of build log in a result slows every
+ * later command. Report a summary and the path of the full output instead.
+ */
+export const MAX_RESULT_CHARS = 100_000;
+
+export function checkResultSize(value: unknown, what: string): void {
+  let length: number;
+  try {
+    length = typeof value === 'string' ? value.length : (JSON.stringify(value) ?? '').length;
+  } catch {
+    throw new Error(`${what} cannot be stored (it is not JSON-serializable)`);
+  }
+  if (length > MAX_RESULT_CHARS) {
+    throw new Error(`${what} is ${length} characters; the limit is ${MAX_RESULT_CHARS}. Save the full output to a file in the project and report a summary and the path.`);
+  }
+}
+
 export function validateQuality(quality: number): number {
   if (!Number.isFinite(quality) || quality < 0 || quality > 1) throw new Error('quality must be a number between 0 and 1');
   return quality;

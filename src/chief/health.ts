@@ -20,7 +20,7 @@
 
 import type { Claim } from '../coordination/claim-ledger.js';
 import type { AgentRole, ColonyMember, ColonyTask, ConsensusProposal } from '../types.js';
-import { ineligibleReason } from './scoring.js';
+import { ineligibleReason } from '../coordination/colony-registry.js';
 
 export type HealthGroup = 'leadership' | 'research' | 'analysis' | 'delivery' | 'quality';
 

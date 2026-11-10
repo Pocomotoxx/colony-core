@@ -70,23 +70,28 @@ const PATTERNS: Pattern[] = [
   { regex: /disregard\s+(?:all\s+)?(?:previous|prior|above)/i, type: 'instruction_override', severity: 'critical', description: 'Attempt to disregard instructions', confidence: 0.93 },
   { regex: /do\s+not\s+follow\s+(?:the\s+)?(?:previous|above|prior)/i, type: 'instruction_override', severity: 'high', description: 'Attempt to bypass earlier instructions', confidence: 0.88 },
 
-  { regex: /you\s+are\s+now\s+(?!going|about|ready)/i, type: 'role_switching', severity: 'high', description: 'Attempt to change the assistant identity', confidence: 0.85 },
+  { regex: /you\s+are\s+now\s+(?:a|an|the|my|our|dan|no\s+longer|in\s+\w+\s+mode)\b/i, type: 'role_switching', severity: 'high', description: 'Attempt to change the assistant identity', confidence: 0.85 },
   { regex: /act\s+as\s+(?:if\s+you\s+are\s+)?a?\s*(?:different|new|another)/i, type: 'role_switching', severity: 'high', description: 'Attempt to assume a different role', confidence: 0.82 },
   { regex: /pretend\s+(?:to\s+be|you\s+are)/i, type: 'role_switching', severity: 'medium', description: 'Role-play instruction (may be legitimate)', confidence: 0.65 },
 
   // Case-sensitive on purpose: the legacy /i flag matched the name "Dan".
-  { regex: /\bDAN\b[^\n]{0,200}?\bmode\b|\bmode\b[^\n]{0,200}?\bDAN\b/, type: 'jailbreak', severity: 'critical', description: 'DAN jailbreak', confidence: 0.98 },
-  { regex: /jailbreak/i, type: 'jailbreak', severity: 'critical', description: 'Explicit jailbreak mention', confidence: 0.95 },
-  { regex: /bypass\s+(?:your\s+)?(?:restrictions|limitations|rules|filters)/i, type: 'jailbreak', severity: 'critical', description: 'Attempt to bypass restrictions', confidence: 0.93 },
-  { regex: /without\s+(?:any\s+)?(?:restrictions|limitations|rules)/i, type: 'jailbreak', severity: 'high', description: 'Request for unrestricted output', confidence: 0.85 },
-  { regex: /disable\s+(?:your\s+)?(?:(?:safety|content)\s+)?filters?/i, type: 'jailbreak', severity: 'critical', description: 'Attempt to disable safety filters', confidence: 0.96 },
-  { regex: /developer\s+mode|dev\s+mode|debug\s+mode/i, type: 'jailbreak', severity: 'high', description: 'Attempt to enable a developer mode', confidence: 0.85 },
+  { regex: /\bDAN\b[^\n]{0,200}?\b(?:mode|jailbreak|prompt)\b|\b(?:mode|jailbreak)\b[^\n]{0,200}?\bDAN\b/, type: 'jailbreak', severity: 'critical', description: 'DAN jailbreak', confidence: 0.98 },
+  { regex: /\b(?:jail\s?break|jailbroken)\s+(?:this|the\s+(?:model|assistant|ai|bot)|your(?:self)?|you)\b/i, type: 'jailbreak', severity: 'critical', description: 'Instruction to jailbreak the assistant', confidence: 0.93 },
+  { regex: /jail\s?break/i, type: 'jailbreak', severity: 'medium', description: 'Jailbreak mentioned (often a topic, e.g. a detector or a report)', confidence: 0.6 },
+  { regex: /bypass\s+(?:your|the\s+(?:model'?s?|assistant'?s?|ai'?s?))\s+(?:restrictions|limitations|rules|filters|guardrails|safety)/i, type: 'jailbreak', severity: 'critical', description: 'Attempt to bypass restrictions', confidence: 0.93 },
+  { regex: /bypass\s+(?:the\s+)?(?:safety|content)\s+(?:filters?|restrictions|checks)/i, type: 'jailbreak', severity: 'high', description: 'Attempt to bypass safety filters', confidence: 0.85 },
+  { regex: /without\s+(?:any\s+)?(?:restrictions|limitations|rules)/i, type: 'jailbreak', severity: 'medium', description: 'Request for unrestricted output (may be ordinary prose)', confidence: 0.6 },
+  { regex: /disable\s+(?:your\s+(?:(?:safety|content)\s+)?|(?:the\s+)?(?:safety|content)\s+)filters?/i, type: 'jailbreak', severity: 'critical', description: 'Attempt to disable safety filters', confidence: 0.96 },
+  // "Enable debug mode" is as common in a README as in an attack, so on its own it is only suspicious;
+  // "you are now in X mode" is caught by the role-switching rule above.
+  { regex: /(?<!\b(?:never|not|avoid|don't|dont|shouldn't)\s+)(?:enable|activate|switch\s+to|enter|turn\s+on|unlock)\s+(?:your\s+)?(?:developer|dev|debug|god|admin|sudo)\s+mode/i, type: 'jailbreak', severity: 'medium', description: 'Request to enable a developer or debug mode (often ordinary instructions)', confidence: 0.65 },
   { regex: /enable\s+(?:hidden|secret|special)\s+(?:features|mode|commands)/i, type: 'jailbreak', severity: 'high', description: 'Attempt to enable hidden features', confidence: 0.88 },
 
   // A fake role header must open a line: "the file system: ext4" is ordinary prose.
   { regex: /(?:^|\n)\s*(?:system|assistant)\s*:|<\|system\|>|<system>/i, type: 'context_manipulation', severity: 'critical', description: 'Fake system or assistant message', confidence: 0.9 },
-  { regex: /\[system\]|\{system\}|system\s+prompt/i, type: 'context_manipulation', severity: 'high', description: 'System prompt reference', confidence: 0.88 },
-  { regex: /reveal\s+(?:your\s+)?(?:system\s+)?prompt/i, type: 'context_manipulation', severity: 'high', description: 'Attempt to extract the system prompt', confidence: 0.9 },
+  { regex: /\[system\]|\{system\}/i, type: 'context_manipulation', severity: 'medium', description: 'System marker (also used in templates)', confidence: 0.7 },
+  { regex: /system\s+prompt/i, type: 'context_manipulation', severity: 'low', description: 'System prompt mentioned (usually a topic, not an attack)', confidence: 0.4 },
+  { regex: /(?:reveal|show|print|repeat|leak|output|display|dump|tell\s+me|give\s+me)\s+(?:me\s+)?(?:your|the)\s+(?:system\s+|hidden\s+|initial\s+|secret\s+)?(?:prompt|instructions)/i, type: 'context_manipulation', severity: 'high', description: 'Attempt to extract the system prompt', confidence: 0.9 },
   { regex: /what\s+(?:is|are)\s+your\s+(?:initial\s+)?instructions/i, type: 'context_manipulation', severity: 'medium', description: 'Query for system instructions', confidence: 0.75 },
   { regex: /```(?:system|instruction|prompt)/i, type: 'context_manipulation', severity: 'high', description: 'Code-fence delimiter abuse', confidence: 0.85 },
   { regex: /---\s*(?:system|instruction|prompt)/i, type: 'context_manipulation', severity: 'medium', description: 'Markdown delimiter abuse', confidence: 0.7 },

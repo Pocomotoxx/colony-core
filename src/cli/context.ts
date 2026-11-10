@@ -85,6 +85,7 @@ export const OPTIONS = {
     apply: { type: 'boolean' },
     quality: { type: 'string' },
     'verified-by-test': { type: 'boolean' },
+  'accept-changes': { type: 'boolean' },
     'queue-depth': { type: 'string' },
     'long-wait-min': { type: 'string' },
     approve: { type: 'boolean' },

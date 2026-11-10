@@ -14,8 +14,8 @@
  * worse" rule is dropped: the score decides.
  */
 
-import { ADVISORY_ROLES } from '../types.js';
 import type { AgentStatus, ColonyMember, ColonyTask } from '../types.js';
+import { ineligibleReason } from '../coordination/colony-registry.js';
 import type { MemberStats } from './member-stats.js';
 
 export interface ScoreWeights {
@@ -69,18 +69,6 @@ export interface RankOptions {
 }
 
 const AVAILABILITY: Record<AgentStatus, number> = { idle: 1, voting: 0.5, busy: 0.3, offline: 0, error: 0 };
-
-/** Why `member` cannot take `task` right now, or null when it can. Mirrors `ColonyRegistry.findCandidates`. */
-export function ineligibleReason(task: ColonyTask, member: ColonyMember): string | null {
-  if (member.status === 'offline' || member.status === 'error') return `member is ${member.status}`;
-  if (task.requiredRole && member.role !== task.requiredRole) return `role is ${member.role}, the task needs ${task.requiredRole}`;
-  if (!task.requiredRole && ADVISORY_ROLES.includes(member.role)) return `${member.role} only takes a task that asks for that role`;
-  if (member.currentTaskIds.length >= member.capabilities.maxConcurrentTasks) return 'member is at capacity';
-  const needed = task.requiredCapabilities ?? [];
-  const missing = needed.filter((c) => !member.capabilities.tools.includes(c) && !member.capabilities.specializations?.includes(c));
-  if (missing.length > 0) return `missing capabilities: ${missing.join(', ')}`;
-  return null;
-}
 
 const clamp01 = (x: number): number => Math.max(0, Math.min(1, x));
 

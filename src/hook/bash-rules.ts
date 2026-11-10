@@ -1,20 +1,18 @@
 /**
  * Pattern rules for shell commands the hook guard inspects, beyond the generic destructive gate.
+ * Writes into `.colony/` and `.git/` are handled by `shell-paths.ts`, which resolves paths.
  *
  * Honest limit, stated in the README too: these are TEXT patterns over the one command string the
- * host shows the hook. They catch the common ways a command writes where it should not or destroys
- * work (redirection, tee, sed -i, find -delete, git checkout/restore, pipe to a shell, recursive
- * chmod, interpreter one-liners). They are not a sandbox: a script file, an alias, or a command
- * assembled at run time is invisible here. Containment, not proof.
+ * host shows the hook. They catch the common ways a command destroys work or runs code it just
+ * downloaded (find -delete, git checkout/restore, pipe to a shell, recursive chmod, interpreter
+ * one-liners, git config keys that run programs). They are not a sandbox: a script file, an alias,
+ * or a command assembled at run time is invisible here. Containment, not proof.
  */
 
 export interface BashFinding {
   decision: 'ask' | 'deny';
   reason: string;
 }
-
-/** Paths only colony commands may change. A shell command that writes into them is refused. */
-const PROTECTED = String.raw`\.?(?:colony|git)[/\\]`;
 
 interface Rule {
   name: string;
@@ -25,17 +23,22 @@ interface Rule {
 
 const RULES: Rule[] = [
   {
-    name: 'write into protected path',
-    // redirection (>, >>), tee, cp/mv targets, sed -i, or any mention of the path right after a writing tool
-    pattern: new RegExp(String.raw`(?:>>?\s*|\btee\s+(?:-a\s+)?|\bsed\s+[^|;&]*-i[^|;&]*\s|\b(?:cp|mv|install)\s+[^|;&]*\s)['"]?${PROTECTED}`, 'i'),
+    name: 'git config that changes how git runs code',
+    pattern: /\bgit\s+(?:-c\s+\S+\s+)*config\b[^|;&]*(?:core\.hooksPath|core\.fsmonitor|core\.sshCommand|core\.editor|core\.pager|alias\.|credential\.helper|filter\.|diff\.external|receive\.denyCurrentBranch)/i,
     decision: 'deny',
-    reason: "the command writes into .colony/ or .git/; the colony's state and rule files change only through colony commands",
+    reason: 'git config of a key that makes git run a program (hooks, fsmonitor, aliases, filters) can hide code execution',
   },
   {
-    name: 'delete or truncate protected path',
-    pattern: new RegExp(String.raw`\b(?:rm|del|rmdir|unlink|truncate)\b[^|;&]*${PROTECTED}`, 'i'),
+    name: 'git -c that makes git run a program',
+    pattern: /\bgit\s+(?:\S+\s+)*-c\s+(?:core\.hooksPath|core\.fsmonitor|core\.sshCommand|core\.editor|core\.pager|alias\.|credential\.helper|filter\.|diff\.external)/i,
     decision: 'deny',
-    reason: 'the command deletes inside .colony/ or .git/',
+    reason: 'git -c with a key that makes git run a program can hide code execution',
+  },
+  {
+    name: 'git config --global/--system',
+    pattern: /\bgit\s+config\s+(?:--global|--system)\b/i,
+    decision: 'ask',
+    reason: 'a global or system git config change affects every repository',
   },
   {
     name: 'find -delete / -exec rm',
