@@ -223,7 +223,8 @@ test('the PowerShell tool is guarded like Bash, and NotebookEdit like a file wri
 });
 
 test('directory names are compared without regard to case, as the file system does', async () => {
-  assert.equal((await call('Write', { file_path: '.COLONY/ledger.json', content: 'x' })).decision, process.platform === 'linux' ? 'allow' : 'deny');
+  // denied on every platform: macOS, Windows and WSL-mounted drives are case-insensitive, and denying a look-alike costs nothing
+  assert.equal((await call('Write', { file_path: '.COLONY/ledger.json', content: 'x' })).decision, 'deny');
   assert.equal((await call('Bash', { command: 'echo x > .COLONY/ledger.json' })).decision, 'deny'); // the shell check never assumes the file system is case-sensitive
 });
 

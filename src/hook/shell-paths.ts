@@ -97,8 +97,9 @@ function expand(text: string, projectDir: string): string {
 
 function protectedHit(target: string, cwd: string, projectDir: string): string | null {
   if (!target || target.startsWith('-') && !target.includes('/')) return null;
-  const normalized = process.platform === 'win32' ? target.replace(/\\/g, '/') : target;
-  const resolved = path.resolve(cwd, normalized);
+  // A backslash is read as a separator on every platform: PowerShell accepts it on Linux and macOS too,
+  // and for a guard the safe mistake is to see a separator where a shell sees an escape.
+  const resolved = path.resolve(cwd, target.replace(/\\/g, '/'));
   const rel = path.relative(projectDir, resolved);
   if (rel.startsWith('..') || path.isAbsolute(rel)) return null;
   const top = rel.split(path.sep)[0].toLowerCase();
@@ -151,7 +152,7 @@ export function findProtectedWrite(command: string, projectDirInput: string): Sh
     const operands = plain.filter((w) => !w.startsWith('-') || w.includes('/') || w.includes('\\'));
 
     if (tool === 'cd' || tool === 'pushd' || tool === 'set-location' || tool === 'sl' || tool === 'chdir') {
-      if (operands[0]) cwd = path.resolve(cwd, process.platform === 'win32' ? operands[0].replace(/\\/g, '/') : operands[0]);
+      if (operands[0]) cwd = path.resolve(cwd, operands[0].replace(/\\/g, '/'));
       continue;
     }
 
