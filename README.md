@@ -57,6 +57,7 @@ node dist/cli.js done <taskId> --result "mit csináltam" # valós, nem üres ere
 
 | Parancs | Mit csinál |
 |---|---|
+| `start --dir <projekt>` | Egy boot, amely ezen felül kiírja a munkamenetet (`workflow`: a `task add` → `next` → `done` kör a projektmappával kitöltve) és azt, hogy telepítve vannak-e a host hookjai (`hooks.installed`, a telepítés parancsával). Repóból a `node scripts/start.mjs <projektmappa>` (vagy `pnpm start <projektmappa>`) indítja: szükség esetén lefordítja a colony-core-t, és megtagadja, ha a projektmappa maga a colony-core. |
 | `boot [--accept-changes]` | Betölti és ellenőrzi az állapotot, beregisztrálja a beépített tagokat, kiírja a protokollt. Blokkol, ha a főkönyv vagy az audit az utolsó mentés óta a colony kívül változott, ha a szabályjegyzék nem sorol fel kötelező szabályt, vagy ha egy szabályfájl hibás. A `--accept-changes` az átnézett külső változást elfogadja (auditálva). |
 | `anomaly add <szöveg> --as <tag> [--task id]`, `anomaly list` | Amit zajként félretettél, azt itt rögzítsd: tárolódik, és feladat lesz az exobiológusnak (`next --as exobiologist`). A szöveg átmegy az injekciószűrőn és a kitakaráson. |
 | `status` | Tagok, feladatok, nyitott javaslatok. |

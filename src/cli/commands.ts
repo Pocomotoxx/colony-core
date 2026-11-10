@@ -1,4 +1,5 @@
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import { BUILTIN_AGENT_PROFILES } from '../agents/agent-profiles.js';
 import { ColonySession, loadRules, resolveRevision, STATE_DIR } from './session.js';
@@ -13,6 +14,7 @@ import { safetyHandlers } from './commands-safety.js';
 import { memoryHandlers } from './commands-memory.js';
 import { anomalyHandlers } from './commands-anomaly.js';
 import { errorMessage } from '../errors.js';
+import { hooksStatus, workflow } from './start-info.js';
 
 export type { CommandResult } from './context.js';
 
@@ -38,6 +40,7 @@ export const USAGE = `colony <command> [options]    (every command prints JSON; 
   profile answer <questionId> <value>     [--skip = no preference]   store an answer; returns the next question
   profile show | profile reset            your answers so far / start over
   verify <taskId> [--timeout-sec N] -- <command> [args...]   the colony runs the check itself and records the evidence; a failed run lowers the quality
+  start --dir <project>                   boot the project and print how to work (the rules, the task loop, whether the host's hooks are installed)
   boot [--accept-changes]                 load the state; --accept-changes takes a ledger/audit edited outside the colony as it is (after you reviewed it)
   rate <taskId> --quality 0..1            rate a finished task after the fact; the colony memory learns from your rating
   fail <taskId> --error <text>            mark a task failed  [--quality 0..1: how far it got]
@@ -105,9 +108,12 @@ async function dispatch(argv: string[], cwd: string): Promise<CommandResult> {
   // The whole command loads and rewrites the state, so it runs under the state lock.
   return withStateLock(path.join(dir, STATE_DIR), async (): Promise<CommandResult> => {
 
-    if (command === 'boot') {
+    if (command === 'boot' || command === 'start') {
       const { record, session, rules } = await ColonySession.boot(dir, { acceptExternalChanges: Boolean(values['accept-changes']) });
       const ok = record.status !== 'BLOCKED';
+      // `start` is a boot that also says how to work and whether the host's hooks are installed
+      const cli = fileURLToPath(new URL('../cli.js', import.meta.url));
+      const startInfo = command === 'start' && ok ? { hooks: await hooksStatus(dir, cli), workflow: workflow(dir, cli) } : {};
       return {
         code: ok ? 0 : 2,
         output: {
@@ -116,6 +122,7 @@ async function dispatch(argv: string[], cwd: string): Promise<CommandResult> {
           ...(session ? { colony: session.hub.getSnapshot(), roles: Object.values(BUILTIN_AGENT_PROFILES).map((p) => p.role) } : {}),
           protocol: PROTOCOL,
           ...(ok ? { rules: rules.map((r) => ({ path: r.path, sha256: r.sha256, text: r.text })) } : {}),
+          ...startInfo,
         },
       };
     }

@@ -4,7 +4,20 @@ Magyar / [English below](#english)
 
 A Colony semmilyen LLM-szolgáltatót nem hív: a host (például a Cowork) maga a modell. Az indításhoz egyetlen utasítás kell, amit feladatadáskor a hostnak adsz. A hostra semmi mást nem kell telepíteni, csak Node.js 20+, pnpm és git.
 
-## Alap utasítás
+## Ajánlott: a repó csatolása és egy `start`
+
+1. Csatold a **colony-core** repót a hosthoz (a projekted mappája mellé). Ha még nincs a gépeden: `git clone https://github.com/Pocomotoxx/colony-core.git`.
+2. Mondd a hostnak: **"Indítsd a colony-t a `[PROJEKTMAPPA]` projekten."** A host az `AGENTS.md` alapján a colony-core mappából ezt futtatja:
+
+```
+node scripts/start.mjs [PROJEKTMAPPA]
+```
+
+(vagy `pnpm start [PROJEKTMAPPA]`; ha a host a repó `.claude/commands` mappáját olvassa, `/colony-start [PROJEKTMAPPA]`.) Ez az első indításkor magától lefordítja a colony-core-t, bootolja a projektet, és kiírja a szabályokat, a munkamenetet és azt, hogy telepítve vannak-e a host hookjai. A `[PROJEKTMAPPA]` a **teljes útvonal**, és nem lehet maga a colony-core (az állapot a projektbe, a `.colony/` mappába kerül).
+
+**Igazolt:** a `start` parancs és a launcher tesztelt (hibás megadásra érthetően leáll). **Nem igazolt:** hogy a Cowork olvassa-e az `AGENTS.md`-t és a `.claude/commands` mappát a csatolt repóból, és hogy a hookok futnak-e benne. Ha nem olvassa, a fenti mondat és útvonal akkor is elég: kérd a hosttól, hogy a colony-core mappából futtassa a `node scripts/start.mjs [PROJEKTMAPPA]` parancsot.
+
+## Alap utasítás (klónozással, csatolás nélkül)
 
 Másold be a hostnak, és cseréld ki a **[PROJEKTMAPPA]** és a **[FELADAT]** részt:
 
@@ -34,7 +47,20 @@ Másold be a hostnak, és cseréld ki a **[PROJEKTMAPPA]** és a **[FELADAT]** r
 
 The Colony calls no LLM provider: the host (for example Cowork) is the model. One instruction, given to the host with the task, is enough to start. Nothing else has to be installed on the host except Node.js 20+, pnpm and git.
 
-## Basic instruction
+## Recommended: attach the repository and say `start`
+
+1. Attach the **colony-core** repository to the host (next to your project folder). If it is not on your machine yet: `git clone https://github.com/Pocomotoxx/colony-core.git`.
+2. Tell the host: **"Start the colony on the `[PROJECT DIR]` project."** Following `AGENTS.md`, the host runs from the colony-core folder:
+
+```
+node scripts/start.mjs [PROJECT DIR]
+```
+
+(or `pnpm start [PROJECT DIR]`; if the host reads this repo's `.claude/commands`, `/colony-start [PROJECT DIR]`.) On the first start it builds colony-core by itself, boots the project, and prints the rules, how to work, and whether the host's hooks are installed. `[PROJECT DIR]` is the **full path** and must not be colony-core itself (the state goes to the project, in `.colony/`).
+
+**Verified:** the `start` command and the launcher are tested (a wrong argument stops with a clear message). **Not verified:** whether Cowork reads `AGENTS.md` and `.claude/commands` from an attached repository, and whether the hooks run there. If it does not, the sentence and the path above are still enough: ask the host to run `node scripts/start.mjs [PROJECT DIR]` from the colony-core folder.
+
+## Basic instruction (cloning, without attaching)
 
 Paste it to the host and replace **[PROJECT DIR]** and **[TASK]**:
 

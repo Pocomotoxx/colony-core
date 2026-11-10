@@ -12,7 +12,8 @@
   "scripts": {
     "build": "tsc",
     "test": "node scripts/run-tests.mjs",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "start": "node scripts/start.mjs"
   },
   "keywords": [
     "agent-colony",
