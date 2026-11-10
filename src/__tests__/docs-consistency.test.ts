@@ -68,3 +68,31 @@ test('a vote\'s confidence is validated and advisory: it never changes the count
   await other.engine.castVote(other.id, { voterId: 'a', approve: true, confidence: 1 });
   assert.equal(other.engine.getProposal(other.id)!.status, 'open');
 });
+
+async function sourceFiles(dir: string): Promise<string[]> {
+  const out: string[] = [];
+  for (const entry of await fs.readdir(dir, { withFileTypes: true })) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      if (entry.name !== '__tests__') out.push(...(await sourceFiles(full)));
+    } else if (entry.name.endsWith('.ts')) out.push(full);
+  }
+  return out;
+}
+
+test('the core reads exactly the environment variables the README names, and makes no network call', async () => {
+  const files = await sourceFiles(path.join(repo, 'src'));
+  const envReads = new Set<string>();
+  for (const file of files) {
+    const text = await fs.readFile(file, 'utf-8');
+    for (const m of text.matchAll(/process\.env\.([A-Za-z_]+)|process\.env\[['"]([A-Za-z_]+)['"]\]/g)) envReads.add(m[1] ?? m[2]);
+    assert.ok(!/\bfetch\(|node:https?['"]|node:net['"]|node:dns['"]|node:tls['"]|WebSocket/.test(text), `${path.relative(repo, file)} looks like it uses the network`);
+  }
+  assert.deepEqual([...envReads].sort(), ['ComSpec']);
+  assert.ok(readme.includes('ComSpec'), 'the README names the one environment variable the core reads');
+  assert.deepEqual(Object.keys(pkg.dependencies ?? {}), [], 'the README promises zero runtime dependencies');
+});
+
+test('the README says that a claim becomes stealable only when someone runs claim sweep', () => {
+  assert.match(readme, /csak amikor valaki lefuttatja a `claim sweep` parancsot/);
+});
