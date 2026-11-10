@@ -22,7 +22,7 @@ Cél: a rendszer magától gyűjtsön, ne a modellre bízzuk.
 - [x] Gazdagép-adapter réteg: a hook logika gazdagép-független hívásokon dolgozik, a Claude Code formátumát egy adapter fordítja.
 - [x] **Élő próba az új eseményekről** (2026-11-10, Claude Code 2.1.281): a 0-s kilépés `PostToolUse`, a nem 0-s `PostToolUseFailure` (`error: "Exit code N
 …"`); a `SessionStart` és `UserPromptSubmit` kontextusát a modell látja; a `CLAUDE_ENV_FILE`-ba írt `export` a Bash-parancsokhoz eljut. A `Stop` payload (`last_assistant_message`, `stop_hook_active`) mérve, még nem használjuk.
-- [x] Automatikus bizonyíték: a teszt- és build-futtatások eredményét a hook rögzíti (`posttool`), a `done` ellenőrzésként használja. Élő végpontok közötti próba: lásd a `scripts/live/` mappát.
+- [x] Automatikus bizonyíték: a teszt- és build-futtatások eredményét a hook rögzíti (`posttool`), a `done` ellenőrzésként használja. Élő végpontok közötti próba 2026-11-10-én sikeres valódi modellel (lásd `scripts/live/` és a README).
 - [~] Munkamenet-azonosító: a `session` hook exportálja `COLONY_SESSION` néven (Bash-eszköznél mérve igazolt), a bizonyíték szűrése ezt használja. **Még nincs kész:** az audit `actor` mezője és a szavazás továbbra is a `--as` szöveg; a PowerShell-eszköz megkapja-e a változót, nem igazolt.
 - [x] Felidézés a prompt előtt (`prompt` hook) és a munkamenet elején (`session` hook); a modellt arra kéri, hogy mutassa meg a felhasználónak. A megjelenítést a `recall.jsonl` rögzíti (az 1. fázis alapja).
 - [x] `colony hook install [--apply]`: a hookok beolvasztása a `.claude/settings.json` fájlba **kifejezett kapcsolóval**, biztonsági másolattal. (A `.gitignore` beírása nincs: a `.colony/` tartalmát neked kell eldöntened, hogy verziókezelt-e.)
@@ -80,7 +80,7 @@ Goal: the system collects by itself instead of relying on the model.
 - [x] Host adapter layer: the hook logic works on host-neutral calls; an adapter translates Claude Code's format.
 - [x] **Live probe of the new events** (2026-11-10, Claude Code 2.1.281): exit 0 fires `PostToolUse`, non-zero fires `PostToolUseFailure` (`error: "Exit code N
 …"`); the context injected by `SessionStart` and `UserPromptSubmit` is seen by the model; an `export` written to `CLAUDE_ENV_FILE` reaches Bash commands. The `Stop` payload (`last_assistant_message`, `stop_hook_active`) is measured, not used yet.
-- [x] Automatic evidence: the hook records test and build results (`posttool`); `done` uses them as the verification. End-to-end live check: see `scripts/live/`.
+- [x] Automatic evidence: the hook records test and build results (`posttool`); `done` uses them as the verification. End-to-end live check passed with a real model on 2026-11-10 (see `scripts/live/` and the README).
 - [~] Session id: the `session` hook exports it as `COLONY_SESSION` (verified for the Bash tool), and evidence is filtered by it. **Not done yet:** the audit `actor` and voting still use the `--as` string; whether the PowerShell tool gets the variable is not verified.
 - [x] Recall before the prompt (`prompt` hook) and at session start (`session` hook); the model is asked to show it to the user. Each shown recall is logged in `recall.jsonl` (the basis of phase 1).
 - [x] `colony hook install [--apply]`: merges the hooks into `.claude/settings.json` **with an explicit switch**, keeping a backup. (No `.gitignore` entry: whether `.colony/` is versioned is your decision.)
