@@ -88,8 +88,8 @@ test('the core reads exactly the environment variables the README names, and mak
     for (const m of text.matchAll(/process\.env\.([A-Za-z_]+)|process\.env\[['"]([A-Za-z_]+)['"]\]/g)) envReads.add(m[1] ?? m[2]);
     assert.ok(!/\bfetch\(|node:https?['"]|node:net['"]|node:dns['"]|node:tls['"]|WebSocket/.test(text), `${path.relative(repo, file)} looks like it uses the network`);
   }
-  assert.deepEqual([...envReads].sort(), ['ComSpec']);
-  assert.ok(readme.includes('ComSpec'), 'the README names the one environment variable the core reads');
+  assert.deepEqual([...envReads].sort(), ['CLAUDE_ENV_FILE', 'COLONY_SESSION', 'ComSpec']);
+  for (const name of envReads) assert.ok(readme.includes(name), `the README names the environment variable ${name}`);
   assert.deepEqual(Object.keys(pkg.dependencies ?? {}), [], 'the README promises zero runtime dependencies');
 });
 

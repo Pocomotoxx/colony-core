@@ -10,6 +10,7 @@ import { parseTimeout, verifyTaskCommand } from './verify-command.js';
 import { redactText } from '../redact.js';
 import { CliError, CommandContext, CommandResult, Handler, OPEN_STATUSES, PRIORITIES, PRIORITY_RANK, ROLES, resolveMembers, summarizeTask } from './context.js';
 import { errorMessage } from '../errors.js';
+import { latestAsVerification, readEvidence } from '../evidence/evidence.js';
 
 // Commands: task, next, done, fail, review, hold, plan, score, verify, rate
 
@@ -106,7 +107,7 @@ async function handle_next(ctx: CommandContext): Promise<CommandResult> {
 tasksHandlers['next'] = handle_next;
 
 async function handle_done(ctx: CommandContext): Promise<CommandResult> {
-  const { values, command, sub, session, hub, log, reply, deputyNotes } = ctx;
+  const { values, command, sub, dir, session, hub, warnings, log, reply, deputyNotes } = ctx;
   const taskId = sub;
   const task = taskId ? hub.orchestrator.getTask(taskId) : undefined;
   if (!task) throw new CliError(`task '${taskId ?? ''}' not found`);
@@ -140,10 +141,35 @@ async function handle_done(ctx: CommandContext): Promise<CommandResult> {
   await hub.orchestrator.completeTask(task.id, agentId, values.result, report);
   hub.claims.close(task.id, 'completed', agentId, Date.now());
   log('task.completed', task.id, { memberId: agentId, resultChars: values.result.length, reportedQuality: quality ?? null, reportedVerifiedByTest: report.verifiedByTest });
+
+  // Evidence the host's hook saw (a test or build run since the task started) does not depend on what was reported.
+  // COLONY_SESSION is exported by the SessionStart hook; without it any session's evidence counts (one developer).
+  const observed = latestAsVerification(await readEvidence(path.join(dir, STATE_DIR), { since: task.startedAt, session: process.env.COLONY_SESSION }));
+  let observedEvidence: Record<string, unknown> | null = null;
+  if (observed) {
+    const { contradiction, capped } = await hub.orchestrator.verifyTask(task.id, observed);
+    log('task.verified', task.id, { source: 'observed', passed: observed.passed, exitCode: observed.exitCode, contradiction, capped });
+    const after = hub.orchestrator.getTask(task.id)!;
+    observedEvidence = {
+      command: observed.command,
+      passed: observed.passed,
+      exitCode: observed.exitCode,
+      at: observed.at,
+      contradiction,
+      quality: { reported: after.reportedQuality ?? after.quality ?? null, effective: after.quality ?? null, loweredByCheck: capped },
+      note: observed.passed
+        ? 'The host\'s hook saw this check pass after the task started.'
+        : contradiction
+          ? 'The report says a test run backed this work, but the last check the host\'s hook saw failed. The failed run counts; the quality was lowered.'
+          : 'The last check the host\'s hook saw after the task started failed.',
+    };
+  } else if (report.verifiedByTest) {
+    warnings.push('the report says a test run backed this work, but the host\'s hook saw no test or build run since the task started: the label is unconfirmed');
+  }
   const unblocked = hub.orchestrator.getAllTasks().filter((t) => before.get(t.id) === 'pending' && t.status === 'assigned');
   const deputy = deputyNotes(task.id);
   await session.save();
-  return reply({ task: summarizeTask(hub.orchestrator.getTask(task.id)!), unblocked: unblocked.map(summarizeTask), reported, ...(deputy.length ? { deputy } : {}) });
+  return reply({ task: summarizeTask(hub.orchestrator.getTask(task.id)!), unblocked: unblocked.map(summarizeTask), reported, ...(observedEvidence ? { observedEvidence } : {}), ...(deputy.length ? { deputy } : {}) });
 }
 
 tasksHandlers['done'] = handle_done;

@@ -45,7 +45,8 @@ export async function evaluateToolCall(call: ToolCall, projectDir: string): Prom
     add(checkSecrets(call.command));
     const protectedWrite = findProtectedWrite(call.command, projectDir);
     if (protectedWrite) {
-      deny = true;
+      if (protectedWrite.decision === 'deny') deny = true;
+      else ask = true;
       reasons.push(protectedWrite.reason);
     }
     for (const finding of scanBashCommand(call.command)) {
@@ -60,8 +61,12 @@ export async function evaluateToolCall(call: ToolCall, projectDir: string): Prom
     } else {
       try {
         const { relative } = await resolveInside(projectDir, call.path);
-        const top = relative.split(path.sep)[0].toLowerCase(); // .COLONY is the same directory on Windows and macOS
-        if (PROTECTED_TOP.has(top)) {
+        const segments = relative.split(path.sep).map((s) => s.toLowerCase()); // .COLONY is the same directory on Windows and macOS
+        const top = segments[0];
+        if (top === '.claude' && /^settings(?:\.local)?\.json$/.test(segments[1] ?? '')) {
+          ask = true;
+          reasons.push("the host's settings file (.claude/settings*.json) holds the guard's hooks; changing it needs the user's say");
+        } else if (PROTECTED_TOP.has(top)) {
           deny = true;
           reasons.push(top === '.colony'
             ? "the colony's state and rule files change only through colony commands, not by editing them directly"

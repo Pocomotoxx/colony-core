@@ -27,6 +27,8 @@ const LAST_ARG = new Set(['cp', 'install', 'rsync', 'ln', 'copy', 'xcopy', 'copy
 
 export interface ShellWrite {
   reason: string;
+  /** `deny` for the colony's own state; `ask` for the host's settings file, which the user may want to edit through the model. */
+  decision: 'deny' | 'ask';
 }
 
 /** Split on `;`, `&&`, `||`, `|`, `&` and newlines, outside quotes. */
@@ -95,6 +97,7 @@ function expand(text: string, projectDir: string): string {
     .replace(/\$\{?(?:CLAUDE_PROJECT_DIR|PROJECT_DIR)\}?/g, here);
 }
 
+/** `.colony`, `.git`, or `settings` (the host's `.claude/settings.json` / `settings.local.json`, where the guard's hooks live). */
 function protectedHit(target: string, cwd: string, projectDir: string): string | null {
   if (!target || target.startsWith('-') && !target.includes('/')) return null;
   // A backslash is read as a separator on every platform: PowerShell accepts it on Linux and macOS too,
@@ -102,8 +105,10 @@ function protectedHit(target: string, cwd: string, projectDir: string): string |
   const resolved = path.resolve(cwd, target.replace(/\\/g, '/'));
   const rel = path.relative(projectDir, resolved);
   if (rel.startsWith('..') || path.isAbsolute(rel)) return null;
-  const top = rel.split(path.sep)[0].toLowerCase();
-  return PROTECTED.has(top) ? top : null;
+  const segments = rel.split(path.sep).map((s) => s.toLowerCase());
+  if (PROTECTED.has(segments[0])) return segments[0];
+  if (segments[0] === '.claude' && segments.length >= 2 && /^settings(?:\.local)?\.json$/.test(segments[1])) return 'settings';
+  return null;
 }
 
 function toolName(word: string): string {
@@ -134,9 +139,9 @@ export function findProtectedWrite(command: string, projectDirInput: string): Sh
     if (ws.length === 0) continue;
     const hit = (target: string): ShellWrite | null => {
       const top = protectedHit(target, cwd, projectDir);
-      return top
-        ? { reason: top === '.colony' ? "the command changes something inside .colony/; the colony's state and rule files change only through colony commands" : 'the command changes something inside .git/' }
-        : null;
+      if (!top) return null;
+      if (top === 'settings') return { decision: 'ask', reason: "the command changes the host's settings file (.claude/settings*.json), which holds the guard's hooks" };
+      return { decision: 'deny', reason: top === '.colony' ? "the command changes something inside .colony/; the colony's state and rule files change only through colony commands" : 'the command changes something inside .git/' };
     };
 
     // redirections apply to any command
@@ -187,7 +192,7 @@ export function findProtectedWrite(command: string, projectDirInput: string): Sh
       // inline code that names a protected directory: refuse, the code can do anything with it
       const inline = plain.some((w) => w === '-c' || w === '-e' || w === '-Command' || w === '-command' || w === '/c' || w === '-lc');
       if (inline && /(?:^|[\s'"/\\])\.(?:colony|git)(?:[\s'"/\\]|$)/i.test(simple)) {
-        return { reason: 'an inline script names .colony/ or .git/; the guard cannot read what it does there' };
+        return { decision: 'deny', reason: 'an inline script names .colony/ or .git/; the guard cannot read what it does there' };
       }
     }
   }

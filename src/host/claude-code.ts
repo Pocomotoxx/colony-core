@@ -1,3 +1,4 @@
+import type { ToolOutcome } from '../evidence/evidence.js';
 import type { GuardVerdict, HostRequest, ToolCall } from './types.js';
 
 /**
@@ -49,4 +50,99 @@ export function toHostRequest(payload: unknown): HostRequest {
 export function preToolUseOutput(verdict: GuardVerdict): string {
   if (verdict.decision === 'allow') return '';
   return `${JSON.stringify({ hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: verdict.decision, permissionDecisionReason: verdict.reason } })}\n`;
+}
+
+/**
+ * A finished shell command as the host's hook reports it. Measured live (Claude Code 2.1.281):
+ * a command that exits 0 fires `PostToolUse` with `tool_response.stdout`; a non-zero exit fires
+ * `PostToolUseFailure` with `error: "Exit code N\n<stderr>"` and `is_interrupt`. There is no exit
+ * code field on the success event, which is why the event itself is the outcome.
+ */
+export function toToolOutcome(payload: unknown): ToolOutcome | null {
+  const p = asRecord(payload);
+  const tool = asString(p.tool_name) ?? '';
+  if (!SHELL_TOOLS.includes(tool)) return null;
+  const event = asString(p.hook_event_name);
+  if (event !== 'PostToolUse' && event !== 'PostToolUseFailure') return null;
+  const command = asString(asRecord(p.tool_input).command);
+  if (!command) return null;
+  const response = asRecord(p.tool_response);
+  const succeeded = event === 'PostToolUse';
+  return {
+    session: asString(p.session_id) ?? null,
+    tool,
+    command,
+    succeeded,
+    durationMs: typeof p.duration_ms === 'number' ? p.duration_ms : null,
+    interrupted: p.is_interrupt === true || response.interrupted === true,
+    outputText: succeeded ? (asString(response.stdout) ?? '') : (asString(p.error) ?? ''),
+  };
+}
+
+/** The submitted prompt of a UserPromptSubmit payload. */
+export function promptText(payload: unknown): string {
+  return asString(asRecord(payload).prompt) ?? '';
+}
+
+export function sessionIdOf(payload: unknown): string | undefined {
+  return asString(asRecord(payload).session_id);
+}
+
+/** What a SessionStart / UserPromptSubmit hook prints to hand the model some context. Nothing when there is none. */
+export function contextOutput(event: 'SessionStart' | 'UserPromptSubmit', context: string | null): string {
+  if (!context) return '';
+  return `${JSON.stringify({ hookSpecificOutput: { hookEventName: event, additionalContext: context } })}\n`;
+}
+
+export interface HookSpec {
+  event: string;
+  matcher?: string;
+  /** The colony hook subcommand. */
+  sub: string;
+  timeoutSeconds: number;
+}
+
+/** Every hook the colony wants installed, in Claude Code's settings format. */
+export const COLONY_HOOKS: readonly HookSpec[] = [
+  { event: 'PreToolUse', matcher: PRETOOL_MATCHER, sub: 'pretool', timeoutSeconds: 10 },
+  { event: 'PostToolUse', matcher: SHELL_TOOLS.join('|'), sub: 'posttool', timeoutSeconds: 10 },
+  { event: 'PostToolUseFailure', matcher: SHELL_TOOLS.join('|'), sub: 'posttool', timeoutSeconds: 10 },
+  { event: 'SessionStart', sub: 'session', timeoutSeconds: 10 },
+  { event: 'UserPromptSubmit', sub: 'prompt', timeoutSeconds: 10 },
+];
+
+type HookGroup = { matcher?: string; hooks: Array<{ type: string; command: string; timeout?: number }> };
+
+/** The settings.json `hooks` block for the colony, given the path of its CLI. */
+export function hookSettings(cliPath: string): { hooks: Record<string, HookGroup[]> } {
+  const cli = cliPath.replace(/\\/g, '/'); // forward slashes: the host runs the command through a shell
+  const hooks: Record<string, HookGroup[]> = {};
+  for (const h of COLONY_HOOKS) {
+    const group: HookGroup = { hooks: [{ type: 'command', command: `node "${cli}" hook ${h.sub}`, timeout: h.timeoutSeconds }] };
+    if (h.matcher) group.matcher = h.matcher;
+    (hooks[h.event] ??= []).push(group);
+  }
+  return { hooks };
+}
+
+/**
+ * Add the colony's hooks to an existing settings object without touching anything else. A hook that
+ * is already there (same command in the same event) is not added twice.
+ */
+export function mergeHookSettings(existing: unknown, ours: { hooks: Record<string, HookGroup[]> }): { merged: Record<string, unknown>; added: string[] } {
+  const merged = JSON.parse(JSON.stringify(typeof existing === 'object' && existing !== null && !Array.isArray(existing) ? existing : {})) as Record<string, unknown>;
+  const hooks = (typeof merged.hooks === 'object' && merged.hooks !== null && !Array.isArray(merged.hooks) ? merged.hooks : {}) as Record<string, HookGroup[]>;
+  const added: string[] = [];
+  for (const [event, groups] of Object.entries(ours.hooks)) {
+    const current = Array.isArray(hooks[event]) ? hooks[event] : [];
+    for (const group of groups) {
+      const command = group.hooks[0].command;
+      if (current.some((g) => Array.isArray(g?.hooks) && g.hooks.some((x) => x?.command === command))) continue;
+      current.push(group);
+      added.push(`${event}: ${command.replace(/^.*\bhook /, 'hook ')}`);
+    }
+    hooks[event] = current;
+  }
+  merged.hooks = hooks;
+  return { merged, added };
 }

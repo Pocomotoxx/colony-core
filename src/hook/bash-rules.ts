@@ -23,6 +23,12 @@ interface Rule {
 
 const RULES: Rule[] = [
   {
+    name: 'colony hook subcommand run from a shell',
+    pattern: /(?:cli\.js|colony(?:\.cmd|\.exe)?)["']?\s+hook\b/i,
+    decision: 'deny',
+    reason: 'the colony hook subcommands are called by the host, not from a shell tool; run from here they could write forged evidence or change the hook configuration',
+  },
+  {
     name: 'git config that changes how git runs code',
     pattern: /\bgit\s+(?:-c\s+\S+\s+)*config\b[^|;&]*(?:core\.hooksPath|core\.fsmonitor|core\.sshCommand|core\.editor|core\.pager|alias\.|credential\.helper|filter\.|diff\.external|receive\.denyCurrentBranch)/i,
     decision: 'deny',

@@ -76,6 +76,8 @@ export interface TaskVerification {
   /** Short hash of the output; the output itself is not stored. */
   outputHash: string;
   outputBytes: number;
+  /** `colony`: the colony ran the command (`verify`). `observed`: the host's hook saw it run. Absent in older records (= colony). */
+  source?: 'colony' | 'observed';
 }
 
 export interface ColonyTask {

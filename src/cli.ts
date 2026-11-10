@@ -8,21 +8,24 @@ async function readStdin(): Promise<string> {
 }
 
 if (process.argv[2] === 'hook') {
-  // A host's tool hook: raw protocol on stdout/stderr, no state loaded, no lock taken.
+  // A host's hook: raw protocol on stdout/stderr, no ledger loaded, no state lock taken.
   const { runHook } = await import('./hook/cli.js');
   const sub = process.argv[3];
   const dirIndex = process.argv.indexOf('--dir');
   try {
-    const stdinText = sub === 'pretool' ? await readStdin() : '';
-    const run = await runHook(sub, stdinText, process.cwd(), dirIndex > 0 ? process.argv[dirIndex + 1] : undefined);
+    const stdinText = sub === 'install' ? '' : await readStdin();
+    const run = await runHook(sub, stdinText, process.cwd(), dirIndex > 0 ? process.argv[dirIndex + 1] : undefined, {
+      apply: process.argv.includes('--apply'),
+      // the host's file for variables that later shell commands should see (set by Claude Code for SessionStart hooks)
+      envFile: process.env.CLAUDE_ENV_FILE,
+    });
     process.stdout.write(run.stdout);
     process.stderr.write(run.stderr);
     process.exitCode = run.code;
   } catch (err) {
-    // fail closed: an uncaught crash would exit 1, which a host treats as a non-blocking error
-    process.stderr.write(`Colony guard: the hook failed (${err instanceof Error ? err.message : String(err)}), so the tool call is refused.
-`);
-    process.exitCode = 2;
+    // the guard fails closed: an uncaught crash would exit 1, which a host treats as a non-blocking error
+    process.stderr.write(`Colony hook: failed (${err instanceof Error ? err.message : String(err)}).\n`);
+    process.exitCode = sub === 'pretool' ? 2 : 0;
   }
 } else {
   const { code, output } = await runCommand(process.argv.slice(2), process.cwd());

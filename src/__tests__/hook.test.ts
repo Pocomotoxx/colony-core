@@ -239,3 +239,26 @@ test('a Windows-style absolute path from the host is resolved, not mistaken for 
   assert.equal((await call('Write', { file_path: inside, content: 'x' })).decision, 'allow');
   assert.equal((await call('Write', { file_path: path.join(root, '.colony', 'ledger.json'), content: 'x' })).decision, 'deny');
 });
+
+test('the host\'s settings file, which holds the guard\'s hooks, needs the user\'s say; the hook subcommands are not for shell tools', async () => {
+  for (const [tool, input] of [
+    ['Write', { file_path: '.claude/settings.json', content: '{}' }],
+    ['Edit', { file_path: '.claude/settings.local.json', new_string: '{}' }],
+    ['Bash', { command: 'echo {} > .claude/settings.json' }],
+    ['Bash', { command: 'cd .claude && sed -i s/a/b/ settings.local.json' }],
+    ['PowerShell', { command: String.raw`Set-Content .claude\settings.json -Value x` }],
+  ] as const) {
+    assert.equal((await call(tool, input)).decision, 'ask', JSON.stringify(input));
+  }
+  // other files in .claude/ (commands, agents) and reading the settings are ordinary work
+  assert.equal((await call('Write', { file_path: '.claude/commands/review.md', content: 'x' })).decision, 'allow');
+  assert.equal((await call('Bash', { command: 'cat .claude/settings.json' })).decision, 'allow');
+
+  for (const command of [
+    'node dist/cli.js hook posttool < forged.json',
+    'echo {} | node "C:/x/dist/cli.js" hook posttool',
+    'colony hook install --apply',
+    'npx colony hook session',
+  ]) assert.equal((await call('Bash', { command })).decision, 'deny', command);
+  assert.equal((await call('Bash', { command: 'node dist/cli.js status' })).decision, 'allow');
+});

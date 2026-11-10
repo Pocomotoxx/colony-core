@@ -1,4 +1,5 @@
 import type { ColonyHub } from '../colony-hub.js';
+import type { ReasoningBank } from '../neural/reasoning-bank.js';
 import type { ColonyTask } from '../types.js';
 import { effectivePreferences, loadProfile } from '../profile/profile.js';
 
@@ -47,7 +48,15 @@ export async function buildBriefing(hub: ColonyHub, task: ColonyTask, profileFil
     warnings.push(`profile not used: ${(err as Error).message}`);
   }
 
-  const patterns = await hub.reasoningBank.recallPatterns(`${task.title} ${task.description}`, { topK: 5, minScore: 0.3 });
+  const { ids: _ids, ...recall } = await recallFor(hub.reasoningBank, `${task.title} ${task.description}`);
+  return { briefing: { profile, recall }, warnings };
+}
+
+export const RECALL_ASK = 'Show the user what the colony remembers about similar work before you start, and ask whether to apply it or to take another approach. The user decides.';
+
+/** Similar earlier work for a text, split into what worked and what to avoid. */
+export async function recallFor(bank: ReasoningBank, text: string): Promise<Briefing['recall'] & { ids: string[] }> {
+  const patterns = await bank.recallPatterns(text, { topK: 5, minScore: 0.3 });
   const toWork = (p: (typeof patterns)[number]): RecalledWork => ({
     problem: snippet(p.problem),
     approach: snippet(p.solution),
@@ -55,10 +64,12 @@ export async function buildBriefing(hub: ColonyHub, task: ColonyTask, profileFil
     similarity: round(p.relevance ?? 0),
     verified: Boolean(p.verified),
   });
-  const worked = patterns.filter((p) => p.successScore >= GOOD).map(toWork);
-  const caution = patterns.filter((p) => p.successScore < POOR).map(toWork);
-  const ask = worked.length + caution.length === 0
-    ? null
-    : 'Show the user what the colony remembers about similar work before you start, and ask whether to apply it or to take another approach. The user decides.';
-  return { briefing: { profile, recall: { worked, caution, ask } }, warnings };
+  const keptWorked = patterns.filter((p) => p.successScore >= GOOD);
+  const keptCaution = patterns.filter((p) => p.successScore < POOR);
+  return {
+    worked: keptWorked.map(toWork),
+    caution: keptCaution.map(toWork),
+    ask: keptWorked.length + keptCaution.length === 0 ? null : RECALL_ASK,
+    ids: [...keptWorked, ...keptCaution].map((p) => p.id),
+  };
 }
