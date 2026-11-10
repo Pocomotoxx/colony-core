@@ -1,6 +1,7 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { evaluatePreToolUse, HookInput } from './pretool.js';
+import { evaluateToolCall } from './pretool.js';
+import { preToolUseOutput, PRETOOL_MATCHER, toHostRequest } from '../host/claude-code.js';
 
 export interface HookRun {
   code: number;
@@ -23,7 +24,7 @@ export async function runHook(sub: string | undefined, stdinText: string, defaul
   if (sub !== 'pretool') {
     return { code: 1, stdout: '', stderr: 'usage: colony hook pretool (reads the tool call as JSON on stdin) | colony hook install\n' };
   }
-  let input: HookInput & { cwd?: unknown };
+  let input: { cwd?: unknown };
   try {
     input = JSON.parse(stdinText);
     if (typeof input !== 'object' || input === null) throw new Error('not an object');
@@ -33,15 +34,13 @@ export async function runHook(sub: string | undefined, stdinText: string, defaul
   const projectDir = path.resolve(dirArg ?? (typeof input.cwd === 'string' ? input.cwd : defaultDir));
   let verdict;
   try {
-    verdict = await evaluatePreToolUse(input, projectDir);
+    verdict = await evaluateToolCall(toHostRequest(input).call, projectDir);
   } catch (err) {
     return { code: 2, stdout: '', stderr: `Colony guard: the check failed (${err instanceof Error ? err.message : String(err)}), so the tool call is refused.
 ` };
   }
   const stderr = verdict.notes.length > 0 ? `Colony guard notes: ${verdict.notes.join('; ')}\n` : '';
-  if (verdict.decision === 'allow') return { code: 0, stdout: '', stderr };
-  const body = { hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: verdict.decision, permissionDecisionReason: verdict.reason } };
-  return { code: 0, stdout: `${JSON.stringify(body)}\n`, stderr };
+  return { code: 0, stdout: preToolUseOutput(verdict), stderr };
 }
 
 function install(dir: string): HookRun {
@@ -49,7 +48,7 @@ function install(dir: string): HookRun {
   const snippet = {
     hooks: {
       PreToolUse: [
-        { matcher: 'Bash|PowerShell|Write|Edit|MultiEdit|NotebookEdit', hooks: [{ type: 'command', command: `node "${cli}" hook pretool` }] },
+        { matcher: PRETOOL_MATCHER, hooks: [{ type: 'command', command: `node "${cli}" hook pretool` }] },
       ],
     },
   };
