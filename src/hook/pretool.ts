@@ -38,7 +38,13 @@ const PROTECTED_TOP = new Set(['.colony', '.git']);
 const asRecord = (v: unknown): Record<string, unknown> => (typeof v === 'object' && v !== null ? (v as Record<string, unknown>) : {});
 const asString = (v: unknown): string | undefined => (typeof v === 'string' ? v : undefined);
 
+/** The tools that run a shell command. The host has a separate PowerShell tool (the usual shell on Windows). */
+const SHELL_TOOLS = new Set(['Bash', 'PowerShell']);
+/** The tools that write files, and the field that names the file (NotebookEdit uses notebook_path). */
+const FILE_TOOLS: Record<string, string> = { Write: 'file_path', Edit: 'file_path', MultiEdit: 'file_path', NotebookEdit: 'notebook_path' };
+
 function collectText(tool: string, input: Record<string, unknown>): string[] {
+  if (tool === 'NotebookEdit') return [asString(input.new_source) ?? ''];
   if (tool === 'Write') return [asString(input.content) ?? ''];
   if (tool === 'Edit') return [asString(input.new_string) ?? ''];
   if (tool === 'MultiEdit') {
@@ -59,7 +65,7 @@ export async function evaluatePreToolUse(input: HookInput, projectDir: string): 
   let deny = false;
 
   let ask = false;
-  if (tool === 'Bash') {
+  if (SHELL_TOOLS.has(tool)) {
     const command = asString(args.command) ?? '';
     add(checkDestructive(command));
     add(checkSecrets(command));
@@ -73,15 +79,15 @@ export async function evaluatePreToolUse(input: HookInput, projectDir: string): 
       else ask = true;
       reasons.push(finding.reason);
     }
-  } else if (tool === 'Write' || tool === 'Edit' || tool === 'MultiEdit') {
-    const file = asString(args.file_path);
+  } else if (tool in FILE_TOOLS) {
+    const file = asString(args[FILE_TOOLS[tool]]);
     if (!file) {
       deny = true;
       reasons.push(`${tool} without a file path is refused`);
     } else {
       try {
         const { relative } = await resolveInside(projectDir, file);
-        const top = relative.split(path.sep)[0];
+        const top = relative.split(path.sep)[0].toLowerCase(); // .COLONY is the same directory on Windows and macOS
         if (PROTECTED_TOP.has(top)) {
           deny = true;
           reasons.push(top === '.colony'

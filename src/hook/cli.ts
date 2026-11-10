@@ -49,7 +49,7 @@ function install(dir: string): HookRun {
   const snippet = {
     hooks: {
       PreToolUse: [
-        { matcher: 'Bash|Write|Edit|MultiEdit', hooks: [{ type: 'command', command: `node "${cli}" hook pretool` }] },
+        { matcher: 'Bash|PowerShell|Write|Edit|MultiEdit|NotebookEdit', hooks: [{ type: 'command', command: `node "${cli}" hook pretool` }] },
       ],
     },
   };

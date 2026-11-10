@@ -70,7 +70,7 @@ test('hook protocol: allow prints nothing, deny prints the host JSON, bad input 
   assert.equal((await runHook('nope', '', root)).code, 1);
 
   const install = JSON.parse((await runHook('install', '', root)).stdout);
-  assert.equal(install.settings.hooks.PreToolUse[0].matcher, 'Bash|Write|Edit|MultiEdit');
+  assert.equal(install.settings.hooks.PreToolUse[0].matcher, 'Bash|PowerShell|Write|Edit|MultiEdit|NotebookEdit');
   assert.match(install.settings.hooks.PreToolUse[0].hooks[0].command, /hook pretool/);
 });
 
@@ -198,4 +198,43 @@ test('reading the colony state, or writing next to it, is not blocked', async ()
     const v = await call('Bash', { command });
     assert.equal(v.decision, 'allow', command);
   }
+});
+
+// ---- the tool set the host really has (checked against the Claude Code hooks documentation)
+
+test('the PowerShell tool is guarded like Bash, and NotebookEdit like a file write', async () => {
+  const denyPs = [
+    String.raw`Set-Content -Path .colony\ledger.json -Value x`,
+    String.raw`Remove-Item -Recurse -Force .colony`,
+    String.raw`echo x > .\.colony\ledger.json`,
+    String.raw`Out-File -FilePath .\.git\config -InputObject x`,
+    String.raw`Copy-Item evil.json .colony\ledger.json`,
+    String.raw`Move-Item evil .colony`,
+    String.raw`git config core.hooksPath C:\evil`,
+  ];
+  for (const command of denyPs) assert.equal((await call('PowerShell', { command })).decision, 'deny', command);
+  assert.equal((await call('PowerShell', { command: String.raw`Get-Content .colony\ledger.json` })).decision, 'allow');
+  assert.equal((await call('PowerShell', { command: 'Get-ChildItem -Recurse src' })).decision, 'allow');
+  assert.notEqual((await call('PowerShell', { command: String.raw`Remove-Item -Recurse -Force .\build` })).decision, 'allow'); // bulk delete asks
+
+  assert.equal((await call('NotebookEdit', { notebook_path: '.colony/x.ipynb', new_source: 'x' })).decision, 'deny');
+  assert.equal((await call('NotebookEdit', { notebook_path: '../out.ipynb', new_source: 'x' })).decision, 'deny');
+  assert.equal((await call('NotebookEdit', { notebook_path: 'analysis.ipynb', new_source: 'print(1)' })).decision, 'allow');
+});
+
+test('directory names are compared without regard to case, as the file system does', async () => {
+  assert.equal((await call('Write', { file_path: '.COLONY/ledger.json', content: 'x' })).decision, process.platform === 'linux' ? 'allow' : 'deny');
+  assert.equal((await call('Bash', { command: 'echo x > .COLONY/ledger.json' })).decision, 'deny'); // the shell check never assumes the file system is case-sensitive
+});
+
+test('the install snippet matches every tool the guard understands', async () => {
+  const install = JSON.parse((await runHook('install', '', root)).stdout);
+  const matcher: string = install.settings.hooks.PreToolUse[0].matcher;
+  for (const tool of ['Bash', 'PowerShell', 'Write', 'Edit', 'MultiEdit', 'NotebookEdit']) assert.ok(matcher.split('|').includes(tool), tool);
+});
+
+test('a Windows-style absolute path from the host is resolved, not mistaken for outside the project', { skip: process.platform !== 'win32' }, async () => {
+  const inside = path.join(root, 'src', 'a.ts').split('/').join(path.sep);
+  assert.equal((await call('Write', { file_path: inside, content: 'x' })).decision, 'allow');
+  assert.equal((await call('Write', { file_path: path.join(root, '.colony', 'ledger.json'), content: 'x' })).decision, 'deny');
 });
