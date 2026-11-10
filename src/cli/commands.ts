@@ -9,6 +9,7 @@ import { CliError, CommandContext, CommandResult, Handler, OPTIONS } from './con
 import { tasksHandlers } from './commands-tasks.js';
 import { claimsHandlers } from './commands-claims.js';
 import { consensusHandlers } from './commands-consensus.js';
+import { debateHandlers } from './commands-debate.js';
 import { inspectHandlers } from './commands-inspect.js';
 import { safetyHandlers } from './commands-safety.js';
 import { memoryHandlers } from './commands-memory.js';
@@ -18,7 +19,7 @@ import { hooksStatus, workflow } from './start-info.js';
 
 export type { CommandResult } from './context.js';
 
-const HANDLERS: Record<string, Handler> = { ...tasksHandlers, ...claimsHandlers, ...consensusHandlers, ...inspectHandlers, ...safetyHandlers, ...memoryHandlers, ...anomalyHandlers };
+const HANDLERS: Record<string, Handler> = { ...tasksHandlers, ...claimsHandlers, ...consensusHandlers, ...debateHandlers, ...inspectHandlers, ...safetyHandlers, ...memoryHandlers, ...anomalyHandlers };
 
 /** Read-only commands that may run on a state whose integrity check failed. */
 const DIAGNOSTIC_COMMANDS: ReadonlySet<string> = new Set(['audit', 'watch']);
@@ -66,6 +67,9 @@ export const USAGE = `colony <command> [options]    (every command prints JSON; 
   claim steal <taskId> --as <member>      take over a stealable claim (after its grace period)
   claim handoff <taskId> --as <member> --to <member> --reason <text> | claim accept|reject <taskId> --as <member>
   vote <proposalId> --as <member> (--approve|--reject) --reason <text> [--confidence 0..1]   (advisory: stored and reported, never counted as a weight)
+  debate <proposalId> position|reply|hypothesis|dissent --as <member> --text <text> [--mode M] [--to <entryId>] [--prediction P --test T]
+                                          the arguments, hypotheses and dissent around a proposal; a record, never a vote
+  debate <proposalId> judge <entryId> --as <member> --outcome supported|refuted [--verified-by-test] | debate <proposalId> show | debate stats
   anomaly add <text> --as <member> [--task <fromTaskId>]   record something set aside as noise; it becomes a task for the exobiologist
   anomaly list [--k N]                    the recorded anomalies
   memory add <text>                       [--ns NAMESPACE] [--allow-risky]   hostile text is refused unless --allow-risky

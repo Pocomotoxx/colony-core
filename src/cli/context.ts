@@ -15,7 +15,7 @@ export class CliError extends Error {
   }
 }
 
-export const ROLES: AgentRole[] = ['director', 'architect', 'engineer', 'reviewer', 'tester', 'analyst', 'security', 'auditor', 'researcher', 'writer', 'exobiologist', 'custom'];
+export const ROLES: AgentRole[] = ['director', 'architect', 'engineer', 'reviewer', 'tester', 'analyst', 'security', 'auditor', 'researcher', 'writer', 'exobiologist', 'dissenter', 'custom'];
 export const PRIORITIES: TaskPriority[] = ['low', 'normal', 'high', 'critical'];
 export const PRIORITY_RANK: Record<TaskPriority, number> = { critical: 0, high: 1, normal: 2, low: 3 };
 export const OPEN_STATUSES = ['assigned', 'in_progress', 'review', 'consensus'];
@@ -98,6 +98,10 @@ export const OPTIONS = {
     section: { type: 'string' },
     'timeout-sec': { type: 'string' },
     skip: { type: 'boolean' },
+    mode: { type: 'string' },
+    prediction: { type: 'string' },
+    test: { type: 'string' },
+    outcome: { type: 'string' },
     help: { type: 'boolean' },
 } as const;
 

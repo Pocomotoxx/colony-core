@@ -178,7 +178,7 @@ test('an auditor never gets an unrouted task', async () => {
 
 test('the new profiles exist, are advisory where they should be, and carry sampling advice', () => {
   const roles = Object.values(BUILTIN_AGENT_PROFILES).map((p) => p.role).sort();
-  assert.deepEqual(roles, ['analyst', 'architect', 'auditor', 'director', 'engineer', 'exobiologist', 'researcher', 'reviewer', 'security', 'tester', 'writer']);
+  assert.deepEqual(roles, ['analyst', 'architect', 'auditor', 'director', 'dissenter', 'engineer', 'exobiologist', 'researcher', 'reviewer', 'security', 'tester', 'writer']);
   const exo = BUILTIN_AGENT_PROFILES.exobiologist;
   assert.ok(exo.sampling!.temperature >= 0.8);
   assert.ok(BUILTIN_AGENT_PROFILES.analyst.sampling!.temperature <= 0.2);
@@ -230,10 +230,10 @@ test('member preset standard adds the missing roles to an older colony, once', a
   assert.equal((await run('member', 'list')).out.members.length, 6);
 
   const first = await run('member', 'preset', 'standard');
-  assert.deepEqual(first.out.added.sort(), ['member_analyst', 'member_auditor', 'member_exobiologist', 'member_researcher', 'member_writer']);
-  assert.equal(first.out.total, 11);
+  assert.deepEqual(first.out.added.sort(), ['member_analyst', 'member_auditor', 'member_dissenter', 'member_exobiologist', 'member_researcher', 'member_writer']);
+  assert.equal(first.out.total, 12);
   assert.deepEqual((await run('member', 'preset', 'standard')).out.added, []);
-  assert.equal((await run('audit', 'list', '--type', 'member.added')).out.entries.length, 5);
+  assert.equal((await run('audit', 'list', '--type', 'member.added')).out.entries.length, 6);
   assert.match((await run('member', 'preset', 'legacy-15')).out.error, /usage/);
 });
 

@@ -15,6 +15,7 @@ export type AgentRole =
   | 'researcher'
   | 'writer'
   | 'exobiologist'
+  | 'dissenter'
   | 'custom';
 
 /**
@@ -22,7 +23,41 @@ export type AgentRole =
  * auditor would lose its independence by doing ordinary work, and the exobiologist would be handed
  * routine tasks it is not meant for. Neither counts as an implicit candidate in dispatch.
  */
-export const ADVISORY_ROLES: readonly AgentRole[] = ['auditor', 'exobiologist'];
+export const ADVISORY_ROLES: readonly AgentRole[] = ['auditor', 'exobiologist', 'dissenter'];
+
+/** How an agent argues. Which two a role may use is fixed in `debate/debate-modes.ts`. */
+export type DebateMode = 'rational' | 'fact-finding' | 'courtroom' | 'negotiation' | 'quarrel';
+
+export interface DebateModePair {
+  default: DebateMode;
+  alternate: DebateMode;
+}
+
+/**
+ * `position`/`reply`: arguments in the debate. `hypothesis`: a testable explanation (needs a prediction
+ * and the cheapest test). `dissent`: the dissenter's recorded objection; it never counts as a vote.
+ */
+export type DiscussionEntryKind = 'position' | 'reply' | 'hypothesis' | 'dissent';
+
+export interface ProposalDiscussionEntry {
+  id: string;
+  kind: DiscussionEntryKind;
+  authorId: string;
+  role: AgentRole;
+  mode: DebateMode;
+  text: string;
+  replyTo?: string;
+  /** Hypothesis only: what would be seen if it is true, and the cheapest test that could prove it wrong. */
+  prediction?: string;
+  test?: string;
+  /** The author used the alternate mode after the default one did not carry the vote. */
+  switched?: boolean;
+  /** Set by `debate judge` on a hypothesis or a dissent. `supported` needs a test run (the host's statement). */
+  outcome?: 'supported' | 'refuted';
+  judgedBy?: string;
+  verifiedByTest?: boolean;
+  createdAt: number;
+}
 
 export type AgentStatus = 'idle' | 'busy' | 'voting' | 'offline' | 'error';
 
@@ -144,6 +179,8 @@ export interface ConsensusProposal<T = unknown> {
   /** Set when the quorum was derived from a strategy: the number of eligible voters. */
   voters?: number;
   strategy?: string;
+  /** The debate around the proposal: arguments, hypotheses and dissent. Not part of the vote count. */
+  discussion?: ProposalDiscussionEntry[];
   createdAt: number;
   expiresAt: number;
 }
