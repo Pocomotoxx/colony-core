@@ -1,4 +1,4 @@
-# A swarm-koordinátorok átemelésének terve (Colony Chief)
+# Az elosztott ágensrendszer koordinátorainak átemelési terve (Colony Chief)
 
 Állapot: 2026-11-01, átírva a 10 szerepes ügynökrendszer szerint. Terv, kód még nincs. Forrás: a régi rajkoordinátor (kb. 7400 sor a hat nagy fájlban, már nincs a repóban) és a felhasználó ügynökrendszer-terve.
 
@@ -6,7 +6,7 @@
 
 | Fájl | Sor | Olvasva |
 |---|---|---|
-| `queen-coordinator.ts` | 2035 | típusok, konfig, `analyzeTask`, a felbontás, képességek, `delegateToAgents`, pontozás, kiválasztás, egészségjelentés (eleje), konszenzus, tanulás. **Nem** olvastam: 870–1100 (komplexitás, időbecslés, domain-választás, mintaillesztés, bizonyosság), 1560–1700 (egészség vége). |
+| a régi központi koordinátor fájlja | 2035 | típusok, konfig, `analyzeTask`, a felbontás, képességek, `delegateToAgents`, pontozás, kiválasztás, egészségjelentés (eleje), konszenzus, tanulás. **Nem** olvastam: 870–1100 (komplexitás, időbecslés, domain-választás, mintaillesztés, bizonyosság), 1560–1700 (egészség vége). |
 | `unified-coordinator.ts` | 2099 | csak a metódusjegyzék |
 | `attention-coordinator.ts` | 1007 | fejléc, típusok |
 | `federation-hub.ts` | 997 | fejléc, típusok, metódusjegyzék |
@@ -14,11 +14,11 @@
 | `message-bus.ts` | 737 | nem olvastam |
 | `domain/`, `application/` | ? | nem olvastam |
 
-A terv ezért a Queen-re (a régi név, az új: Colony Chief) részletes, a többire vázlat. A P0 lépés pótolja a hiányt, mielőtt kódot írnánk.
+A terv ezért a központi koordinátorra (az új név: Colony Chief) részletes, a többire vázlat. A P0 lépés pótolja a hiányt, mielőtt kódot írnánk.
 
 ## Alapgondolat
 
-A régi Queen hat dolgot csinál: **elemez → kioszt → pontoz → egészséget figyel → szavaztat → tanul a kimenetből**. Ő hajtotta végre is a munkát (ügynök-pool, időzítők, `waitForTaskCompletion`). A Colonyban a munkát a host végzi, ezért a **Colony Chief tanácsadó és nyilvántartó**: tiszta, determinisztikus függvények, amelyek javaslatot adnak, és a host dönt. A végrehajtó gépezet nem kerül át.
+A régi központi koordinátor hat dolgot csinál: **elemez → kioszt → pontoz → egészséget figyel → szavaztat → tanul a kimenetből**. Ő hajtotta végre is a munkát (ügynök-pool, időzítők, `waitForTaskCompletion`). A Colonyban a munkát a host végzi, ezért a **Colony Chief tanácsadó és nyilvántartó**: tiszta, determinisztikus függvények, amelyek javaslatot adnak, és a host dönt. A végrehajtó gépezet nem kerül át.
 
 Az ügynökrendszer három eleme **új a régi kódhoz képest**, és külön fázist kap: a **Deputy** (független felügyelet), a **Critic-kör** (visszaküldés korláttal) és az **emberi kapu** (eszkaláció). Ezeket a régi rendszer nem tudta.
 
@@ -53,12 +53,12 @@ A beépített tagok így 6-ról 11-re nőnek (`director`, `architect`, `engineer
 
 ### P0 – Előkészítés (kicsi, kód nélkül)
 
-- Elolvasni a hiányzó részeket: Queen 870–1100 és 1560–1700, `unified-coordinator` `assignTask` és `scoreAgentForTask` (801–905), `message-bus.ts`, `domain/`, `application/`. Ha a `message-bus.ts` tud valamit, ami a Colony `MessageBus`-ából hiányzik (prioritás, visszaigazolás, holtlevél-sor), az külön tétel.
+- Elolvasni a hiányzó részeket: a központi koordinátor 870–1100 és 1560–1700, `unified-coordinator` `assignTask` és `scoreAgentForTask` (801–905), `message-bus.ts`, `domain/`, `application/`. Ha a `message-bus.ts` tud valamit, ami a Colony `MessageBus`-ából hiányzik (prioritás, visszaigazolás, holtlevél-sor), az külön tétel.
 - **Tagstatisztika alapja:** a főkönyvből és az auditnaplóból levezetett mutatók tagonként (befejezett, hibás, átlagos időtartam, utolsó tevékenység). Nem új tár, a meglévő adatokból számolt.
 
 **P0 eredménye (elolvasva):**
-- **Queen 870–1100.** A komplexitás: 0,3 alap + 0,1 részfeladatonként + 0,05 függőségenként, prioritásszorzó (kritikus 1,3 … háttér 0,8), típuspótlék, leírás hossza legfeljebb +0,2, legfeljebb 1,0. Az időbecslés: típusalap × (0,5 + 1,5 × komplexitás) + a részfeladatok fele. Mind kézzel megadott szám. A régiben van `background` prioritás, a Colonyban nincs. A hash-alapú „beágyazás" a régi kódban 768 dimenziós szóhash: ugyanaz a gyengeség, mint a Colony mostani beágyazásáé (szóegyezés, nem jelentés).
-- **`unified-coordinator` `assignTask` / `scoreAgentForTask` (801–905).** Egy másik pontozás: 100 alap, +50 típusegyezés, −20 × terhelés, szorozva az egészséggel, +10 × sikerarány, −5 × átlagos végrehajtási perc. **A régi rendszerben két, egymástól eltérő pontozás élt egymás mellett** (ez és a Queen 0,30/0,20/0,25/0,15/0,10-es súlyozása). A Colony a Queen-félét vette át, mert az összetevőkre bontva magyarázható.
+- **Központi koordinátor 870–1100.** A komplexitás: 0,3 alap + 0,1 részfeladatonként + 0,05 függőségenként, prioritásszorzó (kritikus 1,3 … háttér 0,8), típuspótlék, leírás hossza legfeljebb +0,2, legfeljebb 1,0. Az időbecslés: típusalap × (0,5 + 1,5 × komplexitás) + a részfeladatok fele. Mind kézzel megadott szám. A régiben van `background` prioritás, a Colonyban nincs. A hash-alapú „beágyazás" a régi kódban 768 dimenziós szóhash: ugyanaz a gyengeség, mint a Colony mostani beágyazásáé (szóegyezés, nem jelentés).
+- **`unified-coordinator` `assignTask` / `scoreAgentForTask` (801–905).** Egy másik pontozás: 100 alap, +50 típusegyezés, −20 × terhelés, szorozva az egészséggel, +10 × sikerarány, −5 × átlagos végrehajtási perc. **A régi rendszerben két, egymástól eltérő pontozás élt egymás mellett** (ez és a központi koordinátor 0,30/0,20/0,25/0,15/0,10-es súlyozása). A Colony a központi koordinátor-félét vette át, mert az összetevőkre bontva magyarázható.
 - **`message-bus.ts` (737 sor).** Nem a Colony `MessageBus`-ának megfelelője: ügynökök közti, pont-pont üzenetsor prioritással, visszaigazolással (`requiresAck`), lejárattal és újrapróbálkozással. A Colony busza téma-alapú értesítés. A régi ahhoz kellene, ha a tagok *postaládát* kapnának (üzenet egy tagnak). Ez nincs a tervben; ha igény lesz rá, új tétel.
 - **`domain/` és `application/` (kb. 2070 sor).** DDD-burok az ügynök- és feladat-entitások körül (`Agent`, `Task`, repository-felületek, parancsok). A Colony `ColonyRegistry` és `ColonyTaskOrchestrator` ugyanezt adja, átvenni való nincs.
 - **Tagstatisztika:** a feladatokból és a foglalásokból számolt, nem tárolt (`chief/member-stats.ts`).
@@ -144,7 +144,7 @@ A terv szerint a Deputy a Chief döntéseit auditálja: célcsúszás, végtelen
 
 - `colony member add --ephemeral --ttl-min N`: az al-munkamenet (alügynök) ideiglenes tagja lejárattal; `member sweep` leveszi, a feladata a foglalás-elavulás útján átvehetővé válik. A régi `setInterval`-os takarítás és `Math.random()` azonosító helyett kifejezett söprés és determinisztikus azonosító.
 - `colony member preset <név>`: a hiányzó beépített tagok pótlása a 10 szereplistára (`standard`), és egy opcionális, régi **15 ügynökös** sablon (`legacy-15`), amely a tagokat `offline` állapotban hozza létre (az `offline` tag nem szavaz és nem kap feladatot, amíg egy host be nem jelentkezik helyette).
-- A `broadcast`, `selectOptimalSwarm` és a föderációs szavazás hálózati/több telepítéses: P10.
+- A `broadcast`, az optimális rendszer kiválasztása és a föderációs szavazás hálózati/több telepítéses: P10.
 
 ### P11 – Anomália-sor és Exobiológus
 

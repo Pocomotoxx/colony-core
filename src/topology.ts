@@ -4,7 +4,7 @@ import type { ColonyMember } from './types.js';
  * Colony topology: who is connected to whom. Pure and deterministic: the same members always give the
  * same graph (no randomness, no timers, no event emitter).
  *
- * Replaces the legacy swarm topology manager, which rebalanced randomly on a timer.
+ * Replaces the legacy distributed-agent-system topology manager, which rebalanced randomly on a timer.
  */
 
 export type TopologyType = 'mesh' | 'star' | 'tree' | 'hybrid';
