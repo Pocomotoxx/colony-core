@@ -236,13 +236,16 @@ for (const item of queue.slice(0, planned)) {
   }
 
   started++;
+  const hostStarted = Date.now();
   const host = await runHost(variantDefs[variant], task.prompt, workspace);
+  const hostMs = Date.now() - hostStarted;
   const report = readReport(host.stdout);
   if (started === 1) console.error(`the host's JSON output has these fields: ${report.keys.length ? report.keys.join(', ') : '(none: it is not JSON)'}`);
   if (report.costUsd !== undefined) spent += report.costUsd;
 
   const args = [cli, 'eval', 'check', '--set', setPath, '--variant', variant, '--task', task.id, '--run', String(run), '--workspace', workspace, '--dir', project];
   if (report.costUsd !== undefined) args.push('--cost-usd', String(report.costUsd));
+  args.push('--duration-ms', String(hostMs)); // measured by this script around the host, not taken from the host's own output
   if (report.turns !== undefined) args.push('--turns', String(report.turns));
   if (report.inputTokens !== undefined) args.push('--input-tokens', String(report.inputTokens));
   if (report.outputTokens !== undefined) args.push('--output-tokens', String(report.outputTokens));

@@ -142,7 +142,8 @@ async function handle_eval(ctx: CommandContext): Promise<CommandResult> {
     }
     const result: EvalResult = {
       set: set.set, variant, task: task.id, run, passed: run_.passed, source: 'colony',
-      durationMs: run_.durationMs, at: Date.now(),
+      checkDurationMs: run_.durationMs, at: Date.now(),
+      ...(intOpt(values['duration-ms'], '--duration-ms', 0, 1e9) !== undefined ? { durationMs: intOpt(values['duration-ms'], '--duration-ms', 0, 1e9) } : {}),
       ...(numOpt(values['cost-usd'], '--cost-usd') !== undefined ? { costUsd: numOpt(values['cost-usd'], '--cost-usd') } : {}),
       ...(intOpt(values['input-tokens'], '--input-tokens', 0, 1e9) !== undefined ? { inputTokens: intOpt(values['input-tokens'], '--input-tokens', 0, 1e9) } : {}),
       ...(intOpt(values['output-tokens'], '--output-tokens', 0, 1e9) !== undefined ? { outputTokens: intOpt(values['output-tokens'], '--output-tokens', 0, 1e9) } : {}),

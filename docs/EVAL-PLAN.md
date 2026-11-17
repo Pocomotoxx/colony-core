@@ -1,6 +1,6 @@
 # Eval terv: az ügynökök pontosítása méréssel, költségkerettel
 
-Állapot: **részben megvalósítva** (tárolás, becslés, összehasonlítás, `eval` parancsok, a futtató szkript `scripts/eval-run.mjs` hamis hoszttal tesztelve); valódi ügynökkel még nem futott, mért költségadat nincs. Ami nincs igazolva, azt a "Nyitott kérdések" fejezet sorolja fel.
+Állapot: **részben megvalósítva.** A tárolás, a becslés, az összehasonlítás, az `eval` parancsok és a futtató szkript (`scripts/eval-run.mjs`) kész, hamis hoszttal tesztelve. Egyetlen **próbafutás** futott valódi ügynökkel (2026-11-17, 2 futás, 1 apró feladat): ennek mért adatai a "Mért adatok" fejezetben vannak. Összehasonlítás valódi feladatokon még nem készült. Ami nincs igazolva, azt a "Nyitott kérdések" fejezet sorolja fel.
 
 ## Cél
 
@@ -53,20 +53,24 @@ Megmondani, hogy egy ügynökprofil vagy vitamód változtatása **mérhetően**
 |---|---|
 | `variant`, `task`, `run` | melyik variáns, melyik feladat, hányadik ismétlés |
 | `passed` | az ellenőrző parancs eredménye |
-| `costUsd`, `inputTokens`, `outputTokens`, `durationMs` | amit a futtató a hosttól kap |
-| `turns` | a körök száma |
-| `debate` | váltások és hipotézisek (a `debate stats` adataiból) |
+| `source` | `colony`: a Colony maga futtatta az ellenőrzést (`eval check`). `reported`: egy futtató jelentése, a Colony nem tudja ellenőrizni; az összehasonlítás alapból kihagyja. |
+| `costUsd`, `inputTokens`, `outputTokens`, `turns` | amit a host kimenetéből a futtató kiolvas (ha a host jelenti) |
+| `durationMs` | a host futásának ideje, **a futtató szkript méri** a host körül, nem a host állítása |
+| `checkDurationMs` | a Colony saját ellenőrzésének ideje, nem a futás ideje |
+| `debate` | váltások és hipotézisek (a `debate stats` adataiból); **még nincs megvalósítva** |
 
-## Parancsok (tervezett)
+## Parancsok (megvalósítva)
 
 | Parancs | Mit csinál |
 |---|---|
-| `eval estimate --set S --variants A,B --repeats N` | Becsli a költséget és az időt, nem futtat semmit. |
-| `eval record ...` | A futtató ezzel rögzíti egy futás eredményét. |
-| `eval compare --set S --variants A,B` | Variánsonként sikerarány, szórás, költség, és hogy a különbség a zajnál nagyobb-e. |
-| `eval report` | Összegzés a jóváhagyáshoz. |
+| `eval validate --set <fájl>` | A feladatkészlet ellenőrzése, semmit nem futtat. |
+| `eval estimate --set <fájl> --variants A,B --repeats N` | Becsli a hátralévő futásokat és a költséget (megadott `--cost-per-run` vagy már mért átlag alapján), `--budget-usd` kerettel. Nem futtat semmit. |
+| `eval check ...` | A Colony maga futtatja a feladat ellenőrzését egy munkamappában, és rögzíti az eredményt (`colony` forrás). |
+| `eval record ...` | Egy futtató jelentését rögzíti, `reported` címkével. |
+| `eval compare --set <fájl> --variants A,B` | Fisher-féle egzakt próbával hasonlít össze; nyertest csak elég futásnál és a zajon kívüli különbségnél nevez. |
+| `eval report --set <fájl>` | Futásszám és sikerarány variánsonként. |
 
-A futtató szkript (`scripts/eval-run.mjs`): tiszta mappába másolja a feladatot, a hoston lefuttatja a variánst, az ellenőrző parancsot maga futtatja le, és `eval record`-dal rögzíti az eredményt.
+A futtató szkript (`scripts/eval-run.mjs`): futásonként friss munkamappát készít a feladat `setup` mappájából (a projekten belül, a `.colony`-n kívül), a variánsfájlban megadott host-parancsot indítja benne, méri a futás idejét, majd az `eval check`-et hívja a költség-, kör- és tokenadatokkal. `--yes` nélkül nem indít semmit, éles futáshoz `--budget-usd` kell, és ha a host nem jelent költséget, az első futás után leáll (kivéve `--max-runs` esetén).
 
 ## Költségterv
 
@@ -82,9 +86,9 @@ Az átlagos futásköltséget **nem találom ki**: a próbafutás méri meg.
 
 | Keret | Alapérték (javaslat) | Hatása |
 |---|---|---|
-| Futásonkénti körszám | 15 | a futás leáll, sikertelennek számít |
-| Futásonkénti idő | a feladat `timeoutSec` értéke | ugyanígy |
-| Futásonkénti költség | a próbafutás átlagának 3-szorosa | ugyanígy |
+| Futásonkénti körszám | 15 | a futás leáll, sikertelennek számít. **A telepített `claude` 2.1.322 súgójában nincs körszám-kapcsoló**, ezért ez jelenleg nem kényszeríthető. |
+| Futásonkénti idő | a host időkorlátja (`--host-timeout-sec`, alapérték 600) | a futtató leállítja a folyamatot, a futás sikertelen (tesztelve hamis hoszttal) |
+| Futásonkénti költség | a próbafutás átlagának 3-szorosa | a `claude --max-budget-usd` kapcsoló létezik a 2.1.322-ben, a próbafutás elfogadta, de a **túllépés viselkedését nem teszteltük** |
 | Egy eval teljes kerete | előre megadott USD összeg | elérésekor az egész leáll, a részeredmény megmarad |
 | Futtatás becslés nélkül | tiltott | az `eval estimate` kimenete jóváhagyás nélkül nem indít |
 
@@ -99,6 +103,22 @@ A táblázat csak azt mutatja, hogyan skálázódik a költség. A futáskölts�
 | 10 | 3 | 2 | 60 | 3 USD | 12 USD | 30 USD |
 | 20 | 3 | 2 | 120 | 6 USD | 24 USD | 60 USD |
 | 20 | 5 | 3 | 300 | 15 USD | 60 USD | 150 USD |
+
+### Mért adatok (próbafutás, 2026-11-17)
+
+Egy valódi ügynökkel futtatva: `claude` 2.1.322, `claude -p --output-format json`, `--permission-mode acceptEdits`, a `Bash` eszköz tiltva, `--max-budget-usd 0.5` futásonként, a `claude` alapértelmezett modellje. Egy feladat (`hello`: hozz létre egy `hello.txt` fájlt, amely pontosan az `ok` szót tartalmazza), két futás, a Colony saját ellenőrzésével.
+
+| | 1. futás | 2. futás |
+|---|---|---|
+| Eredmény | sikeres | sikeres |
+| Költség | 0,189 USD | 0,086 USD |
+| Körök | 3 | 3 |
+| Bemeneti token | 6 | 6 |
+| Kimeneti token | 288 | 251 |
+
+- **Igazolt:** a kimenet tartalmaz költséget (`total_cost_usd`), köröket (`num_turns`) és tokent (`usage`), és egy futás összesen 0,275 USD-ba került két futásra (átlag kb. 0,14 USD). A futtató a `claude`-t Windowson közvetlenül indítani tudta, az eredmény a `colony` forrással rögzült, az auditlánc ép.
+- **Korlátok:** két futás és a lehető legkisebb feladat. Ebből **átlagot és szórást nem lehet megbízhatóan számolni**, és egy valódi feladat tipikusan sokkal többe kerül. A két futás közti költségkülönbség okát nem vizsgáltuk (a bemeneti token kicsi, ezért gyanítható, hogy gyorsítótárból származik, de ez nem ellenőrzött).
+- **Következmény a költségre:** 0,14 USD/futás mellett a kb. 90 futás/variáns mintegy 12–13 USD variánsonként, de **csak egy ilyen apró feladatnál**. A valós költséget egy valódi, kis feladaton kell újra megmérni, mielőtt nagyobb összehasonlítást indítunk.
 
 ### Hány futás kell?
 
@@ -138,7 +158,14 @@ Ez azt jelenti, hogy egy komoly összehasonlítás költséges. Ésszerű sorren
 
 ## Nyitott kérdések (nem igazolt)
 
-- A `claude -p` kimenete tartalmaz-e költség- és tokenadatot, és van-e költségkeret-kapcsoló a használt verzióban. A próbafutás dönti el.
-- A Cowork alatt futtatható-e a futtató szkript, vagy csak a Claude Code CLI-ben.
-- Mennyi egy valós feladat átlagos költsége és szórása.
+**Eldőlt a próbafutással** (a "Mért adatok" fejezet szerint): a `claude -p --output-format json` kimenete tartalmaz költség- és tokenadatot, és a `--max-budget-usd` kapcsoló létezik a 2.1.322-ben.
+
+**Továbbra is nyitott:**
+- Mennyi egy valós feladat átlagos költsége és szórása (a próbafeladat apró volt, két futás kevés).
+- Mi a `--max-budget-usd` viselkedése, ha egy futás eléri: leáll-e tisztán, és mit ad vissza a kimenet.
+- Körszám-korlát: van-e a használt verzióban erre mód (a 2.1.322 súgójában nincs `--max-turns`).
+- Miért tér el a két futás költsége, és számít-e a gyorsítótár a mérésnél (azonos feladat ismétlése a gyorsítótár miatt olcsóbb lehet, ami torzítja az átlagot).
 - Hány feladat elég ahhoz, hogy a kis készlet is mondjon valamit.
+- A Cowork alatt futtatható-e a futtató szkript, vagy csak a Claude Code CLI-ben.
+- A `debate` mező (váltások, hipotézisek) rögzítése a futásoknál még nincs megvalósítva.
+- A `tune` és `holdout` szétválasztását a `split` mező csak rögzíti, a rendszer nem kényszeríti.

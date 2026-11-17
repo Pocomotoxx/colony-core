@@ -99,6 +99,8 @@ test('a real run records what the colony checked, with the cost the host reporte
   assert.equal(t1.costUsd, 0.3);
   assert.equal(t1.turns, 2);
   assert.equal(t1.inputTokens, 10);
+  assert.equal(typeof t1.durationMs, 'number', 'the runner measured the host duration');
+  assert.equal(typeof t1.checkDurationMs, 'number');
   assert.match(r.stderr, /the host's JSON output has these fields: result, total_cost_usd/);
   // a fresh workspace per run, outside .colony
   await fs.access(path.join(dir, 'eval-work', 'pilot', 'A', 't1', '1', 'out.txt'));
