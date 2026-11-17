@@ -1,6 +1,6 @@
 # Eval terv: az ügynökök pontosítása méréssel, költségkerettel
 
-Állapot: **részben megvalósítva.** A tárolás, a becslés, az összehasonlítás, az `eval` parancsok és a futtató szkript (`scripts/eval-run.mjs`) kész, hamis hoszttal tesztelve. Egyetlen **próbafutás** futott valódi ügynökkel (2026-11-17, 2 futás, 1 apró feladat): ennek mért adatai a "Mért adatok" fejezetben vannak. Összehasonlítás valódi feladatokon még nem készült. Ami nincs igazolva, azt a "Nyitott kérdések" fejezet sorolja fel.
+Állapot: **részben megvalósítva.** A tárolás, a becslés, az összehasonlítás, az `eval` parancsok és a futtató szkript (`scripts/eval-run.mjs`) kész (hamis hoszttal tesztelve, majd valódi ügynökkel kipróbálva). Két **próbafutás** futott valódi ügynökkel (2026-11-17: egy apró feladat 2 futással, egy kis hibajavítás 5 futással, együtt kb. 0,76 USD): a mért adatok a "Mért adatok" fejezetben vannak. Összehasonlítás még nem készült, mert a próbafeladatok túl könnyűek a variánsok megkülönböztetéséhez. Ami nincs igazolva, azt a "Nyitott kérdések" fejezet sorolja fel.
 
 ## Cél
 
@@ -104,7 +104,11 @@ A táblázat csak azt mutatja, hogyan skálázódik a költség. A futáskölts�
 | 20 | 3 | 2 | 120 | 6 USD | 24 USD | 60 USD |
 | 20 | 5 | 3 | 300 | 15 USD | 60 USD | 150 USD |
 
-### Mért adatok (próbafutás, 2026-11-17)
+### Mért adatok (két próbafutás, 2026-11-17)
+
+Mindkét próba ugyanazzal a beállítással futott: `claude` 2.1.322, `claude -p --output-format json`, `--permission-mode acceptEdits`, a `Bash` eszköz tiltva, `--max-budget-usd 0.5` futásonként, a `claude` alapértelmezett modellje, a Colony saját ellenőrzésével. A két próba együtt kb. **0,76 USD**.
+
+#### 1. próba: `hello` (a lehető legkisebb feladat)
 
 Egy valódi ügynökkel futtatva: `claude` 2.1.322, `claude -p --output-format json`, `--permission-mode acceptEdits`, a `Bash` eszköz tiltva, `--max-budget-usd 0.5` futásonként, a `claude` alapértelmezett modellje. Egy feladat (`hello`: hozz létre egy `hello.txt` fájlt, amely pontosan az `ok` szót tartalmazza), két futás, a Colony saját ellenőrzésével.
 
@@ -118,7 +122,29 @@ Egy valódi ügynökkel futtatva: `claude` 2.1.322, `claude -p --output-format j
 
 - **Igazolt:** a kimenet tartalmaz költséget (`total_cost_usd`), köröket (`num_turns`) és tokent (`usage`), és egy futás összesen 0,275 USD-ba került két futásra (átlag kb. 0,14 USD). A futtató a `claude`-t Windowson közvetlenül indítani tudta, az eredmény a `colony` forrással rögzült, az auditlánc ép.
 - **Korlátok:** két futás és a lehető legkisebb feladat. Ebből **átlagot és szórást nem lehet megbízhatóan számolni**, és egy valódi feladat tipikusan sokkal többe kerül. A két futás közti költségkülönbség okát nem vizsgáltuk (a bemeneti token kicsi, ezért gyanítható, hogy gyorsítótárból származik, de ez nem ellenőrzött).
-- **Következmény a költségre:** 0,14 USD/futás mellett a kb. 90 futás/variáns mintegy 12–13 USD variánsonként, de **csak egy ilyen apró feladatnál**. A valós költséget egy valódi, kis feladaton kell újra megmérni, mielőtt nagyobb összehasonlítást indítunk.
+#### 2. próba: `slug` (egy valódi, kis hibajavítás)
+
+Feladat: a `src/slug.js` hibás `slugify` függvényét kell kijavítani (kisbetű, ékezetek eltávolítása, a nem betű/szám karakterek sorozata egy kötőjel, nincs kötőjel a végeken, üres bemenetre üres szöveg), a látható tesztek (`test/slug.test.js`, 4 eset) alapján. Az ellenőrzés a munkamappán **kívül** van (`checks/slug-check.mjs`), 12 esetet futtat, így az ügynök nem írhatja át, és többet ellenőriz, mint a látható tesztek. Előzetesen igazolt: a hibás kódon bukik, egy referenciamegoldással átmegy. 5 futás, 1 variáns.
+
+| | 1. | 2. | 3. | 4. | 5. |
+|---|---|---|---|---|---|
+| Eredmény | sikeres | sikeres | sikeres | sikeres | sikeres |
+| Költség (USD) | 0,094 | 0,096 | 0,095 | 0,097 | 0,100 |
+| Host-idő (s) | 11,8 | 12,4 | 14,6 | 13,9 | 14,3 |
+| Kimeneti token | 696 | 835 | 742 | 903 | 924 |
+| Körök | 5 | 5 | 5 | 5 | 5 |
+
+Összesen 0,481 USD, átlag **0,096 USD/futás**, a szórás kb. 0,002 USD. A teszteket az ügynök nem módosította (az első futásnál ellenőrizve).
+
+- **Igazolt:** a host futásának ideje a futtató mérésében kerül a `durationMs` mezőbe (kb. 12–15 s), a Colony ellenőrzése külön (`checkDurationMs`, kb. 80 ms). A rejtett ellenőrzés a teszt-átírás kerülőútját kizárja.
+- **A feladat túl könnyű a méréshez.** Ha minden futás sikeres, a sikerarány (100%) nem tud különbséget mutatni két variáns között: 5 futásból a 95%-os intervallum alsó széle 0,57. Egy változtatás hatásának méréséhez olyan feladat kell, amelyen a sikerarány 30 és 70% között van.
+- **Nem igazolt:** hogy ez a költség általános (egy feladat, egy variáns, egy modell). A bemeneti token minden futásnál 6, ami gyorsítótárra utal: az azonos feladat ismétlése olcsóbb lehet, mint egy hideg indítás, ami torzítja az átlagot. Ezt nem vizsgáltuk.
+
+#### Következmény a költségre
+
+- Ezen az apró feladaton kb. 0,10 USD/futás mellett a kb. 90 futás/variáns mintegy **8–9 USD variánsonként**, két variánsnál 17 USD körül.
+- Ez **alsó becslés**: egy nehezebb feladat, amelyen a variánsok eltérnek, valószínűleg futásonként többe kerül. Nehezebb feladattal még nem mértünk.
+- A következő lépés ezért nem több futás ugyanezen a feladaton, hanem **nehezebb, a sikerarányt 30–70% közé hozó feladatok** megírása, és azon újra mérni a költséget.
 
 ### Hány futás kell?
 
@@ -161,7 +187,7 @@ Ez azt jelenti, hogy egy komoly összehasonlítás költséges. Ésszerű sorren
 **Eldőlt a próbafutással** (a "Mért adatok" fejezet szerint): a `claude -p --output-format json` kimenete tartalmaz költség- és tokenadatot, és a `--max-budget-usd` kapcsoló létezik a 2.1.322-ben.
 
 **Továbbra is nyitott:**
-- Mennyi egy valós feladat átlagos költsége és szórása (a próbafeladat apró volt, két futás kevés).
+- Mennyi egy **nehezebb** feladat költsége és szórása. Az eddigi két próbafeladat (apró, illetve kis hibajavítás) 0,09 és 0,14 USD közötti futásköltséget adott, de mindkettő túl könnyű volt a variánsok megkülönböztetéséhez.
 - Mi a `--max-budget-usd` viselkedése, ha egy futás eléri: leáll-e tisztán, és mit ad vissza a kimenet.
 - Körszám-korlát: van-e a használt verzióban erre mód (a 2.1.322 súgójában nincs `--max-turns`).
 - Miért tér el a két futás költsége, és számít-e a gyorsítótár a mérésnél (azonos feladat ismétlése a gyorsítótár miatt olcsóbb lehet, ami torzítja az átlagot).
