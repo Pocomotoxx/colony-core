@@ -94,3 +94,7 @@ Az [EVAL-PLAN.md](EVAL-PLAN.md) szerint: radarral és anélkül, ugyanazokon a f
 - Mennyire megbízható a `scan` egy valós, külső szövegen: erre külön tesztkészlet kell.
 - Valóban javítja-e a radar a munkát a fejlesztő saját projektjein.
 - Mi legyen a jelekkel akkor, ha a host nem tudja futtatni a letöltő szkriptet (például a Coworkben).
+
+## Szolgáltató
+
+A kivonatolás és a védelem külső szolgáltatóval (Groq) fut, csak nyilvános szöveggel, zárt hiba mellett: [PROVIDER-PLAN.md](PROVIDER-PLAN.md).

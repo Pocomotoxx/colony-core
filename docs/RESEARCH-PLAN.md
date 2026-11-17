@@ -108,3 +108,7 @@ Maga a folyamat is mérhető: a cikkekből érkező hipotézisek hányada igazol
 - Mennyi egy kivonat-összefoglalás és egy hipotézis-tervezet tokenköltsége.
 - Hogy a cikkekből jövő hipotézisek valóban javítanak-e a rendszeren: ezt csak a mérés mutatja meg.
 - Fut-e a letöltő szkript a Cowork alatt, vagy csak a Claude Code CLI-ben.
+
+## Szolgáltató
+
+A kivonatolás és a védelem külső szolgáltatóval (Groq) fut, csak nyilvános szöveggel, zárt hiba mellett: [PROVIDER-PLAN.md](PROVIDER-PLAN.md).
