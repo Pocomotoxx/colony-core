@@ -293,7 +293,7 @@ async function handle_score(ctx: CommandContext): Promise<CommandResult> {
   return reply({
     task: summarizeTask(task),
     ranking: hub.rankFor(task),
-    note: 'The weights and component formulas are heuristic (carried over from the legacy Queen), not fitted to data. Performance is the smoothed share of finished tasks the host reported as completed; it is not a verified quality measure.',
+    note: 'The weights and component formulas are heuristic (carried over from the legacy central coordinator), not fitted to data. Performance is the smoothed share of finished tasks the host reported as completed; it is not a verified quality measure.',
   });
 }
 

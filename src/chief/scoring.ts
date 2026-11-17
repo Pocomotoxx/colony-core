@@ -1,7 +1,7 @@
 /**
  * Member scoring for a task: who should take it, and who is next in line.
  *
- * Rewritten from the Queen's agent scoring (legacy `queen-coordinator`). The weights are the
+ * Rewritten from the legacy central coordinator's agent scoring. The weights are the
  * legacy ones and are HEURISTIC: hand-picked constants, not fitted to anything. They are the
  * default and can be overridden.
  *

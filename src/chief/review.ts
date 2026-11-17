@@ -2,7 +2,7 @@
  * The review loop: a reviewer approves or rejects work in progress, a rejection sends it back with
  * the reason, and a limit on rejections hands the decision to the user.
  *
- * This is the "Critic" of the agent-system design. The legacy code had no such loop; the Queen
+ * This is the "Critic" of the agent-system design. The legacy code had no such loop; the central coordinator
  * only recorded outcomes after the fact.
  *
  * Limits, said plainly:

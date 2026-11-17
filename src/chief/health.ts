@@ -1,7 +1,7 @@
 /**
  * Colony health report: groups, bottlenecks, alerts, recommendations.
  *
- * Rewritten from the Queen's swarm health monitor (legacy `queen-coordinator`). A pure function of
+ * Rewritten from the legacy central coordinator's health monitor. A pure function of
  * the ledger and a clock value, so the same state at the same time always gives the same report.
  *
  * Differences from the legacy code:
