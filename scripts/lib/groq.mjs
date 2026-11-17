@@ -189,3 +189,20 @@ export function summaryMessages(text, lang) {
     { role: 'user', content: `<document>\n${text}\n</document>` },
   ];
 }
+
+// ---- small fixes found by the first real call
+
+/** The tokens to book for a call. A reported 0 for a non-empty prompt is not believed: the estimate is used. */
+export function tokensUsed(reported, estimate) {
+  return typeof reported === 'number' && reported > 0 ? reported : estimate;
+}
+
+/**
+ * Models sometimes write non-breaking hyphens and spaces (U+2010, U+2011, U+00A0, U+202F). They look like plain
+ * ones but break searching and comparing, so a summary is normalised to plain characters.
+ */
+export function normalizeSummary(text) {
+  const hyphens = new RegExp(`[${String.fromCharCode(0x2010, 0x2011)}]`, 'g');
+  const spaces = new RegExp(`[${String.fromCharCode(0x00a0, 0x202f)}]`, 'g');
+  return text.replace(hyphens, '-').replace(spaces, ' ');
+}

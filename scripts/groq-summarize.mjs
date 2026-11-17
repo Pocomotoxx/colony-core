@@ -16,7 +16,7 @@ import { existsSync, readFileSync, statSync } from 'node:fs';
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { chatWithRetry, chunkText, DEFAULT_LIMITS, estimateTokens, parseGuardScore, reserve, resolveApiBase, summaryMessages, Usage } from './lib/groq.mjs';
+import { chatWithRetry, chunkText, DEFAULT_LIMITS, estimateTokens, normalizeSummary, parseGuardScore, reserve, resolveApiBase, summaryMessages, tokensUsed, Usage } from './lib/groq.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -200,7 +200,7 @@ async function guardItem(p) {
       return { deferred: room.reason };
     }
     const r = await chatWithRetry({ base, key, body: { model: limits.guard.model, messages: [{ role: 'user', content: chunk }] } }, retry);
-    usage.record('guard', r.ok && r.tokens !== null ? r.tokens : need);
+    usage.record('guard', r.ok ? tokensUsed(r.tokens, need) : need);
     if (!r.ok) return { failedClosed: `the guard could not be reached (${r.error})` };
     if (opts['debug-guard']) raw.push(r.content.slice(0, 80));
     const score = parseGuardScore(r.content);
@@ -249,12 +249,12 @@ for (const p of prepared) {
     continue;
   }
   const r = await chatWithRetry({ base, key, body: { model: limits.summary.model, messages, temperature: 0.2, max_completion_tokens: maxOut } }, retry);
-  usage.record('summary', r.ok && r.tokens !== null ? r.tokens : need);
+  usage.record('summary', r.ok ? tokensUsed(r.tokens, need) : need);
   if (!r.ok) {
     results.push({ ...out, status: r.status === 429 ? 'deferred' : 'failed', reason: `the summary call failed (${r.error})` });
     continue;
   }
-  const summary = r.content.trim();
+  const summary = normalizeSummary(r.content).trim();
   if (!summary) {
     results.push({ ...out, status: 'failed', reason: `empty answer (finish reason: ${r.finishReason ?? 'unknown'}); the reply may have used its tokens before writing` });
     continue;
