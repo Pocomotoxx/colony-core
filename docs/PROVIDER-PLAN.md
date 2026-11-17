@@ -167,7 +167,7 @@ Négy **kitalált** szöveg (kiadási jegyzet, kutatási kivonat jellegű szöve
 
 A radar 25 valódi kiadási jegyzete (lásd [RADAR-PLAN.md](RADAR-PLAN.md)) a teljes láncon: helyi `scan`, Guard, kivonat.
 
-- **24 elem `ok`, 1 karanténba tett.** A karanténba tett elem a Guard hívásánál `HTTP 400`-at kapott (zárt hiba), a szövege hétköznapi, a darabjai nem hosszabbak, mint az átment elemeké, tehát a hossz nem látszik az oknak. **Az ok ismeretlen**, mert az adapter nem írta ki a Groq hibaüzenetét. Ezt javítottuk: a jelentés mostantól a hibaüzenet első 200 karakterét mutatja (a kulcs és a vezérlőkarakterek nélkül). Az elem egyedül újrafuttatva kiderül, hogy tartós vagy időszakos hiba.
+- **24 elem `ok`, 1 karanténba tett, és ennek az oka kiderült.** A karanténba tett elem a Guard hívásánál `HTTP 400`-at kapott. A hibaüzenet kiírása után újrafuttatva a Groq válasza: "Please reduce the length of the messages or completion." Ez **tartós** hiba: az elem első 1500 karakteres darabja meghaladja a Guard modell (a kis Prompt Guard) bemeneti korlátját, mert a commit-azonosítókkal teli szöveg sok tokenre bomlik, a 3 karakter/token becslés pedig alulbecsül. A rögzített 1500 karakteres darabméret tehát nem mindig elég. A javítás: hosszúsági hibánál a darabot felezzük és újra próbáljuk (legalább 300 karakterig, legfeljebb 6 szintig), a futás hátralévő részében a kisebb méretből indulunk, a jelentés `splits` számmal jelzi; ha így sem megy, az elem zárt hibával karanténba kerül. A felezett darabokban egy támadás nem bújhat el (a darab pontszáma dönt), de a határon átnyúló mondatot két darab vág szét, ez ismert korlát.
 - **Guard pontszámok a 24 elemen:** 0,0004 és 0,0213 között, 0 téves jelzés 0,5-nél, 4 / 24 (17%) 0,01-nél. A küszöb marad 0,5.
 - **Kivonatok pontossága:** tíz elem konkrét állításait (verziók, kiadási nevek, függőségek, jelzők) a forrásszöveggel összevetve mind alátámasztottnak találtam, kitalált számot nem. Korlát: tíz elem, és csak a számok és nevek, a tartalmi sűrítés minőségét nem mértem. A kivonatok pontosak, de általánosak ("adds many bug fixes").
 - **Token:** a 24 kivonat 25 147 tokent vitt el, kb. **1050 token/elem** a hosszú jegyzeteknél (a rövid mintáknál kb. 450). A napi 200 ezres keretből ez kb. 190 hosszú elem naponta.
@@ -196,7 +196,7 @@ A radar 25 valódi kiadási jegyzete (lásd [RADAR-PLAN.md](RADAR-PLAN.md)) a te
 
 - A Groq és a modellek licencének és felhasználási feltételeinek tartalma (adatkezelés, ingyenes szint korlátai).
 - Hogyan számolja a Groq a tokent (bemenet és kimenet együtt), és mennyi "gondolkodó" token keletkezik.
-- A Prompt Guard bemeneti hossza: tudomásom szerint rövid a kontextusa, ezért a szöveget darabolni kell, ez ellenőrizendő.
+- A Prompt Guard bemeneti korlátja: a valódi futás igazolta, hogy van (egy 1500 karakteres darab egy hexadecimális azonosítókban gazdag szövegnél túl hosszú volt). A pontos tokenkorlátot nem ismerjük, ezért a darabolás adaptív (felezés hibánál), nem rögzített értékre épül.
 - A kivonatok magyar nyelvi minősége és tévedési aránya.
 - Mennyire áll ellen a GPT OSS 120B a bemenetbe rejtett utasításoknak: egy rejtett kérést nem követett, ez egy eset, nem arány.
 - A Prompt Guard fogási aránya valódi, külső mintákon és a szűrőlánc téves jelzési aránya valódi, ártalmatlan szövegen: kitalált mintákon a Guard 0,5-ös küszöbnél az 1. készleten 43%, a 2.-on 19%, a beágyazott támadásokat nem fogja; a küszöb marad 0,5.
