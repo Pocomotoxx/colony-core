@@ -1,6 +1,6 @@
 # Eval terv: az ügynökök pontosítása méréssel, költségkerettel
 
-Állapot: **terv, nincs megvalósítva.** Ami nincs igazolva, azt a "Nyitott kérdések" fejezet sorolja fel.
+Állapot: **részben megvalósítva** (tárolás, becslés, összehasonlítás, `eval` parancsok); a futtató szkript és a mért költségadat még nincs. Ami nincs igazolva, azt a "Nyitott kérdések" fejezet sorolja fel.
 
 ## Cél
 
