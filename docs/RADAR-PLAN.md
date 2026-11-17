@@ -1,6 +1,6 @@
 # Radar terv: külső jelek a fejlesztő környezetéről
 
-Állapot: **terv, nincs megvalósítva.** Ami nincs igazolva, azt a "Nyitott kérdések" fejezet sorolja fel.
+Állapot: **az első szelet megírva és hamis feed-szerverrel tesztelve (`scripts/radar-fetch.mjs`), valódi hálózati futás még nem történt.** A `radar import`, a forráslista levezetése és a briefing-integráció még terv. Ami nincs igazolva, azt a "Nyitott kérdések" fejezet sorolja fel.
 
 ## Cél
 
@@ -79,6 +79,23 @@ Minden `signals` bejegyzés mezői: `source` (URL), `fetchedAt`, `expiresAt`, `p
 ## Mérés
 
 Az [EVAL-PLAN.md](EVAL-PLAN.md) szerint: radarral és anélkül, ugyanazokon a feladatokon és projekteken. Lehetséges mutatók: mennyi idő alatt derül ki egy elavult vagy sérülékeny függőség, hány javítandó hiba marad a feladat végén. Ha a radar haszna nem mérhető, nem marad be alapértelmezettnek.
+
+## Megvalósítás: az első szelet (`scripts/radar-fetch.mjs`)
+
+Egyetlen forrás: a megadott GitHub-tárolók kiadási jegyzetei (`https://github.com/<tulajdonos>/<tároló>/releases.atom`). Külön szkript a magon kívül (a mag nem használ hálózatot). A célja kettős: a radar első adatforrása, és **valódi, ártalmatlan szöveg** a szűrőlánc téves jelzési arányának méréséhez (a kitalált mintákon ez ismeretlen maradt).
+
+```
+node scripts/radar-fetch.mjs --dir <projekt> --repos tulajdonos/tároló,... --dry-run
+node scripts/radar-fetch.mjs --dir <projekt> --repos tulajdonos/tároló,... --yes
+```
+
+- **Csak a megnevezett tárolók feedjei:** más gazdagép nincs, átirányítást nem követ, nincs bejelentkezés és süti, az `User-Agent` általános (`colony-radar/1.0`), feedenként 1 MB és 20 másodperc a korlát, legfeljebb 20 tároló egy futásban. A gazdagép csak a GitHub vagy egy loopback cím lehet (utóbbi a teszteknek). `--yes` nélkül nem hív hálózatot, a `--dry-run` csak az URL-eket listázza.
+- **Szöveggé alakítás:** a blokk-címkék sort törnek, a sorközi címkék eltűnnek (így a `ign<b>ore</b>` is `ignore`-ként olvasódik), a script- és style-blokkok kimaradnak, az entitások feloldódnak.
+- **Kétszeri szűrés:** a szöveget úgy is átvizsgálja, ahogy megérkezett (HTML-megjegyzésekkel és rejtett részekkel), és sima szövegként is, a HTML-megjegyzések tartalmát külön. A `hostile` elem **karanténba** kerül (a jelentésben szerepel, a fájlba nem), a személyes adat kitakarva kerül a fájlba.
+- **Kimenet:** `<projekt>/.colony/radar/items.json` (`id`, `source`, `text`), ezt olvassa a `scripts/groq-summarize.mjs`. A már látott elemeket (`.colony/radar/seen.json`) kihagyja, `--all` nélkül.
+- **Jelentés:** feedenként állapot, összesítés (hány tiszta, gyanús, hostile, HTML-megjegyzéssel, kitakart), és a karanténba tett elemek forrása, oka és egy rövid, **nem megbízható** idézete. Release-jegyzet hétköznapi szöveg, ezért minden karanténba tett elem megnézendő: lehet téves jelzés.
+- **Tesztek:** 9 teszt hamis feed-szerverrel (valódi hálózat nélkül): URL-ek és `--yes`, szöveggé alakítás és forráslink, hostile és megjegyzésbe rejtett utasítás karanténba, gyanús elem megjelölése és kitakarás, látott elem kihagyása, hibás feed és átirányítás, 1 MB-nál nagyobb feed, tiltott gazdagép és hibás tárolónevek, a kimenet olvashatósága a Groq-kivonatolónak.
+- **Nincs benne (még):** a `radar import`, `list` és `forget` parancs a magban, a forráslista levezetése a `package.json` fájlból, lejárat, és a briefing-integráció. **Valódi hálózati futás még nem történt.**
 
 ## Fázisok
 
