@@ -242,3 +242,14 @@ test('the items file can be read by the Groq summariser (ids and fields match it
   assert.equal(plan.items, 3);
   assert.equal(plan.sendable, 3);
 });
+
+test('version-like numbers stay in the text, other personal data is still redacted, and the items say so', async () => {
+  const dir = await project();
+  routes = { '/o/r/releases.atom': () => ({ body: feed(entry('v1', 'v1', '<p>Patch V8 to 13.6.233.17. Contact maintainer@example.com for questions.</p>')) }) };
+  const out = JSON.parse((await run(dir, ['--repos', 'o/r', '--yes'])).stdout);
+  const list = (await items(dir)) as Array<{ text: string; redactSkip?: string[] }>;
+  assert.match(list[0].text, /V8 to 13\.6\.233\.17\./);
+  assert.ok(!list[0].text.includes('maintainer@example.com'));
+  assert.deepEqual(list[0].redactSkip, ['ip_address']);
+  assert.equal(out.totals.redacted, 1);
+});

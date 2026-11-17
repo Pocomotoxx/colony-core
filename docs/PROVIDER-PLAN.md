@@ -163,6 +163,16 @@ Négy **kitalált** szöveg (kiadási jegyzet, kutatási kivonat jellegű szöve
 - **Szerkezeti korlát:** az injekciót idéző kutatási jegyzetet (`t10`) mindkét szűrő blokkolja (Guard 0,887, helyi `hostile`): egy idézet és egy támadás szövegben nem megkülönböztethető. A kár egy kihagyott elem.
 - **A téves jelzés valódi szövegen ismeretlen.** Mindkét készlet kitalált, az ártalmatlan szövegeket is mi írtuk. Hogy a szűrőlánc hány valódi, ártalmatlan elemet tenne karanténba, a radar első szeletével valódi szövegen mérhető ([RADAR-PLAN.md](RADAR-PLAN.md)).
 
+## Mért adatok: a Guard és a kivonatoló valódi szövegen (2026-11-17)
+
+A radar 25 valódi kiadási jegyzete (lásd [RADAR-PLAN.md](RADAR-PLAN.md)) a teljes láncon: helyi `scan`, Guard, kivonat.
+
+- **24 elem `ok`, 1 karanténba tett.** A karanténba tett elem a Guard hívásánál `HTTP 400`-at kapott (zárt hiba), a szövege hétköznapi, a darabjai nem hosszabbak, mint az átment elemeké, tehát a hossz nem látszik az oknak. **Az ok ismeretlen**, mert az adapter nem írta ki a Groq hibaüzenetét. Ezt javítottuk: a jelentés mostantól a hibaüzenet első 200 karakterét mutatja (a kulcs és a vezérlőkarakterek nélkül). Az elem egyedül újrafuttatva kiderül, hogy tartós vagy időszakos hiba.
+- **Guard pontszámok a 24 elemen:** 0,0004 és 0,0213 között, 0 téves jelzés 0,5-nél, 4 / 24 (17%) 0,01-nél. A küszöb marad 0,5.
+- **Kivonatok pontossága:** tíz elem konkrét állításait (verziók, kiadási nevek, függőségek, jelzők) a forrásszöveggel összevetve mind alátámasztottnak találtam, kitalált számot nem. Korlát: tíz elem, és csak a számok és nevek, a tartalmi sűrítés minőségét nem mértem. A kivonatok pontosak, de általánosak ("adds many bug fixes").
+- **Token:** a 24 kivonat 25 147 tokent vitt el, kb. **1050 token/elem** a hosszú jegyzeteknél (a rövid mintáknál kb. 450). A napi 200 ezres keretből ez kb. 190 hosszú elem naponta.
+- **Hiba, javítva:** a verziószámok kitakarása (lásd a radar tervét).
+
 ## Pilot
 
 1. 20–30 abstract kivonatolása a GPT OSS 120B-vel.

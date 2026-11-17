@@ -112,6 +112,32 @@ export async function reserve(usage, limits, role, tokens, { maxWaitMs, sleep })
 
 // ---- the API call
 
+/**
+ * The reason an error answer gives (the API's own error message), cut to 200 characters, with control characters and the
+ * key removed. It is text from outside: shown as data and never acted on. Empty when the answer has no readable message.
+ */
+export async function errorDetail(res, key) {
+  let text = '';
+  try {
+    text = (await res.text()).slice(0, 4000);
+  } catch {
+    return '';
+  }
+  let message = '';
+  try {
+    const parsed = JSON.parse(text);
+    message = typeof parsed?.error?.message === 'string' ? parsed.error.message : typeof parsed?.message === 'string' ? parsed.message : '';
+  } catch {
+    message = text.trim().startsWith('<') ? '' : text;
+  }
+  let clean = message;
+  if (key) clean = clean.split(key).join('[key]');
+  // whitespace (a line break, a tab) becomes one space first; the other control characters are then dropped
+  clean = clean.replace(/\s+/g, ' ');
+  clean = Array.from(clean).filter((ch) => ch.charCodeAt(0) >= 32 && ch.charCodeAt(0) !== 127).join('').trim();
+  return clean.length > 200 ? `${clean.slice(0, 200)}...` : clean;
+}
+
 /** One chat completion. Returns { ok, content, tokens, finishReason } or { ok: false, error, retryAfterMs }. */
 export async function chat({ base, key, body, fetchImpl = fetch, timeoutMs = 60_000 }) {
   const controller = new AbortController();
@@ -125,7 +151,8 @@ export async function chat({ base, key, body, fetchImpl = fetch, timeoutMs = 60_
     });
     if (!res.ok) {
       const retry = Number(res.headers.get('retry-after'));
-      return { ok: false, error: `HTTP ${res.status}`, status: res.status, retryAfterMs: Number.isFinite(retry) && retry >= 0 ? retry * 1000 : null };
+      const detail = await errorDetail(res, key);
+      return { ok: false, error: detail ? `HTTP ${res.status}: ${detail}` : `HTTP ${res.status}`, status: res.status, retryAfterMs: Number.isFinite(retry) && retry >= 0 ? retry * 1000 : null };
     }
     const json = await res.json();
     const choice = json?.choices?.[0];

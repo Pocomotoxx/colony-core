@@ -113,6 +113,8 @@ if (items.length > 200) fail('at most 200 items per run');
     if (seen.has(it.id)) fail(`items[${i}]: duplicate id '${it.id}'`);
     seen.add(it.id);
     if (typeof it.text !== 'string' || !it.text.trim() || it.text.length > 200_000) fail(`items[${i}]: "text" must be 1-200000 characters`);
+    // The only redaction an item may ask to skip is the IPv4 rule (version numbers look like addresses). Never a secret.
+    if (it.redactSkip !== undefined && !(Array.isArray(it.redactSkip) && it.redactSkip.every((k) => k === 'ip_address'))) fail(`items[${i}]: "redactSkip" may only hold "ip_address"`);
   });
 }
 
@@ -139,11 +141,12 @@ const prepared = items.map((it) => {
   if (scan.verdict === 'hostile') {
     return { id: it.id, status: 'quarantined', reason: `local scan: hostile (${scan.threats.map((t) => t.type).join(', ')})`, sent: false };
   }
-  const redacted = redactText(it.text);
+  const skip = it.redactSkip ?? [];
+  const redacted = redactText(it.text, { skip });
   const truncated = redacted.text.length > maxChars;
   const text = truncated ? redacted.text.slice(0, maxChars) : redacted.text;
   return {
-    id: it.id, text, truncated, redacted: redacted.changed ? redacted.findings.map((f) => f.kind) : [],
+    id: it.id, text, truncated, redacted: redacted.changed ? redacted.findings.map((f) => f.kind) : [], skip,
     suspicious: scan.verdict === 'suspicious',
   };
 });
@@ -264,7 +267,7 @@ for (const p of prepared) {
     results.push({ ...out, status: 'quarantined', reason: `the summary looks hostile (${outScan.threats.map((t) => t.type).join(', ')})` });
     continue;
   }
-  const cleaned = redactText(summary);
+  const cleaned = redactText(summary, { skip: p.skip });
   results.push({ ...out, status: 'ok', summary: cleaned.text, ...(outScan.verdict !== 'clean' ? { summaryScan: outScan.verdict } : {}) });
 }
 
