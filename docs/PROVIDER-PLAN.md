@@ -1,6 +1,6 @@
 # Szolgáltató terv: Groq a külső szövegek feldolgozására
 
-Állapot: **terv, nincs megvalósítva.** A keretek a fejlesztő által a Groq konzolról bemásolt értékek, **nem ellenőriztem őket**. Ami nincs igazolva, azt a "Nyitott kérdések" fejezet sorolja fel.
+Állapot: **az adapter megírva és hamis szerverrel tesztelve, valódi Groq-hívás még nem történt.** A keretek a fejlesztő által a Groq konzolról bemásolt értékek, **nem ellenőriztem őket**. Ami nincs igazolva, azt a "Nyitott kérdések" fejezet sorolja fel.
 
 ## Szabály
 
@@ -75,6 +75,27 @@ A Prompt Guard **valószínűségi jelzés**, nem védelem. Egy osztályozó té
 ## Kulcsok
 
 Az API-kulcsot a fejlesztő állítja be **környezeti változóként**. Nem kerül a repóba, a naplóba vagy a Colony állapotába, és nem kell elküldeni a modellnek. A szkript a kulcsot soha nem írja ki.
+
+## Megvalósítás (`scripts/groq-summarize.mjs`, `scripts/lib/groq.mjs`)
+
+Külön szkript a magon kívül (a mag nem használ hálózatot). Bemenete egy JSON lista (`{ "id", "source", "text" }`), kimenete egy JSON az elemenkénti eredménnyel.
+
+```
+node scripts/groq-summarize.mjs --dir <projekt> --in <elemek.json> --dry-run
+node scripts/groq-summarize.mjs --dir <projekt> --in <elemek.json> --yes
+```
+
+Elemenként: helyi `scan` (a hostile szöveg el sem megy) → kitakarás → a Groq Prompt Guard modellje (darabolva, zárt hibával) → kivonat → a kivonat helyi `scan` és kitakarás lépése.
+
+- **`--yes` nélkül semmi nem megy ki**, és a `--yes` azt jelenti, hogy te vállalod: minden szöveg nyilvános (feed-elem, abstract, kiadási jegyzet), soha projektfájl. A `--dry-run` a tervet adja (tételek, becsült tokenek, belefér-e a mai keretbe), kulcs és hálózat nélkül.
+- **A kulcs** a `GROQ_API_KEY` környezeti változóból jön, csak az `Authorization` fejlécben megy ki, kimenetbe, hibaüzenetbe és fájlba nem kerül. Az API-cím csak a Groq hosztja vagy egy loopback cím lehet (a teszteknél egy hamis szerver); bármi más esetén a szkript nem indul.
+- **Keretek:** percenkénti és napi kérés- és tokenszám, a `.colony/provider/groq-usage.json` fájlban számolva. A percenkénti keret rövid várakozással (`--max-wait-sec`) megoldódik, különben az elem `deferred` lesz; a napi keret elfogyása esetén a maradék `deferred`. A 429-es választ korlátozott számú újrapróbálkozással kezeli.
+- **Zárt hiba:** a guard hibája, olvashatatlan válasza vagy a küszöböt (`--guard-threshold`, alapérték 0,5, **kalibrálatlan**) elérő pontszám esetén az elem `quarantined`, és kivonat nem készül.
+- **Hosszú szöveg:** a szöveg `--max-chars` hosszra csonkul (jelölve), és a guard `--guard-chunk-chars` méretű darabokban nézi (legfeljebb 8 darab). A darabméret **feltevés**, mert a modell bemeneti hosszát nem ellenőriztem.
+- **Tesztek:** 10 teszt egy helyi hamis Groq-szerverrel (valódi hívás és valódi kulcs nélkül): kulcs és `--yes` nélkül nincs hívás, a kulcs nem kerül a kimenetbe, a guard hibája zárt, a hostile szöveg és a kitakart cím nem hagyja el a gépet, a keretek és a 429 kezelése, a hosszú szöveg darabolása.
+- **Összeomlási hiba, javítva:** Windowson a `process.exit()` hívás a hálózati kapcsolatok bezárása közben összeomlasztotta a Node-ot (ez a tesztben időnként jelentkezett). A szkript a végén `process.exitCode`-ot állít.
+
+**Nem igazolt, az első valódi hívás mutatja meg:** milyen formátumban adja vissza a Prompt Guard az eredményt (a szkript szám vagy JSON pontszámot fogad el, mást zárt hibaként kezel), a `max_completion_tokens` elfogadása a modellnél, hogy a GPT OSS belső gondolatmenete mennyi tokent visz el (üres válasz esetén a szkript a befejezés okát kiírja), és a tényleges tokenfogyasztás.
 
 ## Pilot
 
