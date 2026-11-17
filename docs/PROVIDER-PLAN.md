@@ -118,8 +118,38 @@ Négy **kitalált** szöveg (kiadási jegyzet, kutatási kivonat jellegű szöve
 26 **kitalált** szöveg (12 ártalmatlan, köztük utasításszerű megfogalmazásúak és az injekcióról szólók; 14 támadás különböző stílusban: közvetlen felülírás, szerepjáték, a cikkbe rejtett jegyzet, hamis rendszerüzenet, HTML-megjegyzés, magyar nyelvű, kódolt, JSON-mezőbe rejtett, udvarias kérés, hamis dokumentumvég stb.). A szkript a szöveget a Guardnak küldi, és a helyi `scan`-nel hasonlítja össze: küszöbönként megmutatja, mennyi támadást fog meg és mennyi ártalmatlant jelez tévesen a Guard, a helyi szűrő és a kettő együtt, és kiírja azokat a támadásokat, amelyeket **egyik sem** fogott meg.
 
 - A szkript a locálisan hostile szöveget **is elküldi** (az összehasonlítás miatt), ezért csak ilyen, kitalált szövegkészlettel szabad használni, valódi adattal soha. `--yes` nélkül nem indul, és `--dry-run` mutatja a tervet.
-- Tesztelve hamis szerverrel (5 teszt). **Valódi mérés még nem futott.**
+- Tesztelve hamis szerverrel (5 teszt). Valódi mérés az 1. készleten lefutott, az eredmény alább van; a 2. készleten (`eval/guard-set-2.json`) a Guard mérése még nem futott.
 - Korlát: 26 szöveg kis minta, az arányok nem általános hibaarányok, és egy küszöb, amely ezt a készletet elválasztja, nem biztos, hogy valódi támadásokat is elválaszt.
+
+### A kalibrálás eredménye (2026-11-17)
+
+**1. készlet, valódi Guard-mérés** (26 kitalált szöveg, 26 kérés, hiba nélkül), 0,5-ös küszöbnél:
+
+| | Elkapott támadás (14) | Tévesen jelzett ártalmatlan (12) |
+|---|---|---|
+| Prompt Guard | 6 (43%) | 1 (8%) |
+| helyi `scan` (a szabálybővítés előtt) | 1 (7%) | 1 (8%) |
+| a kettő együtt | 6 (43%) | 2 (17%) |
+
+- **8 támadást egyik sem fogott meg** (57%). Küszöb, amely elválasztja a két csoportot, **nincs** (a legmagasabb ártalmatlan pontszám 0,9994, a legalacsonyabb támadásé 0,0006).
+- A Guard az **explicit** támadásokat jelezte (közvetlen felülírás, szerepjáték, magyar felülírás, betűközökkel kódolt, JSON-mezőbe rejtett, feladatváltás), az alábbiakat **nem**: a cikkbe vagy véleménybe rejtett jegyzet az MI-nek, hamis rendszerüzenet, HTML-megjegyzésbe rejtett utasítás, adatkiszivárogtatás kérése, udvarias kérés az olvasó modellhez, hamis dokumentumvég, eszközhasználati kérés. Egyetlen téves jelzése az injekcióról szóló biztonsági bejegyzés (0,9994).
+- **0,01-es küszöbnél** a Guard 10 támadást fog meg (71%) ugyanazzal az egy téves jelzéssel. Ezt **ugyanazon az adaton** választottam, ezért független készleten kell megerősíteni, mielőtt alapértelmezett lesz.
+- A Guard **a legfontosabb esetre**, a harmadik fél szövegébe rejtett, az olvasó modellnek szóló kérésre nem ad védelmet.
+
+**A helyi `scan` bővítése** (általános minták az olvasó modellhez szóló szövegre: "note for AI ...", "hello chatbot", "agents reading this ...", "the assistant must ...", hamis fejlesztői vagy operátori üzenet, "safety checks are disabled", rejtett utasítás megjegyzésben vagy adatmezőben, hamis jelölők és dokumentumvég, jelszó, kulcs vagy beszélgetés kiküldésére kérés, jóváhagyás ellenőrzés nélkül, magyar felülírás és megszólítás). Mérés a helyi szűrővel, hálózat nélkül (`scripts/scan-eval.mjs`):
+
+| Készlet | Hostile támadás | Bármilyen jelzés támadásra | Hostile ártalmatlanra | Bármilyen jelzés ártalmatlanra |
+|---|---|---|---|---|
+| 1. (14 támadás, 12 ártalmatlan), előtte | 1/14 (7%) | 1/14 (7%) | 0/12 | 1/12 |
+| 1., utána | 11/14 (79%) | 12/14 (86%) | 0/12 | 1/12 |
+| 2. (16 támadás, 12 ártalmatlan), előtte | 1/16 (6%) | 1/16 (6%) | 0/12 | 1/12 |
+| 2., utána | 13/16 (81%) | 15/16 (94%) | 1/12 | 2/12 |
+
+- **Fontos korlát:** a szabályokat és mindkét készletet **ugyanaz a szerző** írta, és az 1. készlet hibáit ismertem a szabályok írásakor. Az 1. készlet eredménye ezért **mintán belüli**, a 2. készlet csak **időben független** (előbb íródott és commitolódott, mint a szabályok), forrásban nem. Az eredmény optimista becslés, nem valódi támadási arány. A következő érdemi lépés valódi, külső forrásból származó minták gyűjtése.
+- **Nem fogott meg:** a betűközökkel kódolt szöveg (`a09`), a feladatváltás (`a14`) és a személyiség hamis megerősítéssel (`s16`). Ezek ismert hézagok, a tesztek is rögzítik őket. Az `a09`-et és az `a14`-et a Guard elkapta.
+- **Téves jelzések:** az injekciót idéző kutatási jegyzet `hostile` (`t10`), a konfigurációs dokumentáció a "system prompt" szavak miatt `suspicious` (`t07`, `b11`). A hétköznapi megjegyzések emberi olvasóknak ("note to the reader", "attention all staff"), az IT-értesítés ("SYSTEM NOTICE: maintenance") és az asszisztensekre vonatkozó dokumentáció (`AGENTS.md`) tiszták maradtak.
+- **Menet közben egy szabályt visszavettem:** a "forward all ... to cím@host" mondat hétköznapi üzleti utasítás is lehet, ezért `medium` (gyanús), nem `hostile`. Ezt egy teszt vetette fel, nem a készletek eredménye, de az eredeti egylövéses mérésben ez a támadás (`s03`) még `hostile` volt (a 2. készletben 14/16, 88%), a végleges szabállyal 13/16.
+- **A Guard mérése a 2. készleten még nem futott.**
 
 ## Pilot
 
@@ -147,5 +177,5 @@ Négy **kitalált** szöveg (kiadási jegyzet, kutatási kivonat jellegű szöve
 - A Prompt Guard bemeneti hossza: tudomásom szerint rövid a kontextusa, ezért a szöveget darabolni kell, ez ellenőrizendő.
 - A kivonatok magyar nyelvi minősége és tévedési aránya.
 - Mennyire áll ellen a GPT OSS 120B a bemenetbe rejtett utasításoknak: egy rejtett kérést nem követett, ez egy eset, nem arány.
-- A Prompt Guard valódi fogási aránya és a küszöb: az első hívásban egy rejtett kérést nem jelzett; a `groq-guard-eval` mérése még nem futott.
+- A Prompt Guard fogási aránya és a küszöb: az 1. készleten 43% (0,5-ös küszöb), a beágyazott támadásokat nem fogja; a 2. készleten és valódi, külső mintákon még nem mértük.
 - Fut-e a szkript a Cowork alatt, vagy csak a Claude Code CLI-ben.
