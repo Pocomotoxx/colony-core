@@ -172,11 +172,15 @@ test('validate reads a set inside the project, refuses a bad one, and refuses a 
 
 test('check runs the task check itself and stores the result once; a second try is refused', async () => {
   const dir = await project();
-  const pass = await ok(dir, 'eval', 'check', '--set', 'set.json', '--variant', 'A', '--task', 't1', '--run', '1', '--workspace', 'work/pass', '--cost-usd', '0.25', '--turns', '4');
+  const pass = await ok(dir, 'eval', 'check', '--set', 'set.json', '--variant', 'A', '--task', 't1', '--run', '1', '--workspace', 'work/pass', '--cost-usd', '0.25', '--turns', '4', '--duration-ms', '4200');
   assert.equal(pass.result.passed, true);
   assert.equal(pass.result.source, 'colony');
   assert.equal(pass.result.costUsd, 0.25);
   assert.equal(pass.result.turns, 4);
+  assert.equal(pass.result.durationMs, 4200, 'the duration the runner measured is the run duration');
+  assert.equal(typeof pass.result.checkDurationMs, 'number', 'the check own time is kept apart');
+  const noDuration = await ok(dir, 'eval', 'check', '--set', 'set.json', '--variant', 'B', '--task', 't1', '--run', '1', '--workspace', 'work/pass');
+  assert.equal(noDuration.result.durationMs, undefined, 'without a measured duration none is invented from the check time');
   const fail = await ok(dir, 'eval', 'check', '--set', 'set.json', '--variant', 'A', '--task', 't2', '--run', '1', '--workspace', 'work/fail');
   assert.equal(fail.result.passed, false, 'the check of t2 exits 1');
   assert.match(await bad(dir, 'eval', 'check', '--set', 'set.json', '--variant', 'A', '--task', 't1', '--run', '1', '--workspace', 'work/pass'), /already recorded/);

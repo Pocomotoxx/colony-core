@@ -36,7 +36,10 @@ export interface EvalResult {
   costUsd?: number;
   inputTokens?: number;
   outputTokens?: number;
+  /** How long the run took (the host), as the runner measured it. Absent when nobody said. */
   durationMs?: number;
+  /** How long the colony's own check took. Not the run's duration. */
+  checkDurationMs?: number;
   turns?: number;
   at: number;
 }
