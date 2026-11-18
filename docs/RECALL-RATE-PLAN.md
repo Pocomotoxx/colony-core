@@ -10,7 +10,7 @@ A hook minden promptnál felidézést ad (a korábbi munkából), és azt `recal
 
 - **Hook (`src/hook/events.ts`):** a prompt-felidézés minden olyan esetben logol egy sort (`at`, `session`, `ids`), ha volt találat. Az `ids` a Reasoning Bank mintaazonosítói (`pattern_task_<feladatazonosító>`).
 - **`rate` (`src/cli/rate.ts`):** feladat minőségét állítja be a fejlesztő állítása szerint. Felidézésre nincs parancs.
-- **Session-indítási felidézés:** a `session` hook a munkamenet elején ad felidézést. Ez **nincs naplózva** (a `recall.jsonl` csak a prompt-hook sorait tartalmazza). Ezt a tervben pótoljuk, mert az 1. fázis mindkettőt mér.
+- **Session-indítási felidézés:** a `session` hook **nem ad felidézést** (csak a projekt-kontextust és a beállításokat); a korábbi terv tévesen állította. Nincs mit naplózni. Ha a munkamenet elejét is mérni akarjuk, az külön döntés és külön változtatás (a ROADMAP 0. fázisában most `[ ]`).
 
 ## Javasolt parancsok
 
