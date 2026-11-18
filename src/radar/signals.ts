@@ -69,6 +69,8 @@ export function parseSummaries(input: unknown): { items: SignalImport[]; skipped
 export interface SignalView {
   id: string;
   summary: string;
+  /** The release tag, taken from the source link. */
+  tag: string | null;
   source: string;
   project: string | null;
   fetchedAt: number;
@@ -77,6 +79,8 @@ export interface SignalView {
   guardScore: number | null;
   scan: string;
   label: string;
+  /** Why `next` showed it (only there): the task names the project, or its text is similar (with the similarity). */
+  why?: string;
 }
 
 export function signalView(doc: MemoryDocument, now: number): SignalView {
@@ -84,7 +88,8 @@ export function signalView(doc: MemoryDocument, now: number): SignalView {
   const expiresAt = typeof m.expiresAt === 'number' ? m.expiresAt : 0;
   return {
     id: doc.id.replace(/^signal_/, ''),
-    summary: doc.text,
+    summary: typeof m.summary === 'string' ? m.summary : doc.text,
+    tag: typeof m.tag === 'string' ? m.tag : null,
     source: typeof m.source === 'string' ? m.source : '',
     project: typeof m.project === 'string' ? m.project : null,
     fetchedAt: typeof m.fetchedAt === 'number' ? m.fetchedAt : doc.createdAt,
@@ -106,9 +111,55 @@ export async function listSignals(codex: VectorCodex, now: number): Promise<Sign
 export const SIGNAL_MIN_SCORE = 0.25;
 export const SIGNALS_PER_TASK = 3;
 
-/** The unexpired signals closest to a task, for `next`. Always labelled; empty when nothing is close enough. */
+/** Repository names too general to mean a project when a task mentions them. */
+const GENERIC_NAMES = new Set(['core', 'app', 'apps', 'lib', 'libs', 'cli', 'api', 'docs', 'doc', 'test', 'tests', 'site', 'web', 'sdk', 'tool', 'tools', 'main', 'repo', 'src', 'data', 'server', 'client', 'utils']);
+
+/** The name a task would use for a project: the repository name ("eslint/eslint" is "eslint"), unless it is too general. */
+export function projectNames(project: string | null): string[] {
+  if (!project) return [];
+  const repo = project.split('/')[1]?.toLowerCase() ?? '';
+  return repo.length >= 3 && !GENERIC_NAMES.has(repo) ? [repo] : [];
+}
+
+const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const namesInText = (names: string[], text: string) => names.find((n) => new RegExp(`(?<![a-z0-9])${escapeRegExp(n)}(?![a-z0-9])`).test(text));
+
+/**
+ * The unexpired signals to show with a task, for `next`, at most three, always labelled, each with the reason:
+ *   1. the task NAMES the project ("eslint", "Node.js", "pnpm"): that project's newest signals, whatever the similarity;
+ *   2. otherwise the signals whose text is similar to the task (a starting threshold, not calibrated).
+ * Empty when nothing qualifies. A name that is part of another word ("nodemailer") does not count.
+ */
 export async function externalSignalsFor(codex: VectorCodex, taskText: string, now: number): Promise<SignalView[]> {
-  if ((await codex.count(SIGNALS_NAMESPACE)) === 0) return [];
-  const hits = await codex.search(taskText, { namespace: SIGNALS_NAMESPACE, topK: 10, minScore: SIGNAL_MIN_SCORE });
-  return hits.map((h) => signalView(h.document, now)).filter((s) => !s.expired).slice(0, SIGNALS_PER_TASK);
+  const all = (await listSignals(codex, now)).filter((s) => !s.expired);
+  if (all.length === 0) return [];
+  const lower = taskText.toLowerCase();
+  const chosen: SignalView[] = [];
+  const byProject = new Map<string, SignalView[]>();
+  for (const s of all) if (s.project) byProject.set(s.project, [...(byProject.get(s.project) ?? []), s]);
+  for (const [project, list] of byProject) {
+    const name = namesInText(projectNames(project), lower);
+    if (name) for (const s of list) chosen.push({ ...s, why: `the task names "${name}"` });
+  }
+  if (chosen.length < SIGNALS_PER_TASK) {
+    const hits = await codex.search(taskText, { namespace: SIGNALS_NAMESPACE, topK: 10, minScore: SIGNAL_MIN_SCORE });
+    for (const h of hits) {
+      const s = signalView(h.document, now);
+      if (!s.expired && !chosen.some((c) => c.id === s.id)) chosen.push({ ...s, why: `similar text (${h.score.toFixed(2)})` });
+    }
+  }
+  return chosen.slice(0, SIGNALS_PER_TASK);
+}
+
+/** The release tag of a GitHub release link, decoded, or null when the link has none or it holds odd characters. */
+export function tagOfSource(source: string): string | null {
+  const m = /\/releases\/tag\/([^/?#]+(?:%2[Ff][^/?#]*)?)$/.exec(source.split(/[?#]/)[0]);
+  if (!m) return null;
+  let tag: string;
+  try {
+    tag = decodeURIComponent(m[1]);
+  } catch {
+    return null;
+  }
+  return /^[A-Za-z0-9._@/+-]{1,100}$/.test(tag) ? tag : null;
 }
