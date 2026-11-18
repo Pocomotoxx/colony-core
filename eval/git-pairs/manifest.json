@@ -1,0 +1,63 @@
+{
+  "pairs": {
+    "run-dir-check-cost": {
+      "commit": "cc90a85",
+      "tests": {
+        "dist/__tests__/eval-run.test.js": "6a1b919d861325deb5c023ddd6bf8c748294861d60ff00d08895ae0cffc36ca3",
+        "dist/__tests__/eval.test.js": "41ec34296f4d8be1c0e36c88a44625d0408de3a2d9a23321c296d5171dbbf0e2"
+      },
+      "green": {
+        "passed": 21,
+        "failed": 0
+      },
+      "red": {
+        "passed": 19,
+        "failed": 2,
+        "failing": [
+          "a real run records what the colony checked, with the cost the host reported, and a rerun does nothing",
+          "check runs the task check itself and stores the result once; a second try is refused"
+        ]
+      }
+    },
+    "hook-powershell-case": {
+      "commit": "f733db6",
+      "tests": {
+        "dist/__tests__/hook.test.js": "6ce6081f010e9f9492fe83f73d2ffe0fbc704f4008a1050644d43f4739ec4bff"
+      },
+      "green": {
+        "passed": 15,
+        "failed": 0
+      },
+      "red": {
+        "passed": 11,
+        "failed": 4,
+        "failing": [
+          "hook protocol: allow prints nothing, deny prints the host JSON, bad input blocks, install writes nothing",
+          "the PowerShell tool is guarded like Bash, and NotebookEdit like a file write",
+          "directory names are compared without regard to case, as the file system does"
+        ]
+      }
+    },
+    "groq-error-and-version-numbers": {
+      "commit": "4ef136b",
+      "tests": {
+        "dist/__tests__/groq.test.js": "9f50a78ec7bdd7b090e8e4b203403c9f2315444185d8256d7b81c700c06a52e1",
+        "dist/__tests__/radar-fetch.test.js": "61989d30ad6dc3ebe6a6eb8fd1464b09a0ed1232aa128f4bd11f98cf0a53c5cd",
+        "dist/__tests__/redact-skip.test.js": "ceb9b627cb8d4ec620c1941481b65461082a264df713b967aa5abaa1d7a4bdfc"
+      },
+      "green": {
+        "passed": 26,
+        "failed": 0
+      },
+      "red": {
+        "passed": 21,
+        "failed": 5,
+        "failing": [
+          "an item that asks to keep version-like numbers keeps them",
+          "version-like numbers stay in the text, other personal data is still redacted",
+          "skipping ip_address keeps the version and still redacts everything else"
+        ]
+      }
+    }
+  }
+}

@@ -16,15 +16,12 @@ Ez objektív: a tesztek döntenek, nincs modell és nincs szubjektív ítélet.
 - A `4ef136b` piros állapota részben fordítási hiba (a visszafordított forrás nem fordult), nem csak viselkedésbeli. Ezt a `caveat` mező rögzíti.
 - A pároknak **holdout**-nak kell lenniük: nem szabad hangolásra használni egy változtatott variánst.
 
-## Miért nem futtatható még eval-készletként
+## Futtatható készlet (előre lefordított kiinduló állapot)
 
-Az eval-futás munkamappájában a TypeScript-projektnek fordulnia kell és a függőségeknek ott kell lenniük. Ez futásonként teljes másolást vagy megosztott `node_modules`-t kér, és ezt a biztonsági szabályok szerint külön kell jóváhagyni. Két lehetőség:
+A `set.json` három feladat, mindegyik a `fixtures/<id>` mappából indul: ez a visszafordított állapot lefordított `dist/` és `scripts/` mappája (a colony-core futásidőben nem függ külső csomagtól, így a `node_modules` nem kell). A feladat a forrásfájlok (`dist/` .js és `scripts/` .mjs) javítása; a tesztfájlokat nem szabad módosítani.
 
-1. **Előre lefordított változat**: a munkamappa tartalmaz egy futtatható (JS) kiinduló állapotot, az ügynök JS-fájlokat szerkeszt. Egyszerűbb, de a forrás a TypeScript-től eltér.
-2. **Megosztott függőségek**: a munkamappa csak a forrást kapja, a `node_modules` egy közös, csak olvasható helyen van. A szerkesztés és a fordítás a munkamappában történik.
+Az ellenőrzés (`checks/verify-pair.mjs`) két lépés: először összeveti a tesztfájlok hash-ét a `manifest.json`-nal (módosított teszt = elutasítás), majd lefuttatja a commit tesztjeit. Ellenőrzés, hogy mindhárom fixture a visszafordított állapotban bukik, és a javított állapotban (a commit dist és scripts mappájával) átmegy; valamint hogy a módosított teszt-fájlt az ellenőrzés elutasítja.
 
-A döntés a futtató tervéhez tartozik, külön jóváhagyást kér.
+Egy futtatás költsége és az ügynök-variáns még nincs mérve: a futtatáshoz külön jóváhagyás kell (az eval-run.mjs `--yes` és `--budget-usd`). A készlet **holdout**: nem szabad egy változtatott variáns hangolására használni.
 
-## Következő lépés
-
-A holdout készlet fut, ha a fenti két lehetőség közül eldőlt a fordítás helye. Addig a `pairs.json` a nyilvántartás.
+A fixture-ök összesen kb. 7 MB, a repóban vannak, mert a feladatok önmagukban futtathatók kell legyenek.

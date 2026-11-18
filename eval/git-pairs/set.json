@@ -1,0 +1,30 @@
+{
+  "set": "git-pairs",
+  "split": "holdout",
+  "tasks": [
+    {
+      "id": "run-dir-check-cost",
+      "title": "eval runner: the cost and the check",
+      "prompt": "The compiled JavaScript in dist/ does not behave as the tests in dist/__tests__ expect (the eval runner and the eval check). Find the bug and fix it in the source files: the .js files in dist/ (not dist/__tests__) and the .mjs files in scripts/. Do not edit the test files. The task passes when the listed tests pass.",
+      "check": ["node", "{setDir}/checks/verify-pair.mjs", "run-dir-check-cost"],
+      "setup": "{setDir}/fixtures/run-dir-check-cost",
+      "timeoutSec": 300
+    },
+    {
+      "id": "hook-powershell-case",
+      "title": "hook: PowerShell, NotebookEdit and case",
+      "prompt": "The compiled JavaScript in dist/ does not guard every tool and does not compare directory names as the file system does. Find the bugs and fix them in the source files: the .js files in dist/ (not dist/__tests__) and the .mjs files in scripts/. Do not edit the test files. The task passes when the listed tests pass.",
+      "check": ["node", "{setDir}/checks/verify-pair.mjs", "hook-powershell-case"],
+      "setup": "{setDir}/fixtures/hook-powershell-case",
+      "timeoutSec": 300
+    },
+    {
+      "id": "groq-error-and-version-numbers",
+      "title": "Groq error message and version numbers",
+      "prompt": "The compiled JavaScript in dist/ does not show the API error message and erases version numbers as IP addresses. Find the bugs and fix them in the source files: the .js files in dist/ (not dist/__tests__) and the .mjs files in scripts/. Do not edit the test files. The task passes when the listed tests pass.",
+      "check": ["node", "{setDir}/checks/verify-pair.mjs", "groq-error-and-version-numbers"],
+      "setup": "{setDir}/fixtures/groq-error-and-version-numbers",
+      "timeoutSec": 300
+    }
+  ]
+}
