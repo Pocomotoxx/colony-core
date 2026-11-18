@@ -298,3 +298,54 @@ test('an item that asks to keep version-like numbers keeps them; the rest is sti
   assert.equal(refused.code, 2);
   assert.match(refused.stderr, /"redactSkip" may only hold "ip_address"/);
 });
+
+// ---- a piece too long for the guard model is cut in half
+
+const TOO_LONG = { status: 400, body: { error: { message: 'Please reduce the length of the messages or completion.' } } };
+const lengthOf = (req: { body: any }) => String(req.body.messages[0].content).length;
+const guardCalls = () => seen.filter((s) => s.model === GUARD).length;
+
+test('a piece the guard model finds too long is cut in half and tried again, and the item passes', async () => {
+  const dir = await project([{ id: 'dense', text: 'word '.repeat(300) }]);
+  behaviour = { [GUARD]: (_n, req) => (lengthOf(req) > 800 ? TOO_LONG : ok('0.01', 10)), [SUMMARY]: () => ok('a summary') };
+  const out = JSON.parse((await run(dir, ['--yes', '--guard-chunk-chars', '1500'])).stdout);
+  assert.equal(out.results[0].status, 'ok');
+  assert.equal(out.results[0].guard.splits, 1);
+  assert.equal(out.results[0].guard.chunks, 2, 'two halves were checked');
+  assert.match(out.results[0].guard.note, /cut in half/);
+  assert.equal(guardCalls(), 3, 'the failed call and the two halves');
+});
+
+test('splitting does not hide an attack: the half that holds it decides', async () => {
+  const dir = await project([{ id: 'dense', text: `${'word '.repeat(250)}ATTACK ${'word '.repeat(45)}` }]);
+  behaviour = { [GUARD]: (_n, req) => (lengthOf(req) > 800 ? TOO_LONG : ok(String(req.body.messages[0].content).includes('ATTACK') ? '0.9' : '0.01', 10)), [SUMMARY]: () => ok('should not be asked') };
+  const out = JSON.parse((await run(dir, ['--yes', '--guard-chunk-chars', '1500'])).stdout);
+  assert.equal(out.results[0].status, 'quarantined');
+  assert.match(out.results[0].reason, /guard flagged it/);
+  assert.equal(seen.filter((s) => s.model === SUMMARY).length, 0);
+});
+
+test('when even small pieces are refused the item fails closed after a bounded number of calls; another 400 is not split', async () => {
+  const dir = await project([{ id: 'dense', text: 'word '.repeat(300) }]);
+  behaviour = { [GUARD]: () => TOO_LONG, [SUMMARY]: () => ok('x') };
+  const out = JSON.parse((await run(dir, ['--yes', '--guard-chunk-chars', '1500'])).stdout);
+  assert.equal(out.results[0].status, 'quarantined');
+  assert.match(out.results[0].reason, /could not be reached \(HTTP 400: Please reduce the length/);
+  assert.ok(guardCalls() > 1 && guardCalls() < 20, `${guardCalls()} calls`);
+  assert.equal(seen.filter((s) => s.model === SUMMARY).length, 0);
+
+  behaviour = { [GUARD]: () => ({ status: 400, body: { error: { message: 'invalid request' } } }), [SUMMARY]: () => ok('x') };
+  const other = JSON.parse((await run(dir, ['--yes', '--guard-chunk-chars', '1500'])).stdout);
+  assert.equal(other.results[0].status, 'quarantined');
+  assert.equal(guardCalls(), 1, 'a 400 about something else is not retried in halves');
+});
+
+test('after a split the later items of the run start from the smaller size', async () => {
+  const dir = await project([{ id: 'one', text: 'word '.repeat(300) }, { id: 'two', text: 'word '.repeat(300) }]);
+  behaviour = { [GUARD]: (_n, req) => (lengthOf(req) > 800 ? TOO_LONG : ok('0.01', 10)), [SUMMARY]: () => ok('a summary') };
+  const out = JSON.parse((await run(dir, ['--yes', '--guard-chunk-chars', '1500'])).stdout);
+  assert.equal(out.results[0].guard.splits, 1);
+  assert.equal(out.results[1].guard.splits, undefined, 'the second item needed no split');
+  assert.equal(out.results[1].guard.chunks, 2);
+  assert.equal(guardCalls(), 5, '3 calls for the first item (one refused), 2 for the second');
+});

@@ -190,27 +190,69 @@ const results = [];
 let guardStopped = null;
 let summaryStopped = null;
 
-async function guardItem(p) {
-  const chunks = chunkText(p.text, chunkChars, MAX_GUARD_CHUNKS);
-  let max = 0;
-  const raw = [];
-  for (const chunk of chunks) {
-    if (guardStopped) return { deferred: guardStopped };
-    const need = estimateTokens(chunk) + 20;
-    const room = await reserve(usage, limits, 'guard', need, { maxWaitMs, sleep });
-    if (!room.ok) {
-      guardStopped = room.reason;
-      return { deferred: room.reason };
-    }
-    const r = await chatWithRetry({ base, key, body: { model: limits.guard.model, messages: [{ role: 'user', content: chunk }] } }, retry);
-    usage.record('guard', r.ok ? tokensUsed(r.tokens, need) : need);
-    if (!r.ok) return { failedClosed: `the guard could not be reached (${r.error})` };
-    if (opts['debug-guard']) raw.push(r.content.slice(0, 80));
-    const score = parseGuardScore(r.content);
-    if (score === null) return { failedClosed: 'the guard answer could not be read as a score', raw };
-    max = Math.max(max, score);
+// The guard model has a small context. Text that splits into many tokens (commit hashes, code) can make a piece too
+// long even at 1500 characters, and the API then says so with an HTTP 400. A piece that is too long is cut in half and
+// tried again, down to MIN_PIECE characters; later pieces of the run start from the size that worked.
+const LENGTH_ERROR = /reduce the length|context length|too long|maximum context/i;
+const MIN_PIECE = 300;
+const MAX_SPLIT_DEPTH = 6;
+const MAX_GUARD_PIECES = 60;
+let pieceChars = chunkChars;
+let splits = 0;
+
+function splitInHalf(text) {
+  let mid = Math.floor(text.length / 2);
+  for (let d = 0; d < 60 && mid + d < text.length; d++) {
+    if (/\s/.test(text[mid + d])) { mid += d; break; }
   }
-  return { score: max, chunks: chunks.length, raw };
+  return [text.slice(0, mid), text.slice(mid)];
+}
+
+/** One piece: { score, pieces, raw } or { deferred } or { failedClosed }. */
+async function guardPiece(piece, depth, raw) {
+  if (guardStopped) return { deferred: guardStopped };
+  const need = estimateTokens(piece) + 20;
+  const room = await reserve(usage, limits, 'guard', need, { maxWaitMs, sleep });
+  if (!room.ok) {
+    guardStopped = room.reason;
+    return { deferred: room.reason };
+  }
+  const r = await chatWithRetry({ base, key, body: { model: limits.guard.model, messages: [{ role: 'user', content: piece }] } }, retry);
+  usage.record('guard', r.ok ? tokensUsed(r.tokens, need) : need);
+  if (!r.ok) {
+    if (r.status === 400 && LENGTH_ERROR.test(r.error) && piece.length > MIN_PIECE && depth < MAX_SPLIT_DEPTH) {
+      splits++;
+      pieceChars = Math.max(MIN_PIECE, Math.floor(piece.length / 2));
+      const [a, b] = splitInHalf(piece);
+      const left = await guardPiece(a, depth + 1, raw);
+      if (left.deferred || left.failedClosed) return left;
+      const right = await guardPiece(b, depth + 1, raw);
+      if (right.deferred || right.failedClosed) return right;
+      return { score: Math.max(left.score, right.score), pieces: left.pieces + right.pieces };
+    }
+    return { failedClosed: `the guard could not be reached (${r.error})` };
+  }
+  if (opts['debug-guard']) raw.push(r.content.slice(0, 80));
+  const score = parseGuardScore(r.content);
+  if (score === null) return { failedClosed: 'the guard answer could not be read as a score' };
+  return { score, pieces: 1 };
+}
+
+async function guardItem(p) {
+  let max = 0;
+  let pieces = 0;
+  const raw = [];
+  const splitsBefore = splits;
+  for (let i = 0; i < p.text.length;) {
+    if (pieces >= MAX_GUARD_PIECES) return { failedClosed: `the text needs more than ${MAX_GUARD_PIECES} guard calls` };
+    const piece = p.text.slice(i, i + pieceChars);
+    i += piece.length;
+    const g = await guardPiece(piece, 0, raw);
+    if (g.deferred || g.failedClosed) return { ...g, ...(g.failedClosed && raw.length ? { raw } : {}) };
+    max = Math.max(max, g.score);
+    pieces += g.pieces;
+  }
+  return { score: max, chunks: pieces, splits: splits - splitsBefore, raw };
 }
 
 for (const p of prepared) {
@@ -229,7 +271,7 @@ for (const p of prepared) {
     results.push({ ...out, status: 'quarantined', reason: g.failedClosed, ...(g.raw?.length ? { guardRaw: g.raw } : {}) });
     continue;
   }
-  out.guard = { score: g.score, chunks: g.chunks, ...(g.raw?.length ? { raw: g.raw } : {}) };
+  out.guard = { score: g.score, chunks: g.chunks, ...(g.splits > 0 ? { splits: g.splits, note: 'a piece was too long for the guard model and was cut in half' } : {}), ...(g.raw?.length ? { raw: g.raw } : {}) };
   if (g.score >= threshold) {
     results.push({ ...out, status: 'quarantined', reason: `the guard flagged it (score ${g.score} >= ${threshold})` });
     continue;
