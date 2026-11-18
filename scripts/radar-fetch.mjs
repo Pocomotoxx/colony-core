@@ -30,7 +30,7 @@ function fail(message, code = 2) {
 // ---- arguments
 
 const FLAGS = new Set(['yes', 'dry-run', 'all', 'from-sources']);
-const VALUES = new Set(['dir', 'repos', 'per-feed', 'out', 'max-chars']);
+const VALUES = new Set(['dir', 'repos', 'per-feed', 'out', 'max-chars', 'max-age-days']);
 const opts = {};
 {
   const argv = process.argv.slice(2);
@@ -46,7 +46,7 @@ const opts = {};
   }
 }
 
-const USAGE = 'usage: node scripts/radar-fetch.mjs --dir <project> (--repos owner/repo[,owner/repo...] | --from-sources) [--dry-run | --yes] [--per-feed N] [--out <file>] [--max-chars N] [--all]';
+const USAGE = 'usage: node scripts/radar-fetch.mjs --dir <project> (--repos owner/repo[,owner/repo...] | --from-sources) [--dry-run | --yes] [--per-feed N] [--out <file>] [--max-chars N] [--max-age-days N] [--all]';
 if (!opts.dir) fail(`--dir is required\n${USAGE}`);
 if (Boolean(opts.repos) === Boolean(opts['from-sources'])) fail(`give either --repos or --from-sources\n${USAGE}`);
 
@@ -61,6 +61,9 @@ const intOpt = (value, name, min, max) => {
 };
 const perFeed = intOpt(opts['per-feed'] ?? '5', 'per-feed', 1, 30);
 const maxChars = intOpt(opts['max-chars'] ?? '4000', 'max-chars', 200, 20000);
+// A radar is for fresh signals (they expire in 30 days anyway): an entry older than this is skipped. 0 turns the limit off.
+const maxAgeDays = intOpt(opts['max-age-days'] ?? '90', 'max-age-days', 0, 3650);
+const maxAgeMs = maxAgeDays * 24 * 60 * 60 * 1000;
 const dryRun = Boolean(opts['dry-run']);
 
 const REPO = /^[A-Za-z0-9_.-]{1,100}\/[A-Za-z0-9_.-]{1,100}$/;
@@ -116,7 +119,7 @@ if (existsSync(seenPath)) {
 
 if (dryRun) {
   console.log(JSON.stringify({
-    plan: { feeds: repos.map((r) => `${base}/${r}/releases.atom`), perFeed, alreadySeen: seen.size, out: outPath, note: 'Nothing was fetched. A real run needs --yes and reads only these URLs.' },
+    plan: { feeds: repos.map((r) => `${base}/${r}/releases.atom`), perFeed, maxAgeDays, alreadySeen: seen.size, out: outPath, note: 'Nothing was fetched. A real run needs --yes and reads only these URLs.' },
   }, null, 2));
   console.error('dry run: nothing was fetched.');
   process.exit(0);
@@ -222,6 +225,13 @@ function toText(html) {
   return { text, comments };
 }
 
+/** How old an entry is, from its Atom "updated" date, or null when it has none that can be read. A date in the future counts as fresh. */
+function ageMs(updated) {
+  if (!/^\d{4}-\d{2}-\d{2}/.test(updated)) return null;
+  const t = Date.parse(updated);
+  return Number.isFinite(t) ? Date.now() - t : null;
+}
+
 const RANK = { clean: 0, suspicious: 1, hostile: 2 };
 const worst = (a, b) => (RANK[b] > RANK[a] ? b : a);
 
@@ -231,7 +241,7 @@ const feeds = [];
 const items = [];
 const quarantined = [];
 const processed = [];
-const counts = { entries: 0, new: 0, clean: 0, suspicious: 0, hostile: 0, withComments: 0, redacted: 0 };
+const counts = { entries: 0, stale: 0, undated: 0, new: 0, clean: 0, suspicious: 0, hostile: 0, withComments: 0, redacted: 0 };
 
 for (const repo of repos) {
   const url = `${base}/${repo}/releases.atom`;
@@ -242,8 +252,16 @@ for (const repo of repos) {
   }
   const entries = parseEntries(got.text, perFeed);
   let fresh = 0;
+  let stale = 0;
   for (const e of entries) {
     counts.entries++;
+    const age = ageMs(e.updated);
+    if (age === null) counts.undated++;
+    else if (maxAgeMs > 0 && age > maxAgeMs) {
+      stale++;
+      counts.stale++;
+      continue;
+    }
     const id = `gh-${repo.replace(/[^A-Za-z0-9._-]/g, '_').slice(0, 40)}-${createHash('sha1').update(`${repo}\n${e.atomId || e.link || e.title}`).digest('hex').slice(0, 12)}`.slice(0, 64);
     if (!opts.all && seen.has(id)) continue;
     fresh++;
@@ -273,7 +291,7 @@ for (const repo of repos) {
     if (redacted.changed) counts.redacted++;
     items.push({ id, source: e.link || url, text: redacted.text, redactSkip: ['ip_address'], ...(verdict === 'suspicious' ? { localScan: 'suspicious' } : {}) });
   }
-  feeds.push({ repo, status: 'ok', entries: entries.length, new: fresh });
+  feeds.push({ repo, status: 'ok', entries: entries.length, stale, new: fresh });
 }
 
 // ---- write: the items that passed, and the list of what was seen
