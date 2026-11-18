@@ -257,3 +257,44 @@ test('the key is only ever sent to the Groq host or a loopback address; bad inpu
   });
   assert.equal(self, 2, 'the colony-core folder is refused as the project');
 });
+
+test('an API error message is shown in the report, cut short, without control characters and without the key', async () => {
+  const dir = await project(items);
+  behaviour = {
+    [GUARD]: () => ({ status: 400, body: { error: { message: `Input too long.\nUsed key ${FAKE_KEY} here. ${'x'.repeat(400)}` } } }),
+    [SUMMARY]: () => ok('x'),
+  };
+  const r = await run(dir, ['--yes']);
+  const out = JSON.parse(r.stdout);
+  assert.equal(out.results[0].status, 'quarantined', 'still fails closed');
+  assert.match(out.results[0].reason, /could not be reached \(HTTP 400: Input too long\. Used key \[key\] here\. x+\.\.\.\)/);
+  assert.ok(out.results[0].reason.length < 320);
+  assert.ok(!r.stdout.includes(FAKE_KEY) && !r.stderr.includes(FAKE_KEY));
+  assert.equal(seen.filter((s) => s.model === SUMMARY).length, 0);
+
+  // an answer that is not JSON, or an HTML page, gives no detail, only the status
+  behaviour = { [GUARD]: () => ({ status: 400, body: '<html>bad request</html>' }), [SUMMARY]: () => ok('x') };
+  const html = JSON.parse((await run(dir, ['--yes'])).stdout);
+  assert.match(html.results[0].reason, /could not be reached \(HTTP 400\)/);
+});
+
+test('an item that asks to keep version-like numbers keeps them; the rest is still redacted; a secret cannot be skipped', async () => {
+  const text = 'Patch V8 to 13.6.233.17 and contact maintainer@example.com for details about the release notes.';
+  const dir = await project([{ id: 'v', text, redactSkip: ['ip_address'] }, { id: 'w', text }]);
+  behaviour = { [GUARD]: () => ok('0.01'), [SUMMARY]: () => ok('Patch V8 to 13.6.233.17.') };
+  const out = JSON.parse((await run(dir, ['--yes'])).stdout);
+  const prompts = seen.filter((s) => s.model === SUMMARY).map((s) => s.body.messages.map((m: any) => m.content).join(' '));
+  assert.equal(prompts.length, 2);
+  assert.ok(prompts[0].includes('13.6.233.17'), 'the version of the first item went out');
+  assert.ok(prompts[1].includes('[REDACTED:ip_address]') && !prompts[1].includes('13.6.233.17'), 'the same text without the request is redacted');
+  assert.ok(!prompts.join(' ').includes('maintainer@example.com'), 'the address never goes out');
+  assert.deepEqual(out.results[0].redacted, ['email']);
+  assert.deepEqual(out.results[1].redacted, ['email', 'ip_address']);
+  assert.equal(out.results[0].summary, 'Patch V8 to 13.6.233.17.');
+  assert.match(out.results[1].summary, /\[REDACTED:ip_address\]/);
+
+  const bad = await project([{ id: 'x', text: 'A public note about a release.', redactSkip: ['secret'] }]);
+  const refused = await run(bad, ['--dry-run']);
+  assert.equal(refused.code, 2);
+  assert.match(refused.stderr, /"redactSkip" may only hold "ip_address"/);
+});

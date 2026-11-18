@@ -256,9 +256,10 @@ for (const repo of repos) {
       });
       continue;
     }
-    const redacted = redactText(text);
+    // A four-part version number (13.6.233.17) is a valid IPv4 address, so the IP rule would erase the versions a release note is about.
+    const redacted = redactText(text, { skip: ['ip_address'] });
     if (redacted.changed) counts.redacted++;
-    items.push({ id, source: e.link || url, text: redacted.text, ...(verdict === 'suspicious' ? { localScan: 'suspicious' } : {}) });
+    items.push({ id, source: e.link || url, text: redacted.text, redactSkip: ['ip_address'], ...(verdict === 'suspicious' ? { localScan: 'suspicious' } : {}) });
   }
   feeds.push({ repo, status: 'ok', entries: entries.length, new: fresh });
 }

@@ -1,6 +1,6 @@
 # Radar terv: külső jelek a fejlesztő környezetéről
 
-Állapot: **az első szelet megírva és hamis feed-szerverrel tesztelve (`scripts/radar-fetch.mjs`), valódi hálózati futás még nem történt.** A `radar import`, a forráslista levezetése és a briefing-integráció még terv. Ami nincs igazolva, azt a "Nyitott kérdések" fejezet sorolja fel.
+Állapot: **az első szelet megírva, hamis feed-szerverrel tesztelve, és egyszer valódi hálózati futással kipróbálva (`scripts/radar-fetch.mjs`, 25 elem, 5 tároló).** A `radar import`, a forráslista levezetése és a briefing-integráció még terv. Ami nincs igazolva, azt a "Nyitott kérdések" fejezet sorolja fel.
 
 ## Cél
 
@@ -95,7 +95,23 @@ node scripts/radar-fetch.mjs --dir <projekt> --repos tulajdonos/tároló,... --y
 - **Kimenet:** `<projekt>/.colony/radar/items.json` (`id`, `source`, `text`), ezt olvassa a `scripts/groq-summarize.mjs`. A már látott elemeket (`.colony/radar/seen.json`) kihagyja, `--all` nélkül.
 - **Jelentés:** feedenként állapot, összesítés (hány tiszta, gyanús, hostile, HTML-megjegyzéssel, kitakart), és a karanténba tett elemek forrása, oka és egy rövid, **nem megbízható** idézete. Release-jegyzet hétköznapi szöveg, ezért minden karanténba tett elem megnézendő: lehet téves jelzés.
 - **Tesztek:** 9 teszt hamis feed-szerverrel (valódi hálózat nélkül): URL-ek és `--yes`, szöveggé alakítás és forráslink, hostile és megjegyzésbe rejtett utasítás karanténba, gyanús elem megjelölése és kitakarás, látott elem kihagyása, hibás feed és átirányítás, 1 MB-nál nagyobb feed, tiltott gazdagép és hibás tárolónevek, a kimenet olvashatósága a Groq-kivonatolónak.
-- **Nincs benne (még):** a `radar import`, `list` és `forget` parancs a magban, a forráslista levezetése a `package.json` fájlból, lejárat, és a briefing-integráció. **Valódi hálózati futás még nem történt.**
+- **Nincs benne (még):** a `radar import`, `list` és `forget` parancs a magban, a forráslista levezetése a `package.json` fájlból, lejárat, és a briefing-integráció. Egy valódi futás volt (lásd lent).
+
+## Mért adatok: az első valódi futás (2026-11-17)
+
+Öt nyilvános tároló kiadási jegyzetei (`nodejs/node`, `microsoft/TypeScript`, `pnpm/pnpm`, `eslint/eslint`, `vitest-dev/vitest`, feedenként 5), 25 elem, a hívás csak a GitHubra ment, kulcs nélkül.
+
+| | Eredmény |
+|---|---|
+| Tiszta / gyanús / hostile (helyi `scan`) | 25 / 0 / 0 |
+| HTML-megjegyzéssel | 0 |
+| Kitakart elem | 1 (lásd lent) |
+| Hosszú elem (a 4000 karakteres korlátot elérte) | 6 |
+
+- **Téves jelzés valódi szövegen:** a helyi szűrő 25 elemből egyet sem jelzett. A Guard a 24 elemen, amelyen választ adott, 0,0004 és 0,0213 közötti pontszámot adott (0 tévesen jelzett 0,5-nél). A **0,01-es küszöb** 4 / 24 valódi jegyzetet (17%) jelzett volna, ez a küszöb elvetését valódi adattal is megerősíti. A minta kicsi (25 elem, egyetlen szövegtípus: fejlesztői kiadási jegyzet), ez nem általános arány.
+- **Szöveggé alakítás:** valódi adaton is olvasható szöveget ad. A `<pkg>` és `<id>` helyőrzők, valamint egy szerző által írt `&#39;` karaktersorozat az eredeti szöveg része, nem alakítási hiba.
+- **Hiba, javítva:** egy négy számcsoportos verziószám (`13.6.233.17`, a V8 verziója) IP-címnek számít, és a kitakarás eltüntette, így a kivonat "a V8 patch"-et írt verzió nélkül. A kitakarás kapott egy szűk, opt-in kihagyást (`skip: ['ip_address']`, titkot soha nem lehet kihagyni), a radar elemei `redactSkip: ["ip_address"]` jelzést kapnak, és a kivonatoló csak ezt az egy fajtát fogadja el.
+- **Kitakarás, ami nem hiba:** az e-mail-címek és a többi személyes adat továbbra is kitakarva kerül a fájlba.
 
 ## Fázisok
 

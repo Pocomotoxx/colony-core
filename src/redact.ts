@@ -39,6 +39,11 @@ export interface RedactOptions {
   hash?: readonly RedactKind[];
   /** Required when `hash` is used. */
   salt?: string;
+  /**
+   * Kinds to LEAVE in the text, for one shape that gives false alarms: a four-part version number such as 13.6.233.17
+   * is a valid IPv4 address, so release notes lose their versions. A secret is never left: asking for it is an error.
+   */
+  skip?: readonly RedactKind[];
 }
 
 export interface RedactResult {
@@ -128,8 +133,11 @@ export function redactText(input: string, options: RedactOptions = {}): RedactRe
   const hashKinds = new Set(options.hash ?? []);
   if (hashKinds.size > 0 && !options.salt) throw new Error('hashing needs a salt: an unsalted hash of a phone number or e-mail address can be guessed back');
   hashKinds.delete('secret'); // a secret is never kept, not even hashed
+  const skipKinds = new Set(options.skip ?? []);
+  if (skipKinds.has('secret')) throw new Error('a secret is always redacted and cannot be skipped');
+  for (const kind of skipKinds) if (!REDACT_KINDS.includes(kind)) throw new Error(`unknown kind to skip: ${String(kind)}`);
 
-  const spans = resolveOverlaps(collect(input));
+  const spans = resolveOverlaps(collect(input).filter((s) => !skipKinds.has(s.kind)));
   const counts = new Map<RedactKind, number>();
   let out = '';
   let cursor = 0;
