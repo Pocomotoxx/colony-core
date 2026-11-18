@@ -84,7 +84,10 @@ export interface RecallStats {
   events: number;
   rated: number;
   unrated: number;
+  /** Distinct sessions among the rated recalls. A recall without a session id is not a session: see unattributed. */
   ratedSessions: number;
+  /** Rated recalls that have no session id: they count toward the share, not toward the sessions. */
+  unattributed: number;
   counts: Record<Useful, number>;
   /** Mean of the scores (yes 1, partly 0.5, no 0) over rated events, or null when none is rated. */
   usefulShare: number | null;
@@ -95,12 +98,14 @@ export interface RecallStats {
 }
 
 /**
- * The phase 1 numbers. A session counts once however many of its recalls were rated; an event without a session
- * is its own session. The exit is met when both the session count and the share are.
+ * The phase 1 numbers. A session counts once however many of its recalls were rated. A recall without a session id
+ * cannot be attributed to a session: its rating counts toward the share and is reported as unattributed, but it
+ * never counts toward the sessions. The exit is met when both the session count and the share are.
  */
 export function recallStats(events: RecallEvent[], ratings: Map<number, Rating>): RecallStats {
   const counts: Record<Useful, number> = { yes: 0, partly: 0, no: 0 };
   const sessions = new Set<string>();
+  let unattributed = 0;
   let score = 0;
   let rated = 0;
   for (const e of events) {
@@ -109,7 +114,8 @@ export function recallStats(events: RecallEvent[], ratings: Map<number, Rating>)
     rated++;
     counts[r.useful]++;
     score += SCORE[r.useful];
-    sessions.add(e.session ?? `event-${e.seq}`);
+    if (e.session) sessions.add(e.session);
+    else unattributed++;
   }
   const share = rated === 0 ? null : score / rated;
   return {
@@ -117,6 +123,7 @@ export function recallStats(events: RecallEvent[], ratings: Map<number, Rating>)
     rated,
     unrated: events.length - rated,
     ratedSessions: sessions.size,
+    unattributed,
     counts,
     usefulShare: share === null ? null : Math.round(share * 1000) / 1000,
     exit: {

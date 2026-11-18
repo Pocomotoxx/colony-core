@@ -15,6 +15,11 @@ const runner = path.join(repo, 'scripts', 'eval-run.mjs');
 const FAKE_HOST = [
   "import fs from 'node:fs';",
   "const prompt = fs.readFileSync(0, 'utf-8');",
+  "if (process.argv.includes('--grandchild')) {",
+  "  const { spawn } = await import('node:child_process');",
+  "  spawn(process.execPath, ['-e', 'setTimeout(() => {}, 60000)'], { stdio: 'inherit' });",
+  "  await new Promise((r) => setTimeout(r, 60000));",
+  "}",
   "if (process.argv.includes('--sleep')) await new Promise((r) => setTimeout(r, 8000));",
   "if (prompt.includes('PASS')) fs.writeFileSync('out.txt', 'done');",
   "const body = process.argv.includes('--nocost') ? { result: 'ok' } : { result: 'ok', total_cost_usd: 0.3, num_turns: 2, usage: { input_tokens: 10, output_tokens: 5 }, modelUsage: { 'fake-model-1': { inputTokens: 10 } } };",
@@ -44,7 +49,7 @@ async function project() {
     ],
   }));
   const host = (...extra: string[]) => ({ command: [process.execPath, path.join(dir, 'fake-host.mjs'), ...extra] });
-  await fs.writeFile(path.join(dir, 'variants.json'), JSON.stringify({ variants: { A: host(), B: host(), C: host('--nocost'), S: host('--sleep') } }));
+  await fs.writeFile(path.join(dir, 'variants.json'), JSON.stringify({ variants: { A: host(), B: host(), C: host('--nocost'), S: host('--sleep'), G: host('--grandchild') } }));
   assert.equal((await runCommand(['boot', '--dir', dir], process.cwd())).code, 0);
   return dir;
 }
@@ -136,6 +141,15 @@ test('a host that reports no cost stops after one run, unless the number of runs
   assert.equal(limited.started, 3, 'one was done already; three more were allowed');
   assert.equal(limited.stopped, null);
   assert.equal((await stored(dir)).length, 4);
+});
+
+test('a host that started a process of its own is stopped with that process, and the run does not wait for it', async () => {
+  const dir = await project();
+  const started = Date.now();
+  const r = run(dir, '--repeats', '1', '--budget-usd', '5', '--yes', '--variants', 'G', '--host-timeout-sec', '2', '--max-runs', '1');
+  assert.equal(r.status, 0, r.stderr);
+  assert.equal(JSON.parse(r.stdout).outcomes[0].timedOut, true);
+  assert.ok(Date.now() - started < 30_000, 'the runner did not wait for the grandchild');
 });
 
 test('a host that runs too long is stopped and the run counts as failed', async () => {

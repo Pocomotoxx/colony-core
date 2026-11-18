@@ -1,4 +1,4 @@
-import { spawn } from 'node:child_process';
+import { spawn, type ChildProcess } from 'node:child_process';
 import { createHash } from 'node:crypto';
 
 /**
@@ -29,6 +29,19 @@ const TAIL_CHARS = 2000;
 const WIN_CMD_TOOLS = new Set(['npm', 'pnpm', 'npx', 'yarn']);
 const PLAIN_ARG = /^[A-Za-z0-9@._/:=+\\-]+$/;
 
+/**
+ * Stops the child and everything it started. On POSIX the child leads its own process group (see the spawn below),
+ * so the signal goes to the group; the direct child alone is the fallback.
+ */
+function killGroup(child: ChildProcess): void {
+  try {
+    if (child.pid) process.kill(-child.pid, 'SIGKILL');
+    else child.kill('SIGKILL');
+  } catch {
+    child.kill('SIGKILL');
+  }
+}
+
 export function runVerification(argv: string[], cwd: string, timeoutMs: number): Promise<RunResult> {
   if (argv.length === 0 || !argv[0]) return Promise.reject(new VerifyError('no command given'));
   const [tool, ...args] = argv;
@@ -50,7 +63,7 @@ export function runVerification(argv: string[], cwd: string, timeoutMs: number):
     let timedOut = false;
     let child;
     try {
-      child = spawn(file, fileArgs, { cwd, shell: false, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
+      child = spawn(file, fileArgs, { cwd, shell: false, windowsHide: true, detached: !win, stdio: ['ignore', 'pipe', 'pipe'] });
     } catch (err) {
       reject(new VerifyError(`could not start '${tool}': ${(err as Error).message}`));
       return;
@@ -66,15 +79,32 @@ export function runVerification(argv: string[], cwd: string, timeoutMs: number):
     const timer = setTimeout(() => {
       timedOut = true;
       if (win && child.pid) spawn('taskkill', ['/pid', String(child.pid), '/t', '/f'], { windowsHide: true, stdio: 'ignore' });
-      else child.kill('SIGKILL');
+      else killGroup(child);
     }, timeoutMs);
 
-    child.on('error', (err) => {
+    // The child leads its own process group on POSIX, so a Ctrl-C or a termination of the colony no longer
+    // reaches it through the terminal: stop the group here, then let the signal take its default course.
+    const onSignal = (signal: NodeJS.Signals) => {
+      killGroup(child);
+      release();
+      process.kill(process.pid, signal);
+    };
+    const release = () => {
       clearTimeout(timer);
+      process.removeListener('SIGINT', onSignal);
+      process.removeListener('SIGTERM', onSignal);
+    };
+    if (!win) {
+      process.once('SIGINT', onSignal);
+      process.once('SIGTERM', onSignal);
+    }
+
+    child.on('error', (err) => {
+      release();
       reject(new VerifyError(`could not run '${tool}': ${err.message}`));
     });
     child.on('close', (code) => {
-      clearTimeout(timer);
+      release();
       resolve({
         exitCode: code,
         passed: code === 0 && !timedOut,

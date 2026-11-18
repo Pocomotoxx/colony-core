@@ -116,6 +116,25 @@ test('a feed becomes plain-text items with a source link; the request is plain (
   assert.equal(requests[0].cookie, undefined);
 });
 
+test('the source link is the alternate link of the entry, whatever the order or the quotes of its attributes', async () => {
+  const dir = await project();
+  const raw = (id: string, links: string) =>
+    '<entry><id>tag:github.com,2008:Repository/1/' + id + '</id><updated>' + daysAgo(1) + '</updated>' + links + '<title>' + id + '</title><content type="html">&lt;p&gt;Notes for ' + id + '.&lt;/p&gt;</content></entry>';
+  routes = {
+    '/o/r/releases.atom': () => ({
+      body: feed(
+        raw('v3', '<link href="https://github.com/o/r/releases" rel="self"/><link href="https://github.com/o/r/releases/tag/v3" rel="alternate"/>'),
+        raw('v2', "<link rel='self' href='https://github.com/o/r/releases'/><link type='text/html' href='https://github.com/o/r/releases/tag/v2' rel='alternate'/>"),
+        raw('v1', '<link href="https://github.com/o/r/releases/tag/v1"/>'),
+      ),
+    }),
+  };
+  const r = await run(dir, ['--repos', 'o/r', '--yes']);
+  assert.equal(r.code, 0, r.stderr);
+  const sources = (await items(dir)).map((i) => i.source).sort();
+  assert.deepEqual(sources, ['https://github.com/o/r/releases/tag/v1', 'https://github.com/o/r/releases/tag/v2', 'https://github.com/o/r/releases/tag/v3']);
+});
+
 test('a hostile release note is quarantined and not written; so is one with an instruction hidden in an HTML comment', async () => {
   const dir = await project();
   routes = {

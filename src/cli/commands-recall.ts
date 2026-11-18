@@ -75,7 +75,7 @@ async function handle_recall(ctx: CommandContext): Promise<CommandResult> {
     const ratings = await readRatings(stateDir);
     return reply({
       stats: recallStats(events, ratings),
-      note: 'Phase 1 of the roadmap: at least 30 rated sessions, and at least half of the ratings useful. Below half we do not widen recall; we find out why. The ratings are the developer\'s statements.',
+      note: 'Phase 1 of the roadmap: at least 30 rated sessions, and at least half of the ratings useful. Below half we do not widen recall; we find out why. Ratings of recalls without a session id count toward the share but not toward the 30 sessions (see unattributed). The ratings are the developer\'s statements.',
     });
   }
 

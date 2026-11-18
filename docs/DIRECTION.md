@@ -33,7 +33,7 @@
 ## 4. Mi kell a céléhez
 
 1. **Használat a saját munkán.** Ez a hiányzó láncszem. Nélküle minden további fejlesztés becslés marad.
-2. **Értékelési szokás.** Minden munkamenet végén egy rövid értékelés (hasznos / nem hasznos, a felidézett elemekre), és ezt a rendszer rögzíti. Ehhez kell egy egyszerű parancs (például `rate`), amely már megvan, de a felidézések értékelésére még nincs.
+2. **Értékelési szokás.** Minden munkamenet végén egy rövid értékelés (hasznos / nem hasznos, a felidézett elemekre), és ezt a rendszer rögzíti. Erre a `recall list`, `recall rate` és `recall stats` parancsok szolgálnak; a használat mérése (30 értékelt munkamenet) még hátra van.
 3. **Hasznosság mérése:** a rögzített értékelésekből a felidézés aránya, és az, hogy a segített munkamenetek többet vagy kevesebbet hibáznak-e.
 4. **Mellékágak befagyasztása** az 1. fázis végéig: új radar-, eval- vagy védelmi szolgáltatások nem indulnak, amíg nincs mérés. A `ROADMAP.md` ezt már kimondja.
 5. **Cowork-ellenőrzés:** ha a Cowork a fő környezeted, egyszer ki kell próbálni, hogy a `start` és a hookok futnak-e benne.
@@ -41,7 +41,7 @@
 ## 5. Javasolt következő lépések (sorrendben)
 
 1. **Ezt a dokumentumot elfogadni** (vagy módosítani): ha egyetértesz, a mellékágak befagyasztása dől el.
-2. **A `rate` parancs kiterjesztése** a felidézések értékelésére, tesztekkel (ez a 1. fázis előfeltétele).
+2. **A felidézések értékelése** (`recall list`, `recall rate`, `recall stats`): kész, tesztekkel (PR #24). Ez volt az 1. fázis előfeltétele.
 3. **Használat:** 30 munkamenet a saját munkádon, minden munkamenet végén értékelve.
 4. **Összesítés:** a hasznosság aránya és a hibák összehasonlítása. Csak ez után dől el, mi jön a 2. fázisból.
 

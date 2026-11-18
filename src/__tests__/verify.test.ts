@@ -56,6 +56,18 @@ test('a command that runs too long is stopped', async () => {
   assert.ok(r.durationMs < 20_000);
 });
 
+test('a time-out stops the whole process tree, not only the direct child', async () => {
+  const script = [
+    "const { spawn } = require('node:child_process');",
+    "spawn(process.execPath, ['-e', 'setTimeout(() => {}, 60000)'], { stdio: 'inherit' });",
+    'setTimeout(() => {}, 60000);',
+  ].join('\n');
+  const r = await runVerification([NODE, '-e', script], root, 2000);
+  assert.equal(r.timedOut, true);
+  assert.equal(r.passed, false);
+  assert.ok(r.durationMs < 20_000, 'the run ended with the time-out, not when the grandchild ended');
+});
+
 test('a passed check marks the work verified, and the recall shows it', async () => {
   const run = await project('pass');
   const id = await finishedTask(run, ['--quality', '0.9']);
