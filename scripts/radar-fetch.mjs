@@ -29,7 +29,7 @@ function fail(message, code = 2) {
 
 // ---- arguments
 
-const FLAGS = new Set(['yes', 'dry-run', 'all']);
+const FLAGS = new Set(['yes', 'dry-run', 'all', 'from-sources']);
 const VALUES = new Set(['dir', 'repos', 'per-feed', 'out', 'max-chars']);
 const opts = {};
 {
@@ -46,8 +46,9 @@ const opts = {};
   }
 }
 
-const USAGE = 'usage: node scripts/radar-fetch.mjs --dir <project> --repos owner/repo[,owner/repo...] [--dry-run | --yes] [--per-feed N] [--out <file>] [--max-chars N] [--all]';
-for (const required of ['dir', 'repos']) if (!opts[required]) fail(`--${required} is required\n${USAGE}`);
+const USAGE = 'usage: node scripts/radar-fetch.mjs --dir <project> (--repos owner/repo[,owner/repo...] | --from-sources) [--dry-run | --yes] [--per-feed N] [--out <file>] [--max-chars N] [--all]';
+if (!opts.dir) fail(`--dir is required\n${USAGE}`);
+if (Boolean(opts.repos) === Boolean(opts['from-sources'])) fail(`give either --repos or --from-sources\n${USAGE}`);
 
 const project = resolve(opts.dir);
 if (project === resolve(root)) fail('--dir is the colony-core folder itself: give the PROJECT folder (the radar state goes to <project>/.colony/radar).');
@@ -63,8 +64,19 @@ const maxChars = intOpt(opts['max-chars'] ?? '4000', 'max-chars', 200, 20000);
 const dryRun = Boolean(opts['dry-run']);
 
 const REPO = /^[A-Za-z0-9_.-]{1,100}\/[A-Za-z0-9_.-]{1,100}$/;
-const repos = opts.repos.split(',').map((r) => r.trim()).filter(Boolean);
-if (repos.length === 0) fail('--repos needs at least one owner/repo');
+// the list: named here, or the one you approved with `radar sources approve` (<project>/.colony/radar/sources.json)
+function approvedRepos() {
+  const file = join(project, '.colony', 'radar', 'sources.json');
+  if (!existsSync(file)) fail('there is no approved list yet: run `radar sources` and then `radar sources approve --all` (or name the repositories) in this project.');
+  try {
+    const parsed = JSON.parse(readFileSync(file, 'utf-8'));
+    return (Array.isArray(parsed.repos) ? parsed.repos : []).map((r) => (typeof r?.repo === 'string' ? r.repo : '')).filter(Boolean);
+  } catch {
+    return fail('the approved list (.colony/radar/sources.json) is not valid JSON');
+  }
+}
+const repos = opts['from-sources'] ? approvedRepos() : opts.repos.split(',').map((r) => r.trim()).filter(Boolean);
+if (repos.length === 0) fail(opts['from-sources'] ? 'the approved list is empty: approve at least one repository with `radar sources approve`' : '--repos needs at least one owner/repo');
 if (repos.length > 20) fail('at most 20 repositories per run');
 if (new Set(repos).size !== repos.length) fail('--repos names a repository twice');
 for (const r of repos) if (!REPO.test(r) || r.includes('..')) fail(`'${r}' is not an owner/repo name`);

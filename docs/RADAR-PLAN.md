@@ -1,6 +1,6 @@
 # Radar terv: külső jelek a fejlesztő környezetéről
 
-Állapot: **az első szelet megírva, hamis feed-szerverrel tesztelve, és egyszer valódi hálózati futással kipróbálva (`scripts/radar-fetch.mjs`, 25 elem, 5 tároló).** A `radar import`, `list` és `forget` parancs a magban megvalósítva és tesztelve, a `next` kimenete címkézett `externalSignals` mezőt kap; a forráslista levezetése a `package.json` fájlból és a valódi használat mérése még hátravan. Ami nincs igazolva, azt a "Nyitott kérdések" fejezet sorolja fel.
+Állapot: **az első szelet megírva, hamis feed-szerverrel tesztelve, és egyszer valódi hálózati futással kipróbálva (`scripts/radar-fetch.mjs`, 25 elem, 5 tároló).** A `radar import`, `list` és `forget` parancs a magban megvalósítva és tesztelve, a `next` kimenete címkézett `externalSignals` mezőt kap; a forráslista levezetése a `package.json` fájlból (`radar sources`) is megvalósítva; a valódi használat mérése még hátravan. Ami nincs igazolva, azt a "Nyitott kérdések" fejezet sorolja fel.
 
 ## Cél
 
@@ -52,7 +52,8 @@ Minden `signals` bejegyzés mezői: `source` (URL), `fetchedAt`, `expiresAt`, `p
 
 | Parancs | Állapot | Mit csinál |
 |---|---|---|
-| `radar sources` | **terv** | A `package.json`-ból levezetett, javasolt forráslista; a fejlesztő hagyja jóvá. |
+| `radar sources` | **megvalósítva** | A projekt függőségeinek GitHub-tárolói: a `package.json` és a telepített függőségek `package.json` fájljának `repository` mezője alapján, **hálózat nélkül**. Egy tároló egyszer szerepel a hozzá tartozó csomagokkal; ami nem oldható fel, az okkal a `unresolved` listában van. Semmit nem választ helyetted. |
+| `radar sources approve <owner/repo>... \| --all`, `radar sources remove <owner/repo>...` | **megvalósítva** | A fejlesztő név szerint hagyja jóvá a listát (`.colony/radar/sources.json`, legfeljebb 20 tároló, a függőségek között nem szereplő név "manual" jelölést és figyelmeztetést kap). A `scripts/radar-fetch.mjs --from-sources` csak ezt a listát olvassa. |
 | `radar import <fájl> [--ttl-days N] [--project NÉV]` | **megvalósítva** | A `scripts/groq-summarize.mjs --out` kimenetét olvassa: csak a `ok` státuszú, https forráslinkes elemeket tárolja (a többit `skipped` néven felsorolja), a szöveget újra átvizsgálja (hostile: elutasítja és naplózza) és kitakarja (a verziószámok kivételével). Ugyanaz az azonosító frissít, nem duplikál. Hálózatot nem használ. |
 | `radar list [--project P] [--k N] [--include-expired]` | **megvalósítva** | A jelek címkével, forrással, idővel és lejárattal; alapból a lejártak nélkül. |
 | `radar forget <id> \| --expired \| --all` | **megvalósítva** | Törlés. |
@@ -102,12 +103,14 @@ node scripts/radar-fetch.mjs --dir <projekt> --repos tulajdonos/tároló,... --y
 - **Kimenet:** `<projekt>/.colony/radar/items.json` (`id`, `source`, `text`), ezt olvassa a `scripts/groq-summarize.mjs`. A már látott elemeket (`.colony/radar/seen.json`) kihagyja, `--all` nélkül.
 - **Jelentés:** feedenként állapot, összesítés (hány tiszta, gyanús, hostile, HTML-megjegyzéssel, kitakart), és a karanténba tett elemek forrása, oka és egy rövid, **nem megbízható** idézete. Release-jegyzet hétköznapi szöveg, ezért minden karanténba tett elem megnézendő: lehet téves jelzés.
 - **Tesztek:** 9 teszt hamis feed-szerverrel (valódi hálózat nélkül): URL-ek és `--yes`, szöveggé alakítás és forráslink, hostile és megjegyzésbe rejtett utasítás karanténba, gyanús elem megjelölése és kitakarás, látott elem kihagyása, hibás feed és átirányítás, 1 MB-nál nagyobb feed, tiltott gazdagép és hibás tárolónevek, a kimenet olvashatósága a Groq-kivonatolónak.
-- **Nincs benne (még):** a forráslista levezetése a `package.json` fájlból, a lejárt jelek automatikus törlése (jelenleg `radar forget --expired`), és az, hogy a `start` kimenete is mutasson jeleket. A `radar import` és a `next` integrációja megvalósult, lásd a Parancsok fejezetet. Egy valódi hálózati futás volt (lásd lent).
+- **Nincs benne (még):** a lejárt jelek automatikus törlése (jelenleg `radar forget --expired`), és az, hogy a `start` kimenete is mutasson jeleket. A `radar import` és a `next` integrációja megvalósult, lásd a Parancsok fejezetet. Egy valódi hálózati futás volt (lásd lent).
 
 ## A teljes lánc (kézzel indítva, minden lépés külön jóváhagyással)
 
 ```
-node scripts/radar-fetch.mjs --dir <projekt> --repos tulajdonos/tároló,... --yes
+node dist/cli.js radar sources --dir <projekt>                      # javaslat a függőségekből (hálózat nélkül)
+node dist/cli.js radar sources approve --all --dir <projekt>        # vagy név szerint: approve owner/repo ...
+node scripts/radar-fetch.mjs --dir <projekt> --from-sources --yes   # (vagy: --repos tulajdonos/tároló,...)
 node scripts/groq-summarize.mjs --dir <projekt> --in .colony/radar/items.json --yes --out .colony/radar/summaries.json
 node dist/cli.js radar import .colony/radar/summaries.json --dir <projekt>
 ```
@@ -117,6 +120,13 @@ node dist/cli.js radar import .colony/radar/summaries.json --dir <projekt>
 3. **Import a magba** (hálózat nélkül): csak a `ok` státuszú, forráslinkes elem kerül be, a szöveg újra átmegy a `scan`-en és a kitakaráson.
 
 Az eredeti elem sorsa a lánc minden pontján látható: `radar-fetch` jelentése (karantén), a kivonatoló `results` listája (`quarantined`, `deferred`, `failed`), az import `skipped` és `refused` listája.
+
+## Mért adatok: a forráslista a colony-core saját függőségein (2026-11-18)
+
+A colony-core `package.json` fájlja és az 5 közvetlen függőségének `package.json` fájlja (könnyű másolat, telepítés és hálózat nélkül): **5 függőségből 4 tároló, 0 feloldatlan.** Az `eslint/eslint` két csomagot ad (`eslint`, `@eslint/js`), a `@types/node` a `DefinitelyTyped/DefinitelyTyped` tárolóra mutat, a `typescript` a `microsoft/TypeScript`-re, a `typescript-eslint` a `typescript-eslint/typescript-eslint`-re.
+
+- **Korlát:** a javaslat azt mutatja, hol van a forráskód, **nem azt, hogy a tároló GitHub-kiadásokat tesz-e közzé.** A `DefinitelyTyped` például nem szokott kiadásokat közzétenni, a `releases.atom` ott üres lehet. Hogy egy jóváhagyott tárolónak van-e kiadásfeedje, csak a letöltésnél derül ki (a jelentésben `entries: 0`); ezt a javaslat nem ellenőrzi, mert hálózatot nem használ.
+- **Csak az első szint:** a gyökér `package.json` közvetlen függőségei; az átvitt (tranzitív) függőségeket és a munkaterületek almappáit nem járja be.
 
 ## Mért adatok: milyen jeleket kap egy feladat (2026-11-18)
 
