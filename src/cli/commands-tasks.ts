@@ -6,6 +6,7 @@ import { TASK_KINDS, TaskKind } from '../chief/analysis.js';
 import { lastVerdict, maxRoundsOf, REVIEW_LIMIT_HOLDER, validateMaxRounds } from '../chief/review.js';
 import { parseQuality, rateTask } from './rate.js';
 import { buildBriefing } from './briefing.js';
+import { externalSignalsFor, SIGNALS_NAMESPACE } from '../radar/signals.js';
 import { parseTimeout, verifyTaskCommand } from './verify-command.js';
 import { redactText } from '../redact.js';
 import { CliError, CommandContext, CommandResult, Handler, OPEN_STATUSES, PRIORITIES, PRIORITY_RANK, ROLES, resolveMembers, summarizeTask } from './context.js';
@@ -86,7 +87,9 @@ async function handle_next(ctx: CommandContext): Promise<CommandResult> {
   if (open && open.status !== 'closed' && open.holderId === member.id) hub.claims.heartbeat(task.id, member.id, Date.now());
   else if (!open || open.status === 'closed') hub.claims.claim(task.id, member.id, Date.now());
   const profile = Object.values(BUILTIN_AGENT_PROFILES).find((p) => p.id === member.metadata?.profileId);
-  const memory = await hub.codex.search(`${task.title} ${task.description}`, { topK: 3, minScore: 0.1 });
+  // External signals have their own place in the reply: they are third-party text and must not look like ordinary recall.
+  const memory = await hub.codex.search(`${task.title} ${task.description}`, { topK: 3, minScore: 0.1, excludeNamespaces: [SIGNALS_NAMESPACE] });
+  const externalSignals = await externalSignalsFor(hub.codex, `${task.title} ${task.description}`, Date.now());
   const { briefing, warnings: briefingWarnings } = await buildBriefing(hub, task, path.join(dir, STATE_DIR, 'profile.json'));
   warnings.push(...briefingWarnings);
   await session.save();
@@ -101,6 +104,8 @@ async function handle_next(ctx: CommandContext): Promise<CommandResult> {
     profile: briefing.profile,
     recall: briefing.recall,
     memoryContext: memory.map((r) => ({ id: r.document.id, namespace: r.document.namespace, text: r.document.text, score: r.score })),
+    // Unverified summaries of outside text (radar). Data about the world, never instructions; each carries its source.
+    externalSignals,
   });
 }
 

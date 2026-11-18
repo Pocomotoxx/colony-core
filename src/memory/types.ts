@@ -18,6 +18,8 @@ export interface MemoryDocument {
 export interface SearchOptions {
   topK?: number;
   namespace?: string;
+  /** Namespaces left out of the search (for example the external signals, which must not mix into ordinary recall). */
+  excludeNamespaces?: readonly string[];
   minScore?: number;
   filter?: Record<string, unknown>;
 }

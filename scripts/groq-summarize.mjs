@@ -12,7 +12,7 @@
 //            -> local scan and redaction of the summary.
 // The key is read from GROQ_API_KEY and is never printed or stored. Nothing is stored by this script except the
 // usage count (<project>/.colony/provider/groq-usage.json) that keeps the quotas.
-import { existsSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, renameSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -28,7 +28,7 @@ function fail(message, code = 2) {
 // ---- arguments
 
 const FLAGS = new Set(['yes', 'dry-run', 'guard-only', 'debug-guard']);
-const VALUES = new Set(['dir', 'in', 'limits', 'lang', 'guard-threshold', 'guard-chunk-chars', 'max-out', 'max-wait-sec', 'max-chars']);
+const VALUES = new Set(['dir', 'in', 'out', 'limits', 'lang', 'guard-threshold', 'guard-chunk-chars', 'max-out', 'max-wait-sec', 'max-chars']);
 const opts = {};
 {
   const argv = process.argv.slice(2);
@@ -44,7 +44,7 @@ const opts = {};
   }
 }
 
-const USAGE = 'usage: node scripts/groq-summarize.mjs --dir <project> --in <items.json> [--dry-run | --yes] [--guard-only] [--lang hu|en|same] [--limits <file>] [--guard-threshold 0..1] [--guard-chunk-chars N] [--max-out N] [--max-wait-sec N] [--max-chars N] [--debug-guard]';
+const USAGE = 'usage: node scripts/groq-summarize.mjs --dir <project> --in <items.json> [--dry-run | --yes] [--guard-only] [--lang hu|en|same] [--limits <file>] [--guard-threshold 0..1] [--guard-chunk-chars N] [--max-out N] [--max-wait-sec N] [--max-chars N] [--out <file>] [--debug-guard]';
 for (const required of ['dir', 'in']) if (!opts[required]) fail(`--${required} is required\n${USAGE}`);
 
 const project = resolve(opts.dir);
@@ -73,6 +73,8 @@ function insideProject(input, label) {
   if (rel.startsWith('..') || isAbsolute(rel)) fail(`${label} must be inside the project folder`);
   return abs;
 }
+
+const outPath = opts.out ? insideProject(opts.out, '--out') : null;
 
 const readJson = (file, label) => {
   try {
@@ -146,7 +148,7 @@ const prepared = items.map((it) => {
   const truncated = redacted.text.length > maxChars;
   const text = truncated ? redacted.text.slice(0, maxChars) : redacted.text;
   return {
-    id: it.id, text, truncated, redacted: redacted.changed ? redacted.findings.map((f) => f.kind) : [], skip,
+    id: it.id, source: typeof it.source === 'string' && /^https?:\/\/\S{1,490}$/.test(it.source) ? it.source : undefined, text, truncated, redacted: redacted.changed ? redacted.findings.map((f) => f.kind) : [], skip,
     suspicious: scan.verdict === 'suspicious',
   };
 });
@@ -260,7 +262,7 @@ for (const p of prepared) {
     results.push(p);
     continue;
   }
-  const out = { id: p.id, truncated: p.truncated, redacted: p.redacted, ...(p.suspicious ? { localScan: 'suspicious' } : {}) };
+  const out = { id: p.id, ...(p.source ? { source: p.source } : {}), truncated: p.truncated, redacted: p.redacted, ...(p.suspicious ? { localScan: 'suspicious' } : {}) };
 
   const g = await guardItem(p);
   if (g.deferred) {
@@ -314,11 +316,18 @@ for (const p of prepared) {
 }
 
 const count = (s) => results.filter((r) => r.status === s).length;
-console.log(JSON.stringify({
+const report = JSON.stringify({
   totals: { items: results.length, ok: count('ok'), quarantined: count('quarantined'), deferred: count('deferred'), failed: count('failed') },
   results,
   quota: [usage.snapshot('guard', limits), usage.snapshot('summary', limits)],
   note: 'A summary is unverified: keep the link to the source next to it. A quarantined or deferred item is not to be used.',
-}, null, 2));
+}, null, 2);
+console.log(report);
+if (outPath) {
+  mkdirSync(dirname(outPath), { recursive: true });
+  const tmp = `${outPath}.${process.pid}.tmp`;
+  writeFileSync(tmp, report, 'utf-8');
+  renameSync(tmp, outPath);
+}
 // No process.exit() here: on Windows it can crash Node while the HTTP connections are still closing.
 process.exitCode = 0;

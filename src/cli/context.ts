@@ -119,6 +119,11 @@ export const OPTIONS = {
     turns: { type: 'string' },
     'min-runs': { type: 'string' },
     'include-reported': { type: 'boolean' },
+    'ttl-days': { type: 'string' },
+    project: { type: 'string' },
+    'include-expired': { type: 'boolean' },
+    expired: { type: 'boolean' },
+    all: { type: 'boolean' },
     help: { type: 'boolean' },
 } as const;
 

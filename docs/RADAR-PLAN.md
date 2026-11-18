@@ -1,6 +1,6 @@
 # Radar terv: külső jelek a fejlesztő környezetéről
 
-Állapot: **az első szelet megírva, hamis feed-szerverrel tesztelve, és egyszer valódi hálózati futással kipróbálva (`scripts/radar-fetch.mjs`, 25 elem, 5 tároló).** A `radar import`, a forráslista levezetése és a briefing-integráció még terv. Ami nincs igazolva, azt a "Nyitott kérdések" fejezet sorolja fel.
+Állapot: **az első szelet megírva, hamis feed-szerverrel tesztelve, és egyszer valódi hálózati futással kipróbálva (`scripts/radar-fetch.mjs`, 25 elem, 5 tároló).** A `radar import`, `list` és `forget` parancs a magban megvalósítva és tesztelve, a `next` kimenete címkézett `externalSignals` mezőt kap; a forráslista levezetése a `package.json` fájlból és a valódi használat mérése még hátravan. Ami nincs igazolva, azt a "Nyitott kérdések" fejezet sorolja fel.
 
 ## Cél
 
@@ -48,14 +48,16 @@ scripts/radar-fetch.mjs   (hálózat itt van, a magon kívül, kézzel indítva)
 
 Minden `signals` bejegyzés mezői: `source` (URL), `fetchedAt`, `expiresAt`, `project` (melyik függőséghez tartozik), `summary` (rövid kivonat), `hash` (a duplikáció kizárására).
 
-## Parancsok (tervezettek)
+## Parancsok
 
-| Parancs | Mit csinál |
-|---|---|
-| `radar sources` | A `package.json`-ból levezetett, javasolt forráslista; a fejlesztő hagyja jóvá. |
-| `radar import <fájl>` | A letöltő szkript kimenetét beolvassa, szűri, deduplikálja és tárolja. Hálózatot nem használ. |
-| `radar list [--project P]` | A friss, nem lejárt jelek. |
-| `radar forget --expired` | A lejárt jelek törlése. |
+| Parancs | Állapot | Mit csinál |
+|---|---|---|
+| `radar sources` | **terv** | A `package.json`-ból levezetett, javasolt forráslista; a fejlesztő hagyja jóvá. |
+| `radar import <fájl> [--ttl-days N] [--project NÉV]` | **megvalósítva** | A `scripts/groq-summarize.mjs --out` kimenetét olvassa: csak a `ok` státuszú, https forráslinkes elemeket tárolja (a többit `skipped` néven felsorolja), a szöveget újra átvizsgálja (hostile: elutasítja és naplózza) és kitakarja (a verziószámok kivételével). Ugyanaz az azonosító frissít, nem duplikál. Hálózatot nem használ. |
+| `radar list [--project P] [--k N] [--include-expired]` | **megvalósítva** | A jelek címkével, forrással, idővel és lejárattal; alapból a lejártak nélkül. |
+| `radar forget <id> \| --expired \| --all` | **megvalósítva** | Törlés. |
+
+A jelek a `signals` névtérben vannak, **a szokásos felidézésbe nem keverednek** (a keresés `excludeNamespaces` opciót kapott). A `next` kimenetének `externalSignals` mezője mutat legfeljebb hármat a feladathoz közelit (nem lejárt, hasonlósági küszöb 0,25, **kalibrálatlan**), mindegyiket "nem igazolt" címkével és forrással.
 
 ## Költség
 
@@ -95,7 +97,21 @@ node scripts/radar-fetch.mjs --dir <projekt> --repos tulajdonos/tároló,... --y
 - **Kimenet:** `<projekt>/.colony/radar/items.json` (`id`, `source`, `text`), ezt olvassa a `scripts/groq-summarize.mjs`. A már látott elemeket (`.colony/radar/seen.json`) kihagyja, `--all` nélkül.
 - **Jelentés:** feedenként állapot, összesítés (hány tiszta, gyanús, hostile, HTML-megjegyzéssel, kitakart), és a karanténba tett elemek forrása, oka és egy rövid, **nem megbízható** idézete. Release-jegyzet hétköznapi szöveg, ezért minden karanténba tett elem megnézendő: lehet téves jelzés.
 - **Tesztek:** 9 teszt hamis feed-szerverrel (valódi hálózat nélkül): URL-ek és `--yes`, szöveggé alakítás és forráslink, hostile és megjegyzésbe rejtett utasítás karanténba, gyanús elem megjelölése és kitakarás, látott elem kihagyása, hibás feed és átirányítás, 1 MB-nál nagyobb feed, tiltott gazdagép és hibás tárolónevek, a kimenet olvashatósága a Groq-kivonatolónak.
-- **Nincs benne (még):** a `radar import`, `list` és `forget` parancs a magban, a forráslista levezetése a `package.json` fájlból, lejárat, és a briefing-integráció. Egy valódi futás volt (lásd lent).
+- **Nincs benne (még):** a forráslista levezetése a `package.json` fájlból, a lejárt jelek automatikus törlése (jelenleg `radar forget --expired`), és az, hogy a `start` kimenete is mutasson jeleket. A `radar import` és a `next` integrációja megvalósult, lásd a Parancsok fejezetet. Egy valódi hálózati futás volt (lásd lent).
+
+## A teljes lánc (kézzel indítva, minden lépés külön jóváhagyással)
+
+```
+node scripts/radar-fetch.mjs --dir <projekt> --repos tulajdonos/tároló,... --yes
+node scripts/groq-summarize.mjs --dir <projekt> --in .colony/radar/items.json --yes --out .colony/radar/summaries.json
+node dist/cli.js radar import .colony/radar/summaries.json --dir <projekt>
+```
+
+1. **Letöltés és szűrés** (hálózat: csak a megnevezett GitHub-feedek). Karantén: a hostile elem.
+2. **Guard és kivonat** (Groq, csak nyilvános szöveg). Karantén: amit a Guard jelez, vagy ami hibára fut (zárt hiba). A `--out` UTF-8 fájlt ír (a PowerShell `>` átirányítása UTF-16-ot írna, azt semmi nem olvassa), és a `--out` útvonalát a szkript **az első hívás előtt** ellenőrzi. Minden eredmény viszi a forráslinkjét.
+3. **Import a magba** (hálózat nélkül): csak a `ok` státuszú, forráslinkes elem kerül be, a szöveg újra átmegy a `scan`-en és a kitakaráson.
+
+Az eredeti elem sorsa a lánc minden pontján látható: `radar-fetch` jelentése (karantén), a kivonatoló `results` listája (`quarantined`, `deferred`, `failed`), az import `skipped` és `refused` listája.
 
 ## Mért adatok: az első valódi futás (2026-11-17)
 
@@ -116,8 +132,8 @@ node scripts/radar-fetch.mjs --dir <projekt> --repos tulajdonos/tároló,... --y
 ## Fázisok
 
 1. **Letöltő szkript kézzel**, egy forrással (például egy függőség GitHub-kiadásai), a kimeneti formátum rögzítésével.
-2. **`radar import`, `list`, `forget`** tesztekkel (mintaadatokkal, hálózat nélkül), beleértve a hostile szöveg elutasítását és a lejárat tesztjét.
-3. **Briefing-integráció:** a friss, projekthez tartozó jelek megjelennek a `start` és a `next` kimenetében, megjelölve.
+2. **`radar import`, `list`, `forget`** tesztekkel (mintaadatokkal, hálózat nélkül), beleértve a hostile szöveg elutasítását és a lejárat tesztjét. **Kész.**
+3. **Briefing-integráció:** a friss, a feladathoz közeli jelek megjelennek a `next` kimenetében, megjelölve (**kész**); a `start` kimenete még nem mutat jeleket.
 4. **Biztonsági figyelmeztetések forrása.**
 5. **Mérés** az eval keretben; ez dönti el, hogy a radar alapértelmezett lesz-e.
 
