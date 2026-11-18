@@ -1,6 +1,6 @@
 # Eval terv: az ügynökök pontosítása méréssel, költségkerettel
 
-Állapot: **részben megvalósítva.** A tárolás, a becslés, az összehasonlítás, az `eval` parancsok és a futtató szkript (`scripts/eval-run.mjs`) kész (hamis hoszttal tesztelve, majd valódi ügynökkel kipróbálva). Két **próbafutás** futott valódi ügynökkel (2026-11-17: egy apró feladat 2 futással, egy kis hibajavítás 5 futással, együtt kb. 0,76 USD): a mért adatok a "Mért adatok" fejezetben vannak. Összehasonlítás még nem készült, mert a próbafeladatok túl könnyűek a variánsok megkülönböztetéséhez. Ami nincs igazolva, azt a "Nyitott kérdések" fejezet sorolja fel.
+Állapot: **részben megvalósítva.** A tárolás, a becslés, az összehasonlítás, az `eval` parancsok és a futtató szkript (`scripts/eval-run.mjs`) kész (hamis hoszttal tesztelve, majd valódi ügynökkel kipróbálva). Két **próbafutás** futott valódi ügynökkel (2026-11-17: egy apró feladat 2 futással, egy kis hibajavítás 5 futással, együtt kb. 0,76 USD becsült, API-egyenértékű költség; Pro-előfizetéssel a valódi ár a használati keret): a mért adatok a "Mért adatok" fejezetben vannak. Összehasonlítás még nem készült, mert a próbafeladatok túl könnyűek a variánsok megkülönböztetéséhez. Ami nincs igazolva, azt a "Nyitott kérdések" fejezet sorolja fel.
 
 ## Cél
 
@@ -74,6 +74,8 @@ A futtató szkript (`scripts/eval-run.mjs`): futásonként friss munkamappát k�
 
 ## Költségterv
 
+> **Mit jelent itt a "USD":** a `claude` által jelentett `total_cost_usd` mező, a **tokenhasználat API-egyenértékű becslése**, nem fizetett összeg. A mérések egy **claude.ai fiókkal (Pro csomag)** bejelentkezett `claude`-dal futottak, nem API-kulccsal, ezért a Claude API konzol 0 USD-t mutat: a valódi ár a csomag **használati keretéből** fogy, amelyből mennyi, azt a `total_cost_usd` nem mondja meg (a claude.ai használati oldala mutatja). A `--budget-usd` keret ugyanebben az egységben korlátoz, tehát a **felhasználás arányos korlátja**, nem a számláé. API-kulccsal futó host esetén ugyanez a szám közel a tényleges ár. A Groq csak a radarban fut (ingyenes szint kvótája), az eval-futások a `claude`-on mennek, mert a mérésnek ugyanazon a modellen kell futnia, mint a munkának.
+
 ### Képlet
 
 ```
@@ -106,7 +108,7 @@ A táblázat csak azt mutatja, hogyan skálázódik a költség. A futáskölts�
 
 ### Mért adatok (két próbafutás, 2026-11-17)
 
-Mindkét próba ugyanazzal a beállítással futott: `claude` 2.1.322, `claude -p --output-format json`, `--permission-mode acceptEdits`, a `Bash` eszköz tiltva, `--max-budget-usd 0.5` futásonként, a `claude` alapértelmezett modellje, a Colony saját ellenőrzésével. A két próba együtt kb. **0,76 USD**.
+Mindkét próba ugyanazzal a beállítással futott: `claude` 2.1.322, `claude -p --output-format json`, `--permission-mode acceptEdits`, a `Bash` eszköz tiltva, `--max-budget-usd 0.5` futásonként, a `claude` alapértelmezett modellje, a Colony saját ellenőrzésével. A két próba együtt kb. **0,76 USD becsült (API-egyenértékű) költség**, a Pro-keretből fogyott rész ismeretlen.
 
 #### 1. próba: `hello` (a lehető legkisebb feladat)
 

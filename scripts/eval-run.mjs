@@ -5,8 +5,11 @@
 //   node scripts/eval-run.mjs --dir <project> --set <task set> --variants-file <file> --repeats N --dry-run
 //   node scripts/eval-run.mjs --dir <project> --set <task set> --variants-file <file> --repeats N --budget-usd X --yes
 //
-// This script starts an agent, which costs money and can change files in the workspace it is given, so:
-//   - nothing starts without --yes, and a real run needs --budget-usd (it stops when the reported cost reaches it);
+// This script starts an agent, which uses your plan's usage allowance (or API credit, if the host runs on an API key)
+// and can change files in the workspace it is given, so:
+//   - nothing starts without --yes, and a real run needs --budget-usd (it stops when the reported cost reaches it). The
+//     "cost" is the API-equivalent ESTIMATE in USD that the host reports for its token use, not an amount charged to you:
+//     with a subscription (for example Claude Pro) the real price is the share of the plan's allowance that the runs use;
 //   - if the host does not report a cost, it stops after the first run (the budget cannot be enforced), unless --max-runs is given;
 //   - the host runs in <work-dir>/<set>/<variant>/<task>/<run>, a fresh copy of the task's `setup` folder, never in the project itself;
 //   - the pass or fail comes from `colony eval check` (the colony runs the check), not from the host's own claim.
@@ -70,8 +73,8 @@ if (opts['budget-usd'] !== undefined) {
   if (!Number.isFinite(budget) || budget <= 0) fail('--budget-usd must be a number greater than 0');
 }
 if (!dryRun) {
-  if (!opts.yes) fail('this starts an agent (it costs money and changes files in its workspace). Look at --dry-run first, then add --yes to run.');
-  if (budget === null) fail('a real run needs --budget-usd: the run stops when the reported cost reaches it.');
+  if (!opts.yes) fail("this starts an agent (it uses your plan's usage allowance or API credit, and changes files in its workspace). Look at --dry-run first, then add --yes to run.");
+  if (budget === null) fail('a real run needs --budget-usd: the run stops when the reported cost estimate (API-equivalent, in USD) reaches it.');
 }
 
 function insideProject(input, label) {
@@ -224,7 +227,7 @@ let stopped = null;
 const outcomes = [];
 
 for (const item of queue.slice(0, planned)) {
-  if (budget !== null && spent >= budget) { stopped = `the budget (${budget} USD) is reached`; break; }
+  if (budget !== null && spent >= budget) { stopped = `the budget (${budget} USD) is reached (the cost is the host's API-equivalent estimate)`; break; }
   const { variant, task, run } = item;
   const workspace = join(workRoot, taskSet.set, variant, task.id, String(run));
   rmSync(workspace, { recursive: true, force: true });
@@ -262,5 +265,8 @@ for (const item of queue.slice(0, planned)) {
   }
 }
 
-console.log(JSON.stringify({ started, spentUsd: spent, budgetUsd: budget, stopped, outcomes }, null, 2));
+console.log(JSON.stringify({
+  started, spentUsd: spent, budgetUsd: budget, stopped, outcomes,
+  costNote: "The cost is the API-equivalent estimate in USD that the host reports for its token use, not an amount charged to you. With a subscription it is drawn from the plan's usage allowance.",
+}, null, 2));
 process.exit(stopped && started === 0 ? 1 : 0);

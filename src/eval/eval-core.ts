@@ -251,6 +251,7 @@ export function estimateRuns(set: EvalSet, variants: string[], repeats: number, 
   const notes: string[] = [];
   if (cost === null) notes.push('No cost per run is known: pass --cost-per-run, or record a pilot run with --cost-usd first. Nothing should start without an estimate.');
   if (costSource === 'given') notes.push('The cost per run is the value you gave; it is not measured.');
+  notes.push('The cost is the API-equivalent estimate in USD that the host reports for its token use (total_cost_usd), not an amount charged to you: with a subscription it is drawn from the plan\'s usage allowance.');
   notes.push('A reliable difference of about 20 percentage points needs roughly 90 runs per variant; a smaller difference needs more. Fewer runs show only large differences.');
   return {
     tasks: set.tasks.length, variants, repeats, plannedRuns: planned, alreadyDone: done, remainingRuns: remaining,
