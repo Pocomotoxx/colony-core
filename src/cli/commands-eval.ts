@@ -38,7 +38,7 @@ async function loadSet(dir: string, file: string | undefined): Promise<EvalSet> 
   const stat = await fs.stat(abs).catch(() => null);
   if (!stat?.isFile()) throw new CliError(`task set '${file}' not found`);
   if (stat.size > MAX_SET_BYTES) throw new CliError('the task set is larger than 1 MB');
-  const parsed = parseEvalSet(await fs.readFile(abs, 'utf-8'));
+  const parsed = parseEvalSet(await fs.readFile(abs, 'utf-8'), { setDir: path.dirname(abs) });
   if (!parsed.set) throw new CliError(`the task set is invalid:\n- ${parsed.problems.join('\n- ')}`);
   return parsed.set;
 }

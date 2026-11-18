@@ -1,0 +1,46 @@
+{
+  "set": "hard-1",
+  "split": "tune",
+  "tasks": [
+    {
+      "id": "interval-merge",
+      "title": "mergeIntervals",
+      "prompt": "Read README.md in the current folder. The function in src/merge.js does not follow it. Fix the code so that it follows README.md exactly, including the validation rules. Change only files under src/. Do not edit README.md and do not create other files.",
+      "check": ["node", "{setDir}/checks/interval-merge.mjs"],
+      "setup": "{setDir}/fixtures/interval-merge",
+      "timeoutSec": 60
+    },
+    {
+      "id": "csv-parse",
+      "title": "parseCsv",
+      "prompt": "Read README.md in the current folder. src/csv.js only splits on line breaks and commas. Implement parseCsv so that it follows README.md exactly, including the error rules. Change only files under src/. Do not edit README.md and do not create other files.",
+      "check": ["node", "{setDir}/checks/csv-parse.mjs"],
+      "setup": "{setDir}/fixtures/csv-parse",
+      "timeoutSec": 60
+    },
+    {
+      "id": "money-split",
+      "title": "splitCents",
+      "prompt": "Read README.md in the current folder. src/split.js loses or invents cents. Make splitCents follow README.md exactly, including the exact computation and the validation rules. Change only files under src/. Do not edit README.md and do not create other files.",
+      "check": ["node", "{setDir}/checks/money-split.mjs"],
+      "setup": "{setDir}/fixtures/money-split",
+      "timeoutSec": 60
+    },
+    {
+      "id": "rate-limiter",
+      "title": "SlidingWindowLimiter",
+      "prompt": "Read README.md in the current folder. The limiter in src/limiter.js does not behave as described. Make it follow README.md exactly: the window boundary, what is recorded, retryAfterMs, size() and the validation. Change only files under src/. Do not edit README.md and do not create other files.",
+      "check": ["node", "{setDir}/checks/rate-limiter.mjs"],
+      "setup": "{setDir}/fixtures/rate-limiter",
+      "timeoutSec": 60
+    },
+    {
+      "id": "iso-weeks",
+      "title": "ISO weeks",
+      "prompt": "Read README.md in the current folder. Weekly reports are wrong around the turn of the year, and the other modules in src/ disagree with the standard, too. Fix the code in src/ so that dates.js, calendar.js and report.js all follow the ISO 8601 rules in README.md. Change only files under src/. Do not edit README.md and do not create other files.",
+      "check": ["node", "{setDir}/checks/iso-weeks.mjs"],
+      "setup": "{setDir}/fixtures/iso-weeks",
+      "timeoutSec": 120
+    }
+  ]
+}

@@ -2,7 +2,7 @@ import js from '@eslint/js';
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
-  { ignores: ['dist/**', 'node_modules/**', '.claude/worktrees/**'] },
+  { ignores: ['dist/**', 'node_modules/**', '.claude/worktrees/**', 'eval/**'] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
