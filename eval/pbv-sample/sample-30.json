@@ -1,0 +1,186 @@
+{
+  "seed": 20261118,
+  "selection": "clean pool (MIT repos only), proportional 18 TS + 12 JS, deterministic shuffle by instance_id",
+  "sample": [
+    {
+      "instance_id": "mui__material-ui-13430",
+      "repo": "mui/material-ui",
+      "language": "TypeScript",
+      "base_commit": "fa2b154ffb5daaf0dce0da22931f36802c03391b"
+    },
+    {
+      "instance_id": "mui__material-ui-42412",
+      "repo": "mui/material-ui",
+      "language": "TypeScript",
+      "base_commit": "b8a28e13dc0821314700f1aefc9f8e1134cf9034"
+    },
+    {
+      "instance_id": "mui__material-ui-12303",
+      "repo": "mui/material-ui",
+      "language": "TypeScript",
+      "base_commit": "f432f8a733514b3fa83718102d78f1311cb19de0"
+    },
+    {
+      "instance_id": "mui__material-ui-26807",
+      "repo": "mui/material-ui",
+      "language": "TypeScript",
+      "base_commit": "567e6cf97dce71eba9370e8c13519d206a98ffd2"
+    },
+    {
+      "instance_id": "microsoft__vscode-109750",
+      "repo": "microsoft/vscode",
+      "language": "TypeScript",
+      "base_commit": "cf4b5a703f581944f308b9a6f1e8b386059caef1"
+    },
+    {
+      "instance_id": "microsoft__vscode-148971",
+      "repo": "microsoft/vscode",
+      "language": "TypeScript",
+      "base_commit": "2dff5deef71fed71f039f8064e4e6deb818b1e3d"
+    },
+    {
+      "instance_id": "coder__code-server-4923",
+      "repo": "coder/code-server",
+      "language": "TypeScript",
+      "base_commit": "78658f1cf48a5e019a82cde937cfa8feed8b986b"
+    },
+    {
+      "instance_id": "mui__material-ui-14391",
+      "repo": "mui/material-ui",
+      "language": "TypeScript",
+      "base_commit": "2dedcc12fda827a9bbb0bece2f94aa0695e73a7c"
+    },
+    {
+      "instance_id": "mui__material-ui-24105",
+      "repo": "mui/material-ui",
+      "language": "TypeScript",
+      "base_commit": "16c648dfd8d9b47772a44f3a77c6648a55557d80"
+    },
+    {
+      "instance_id": "mui__material-ui-14364",
+      "repo": "mui/material-ui",
+      "language": "TypeScript",
+      "base_commit": "b5d9b243d30a879ab33e53bda4c6553402d99e39"
+    },
+    {
+      "instance_id": "mui__material-ui-34610",
+      "repo": "mui/material-ui",
+      "language": "TypeScript",
+      "base_commit": "1e09429e1804ddd7505fe78f3d606e24e98aa16f"
+    },
+    {
+      "instance_id": "mui__material-ui-11451",
+      "repo": "mui/material-ui",
+      "language": "TypeScript",
+      "base_commit": "04fae47c2a876f38aacfae866d220ddcbb7358ef"
+    },
+    {
+      "instance_id": "mui__material-ui-14496",
+      "repo": "mui/material-ui",
+      "language": "TypeScript",
+      "base_commit": "9ecc8db8abbfb829111d3b5c0678267827984024"
+    },
+    {
+      "instance_id": "mui__material-ui-27312",
+      "repo": "mui/material-ui",
+      "language": "TypeScript",
+      "base_commit": "bd6e492ee5f71357a5a56f06c223310dd92157cb"
+    },
+    {
+      "instance_id": "microsoft__vscode-173585",
+      "repo": "microsoft/vscode",
+      "language": "TypeScript",
+      "base_commit": "fcafbd6df382036c665b63a2c08e6154bfbbd289"
+    },
+    {
+      "instance_id": "mui__material-ui-18141",
+      "repo": "mui/material-ui",
+      "language": "TypeScript",
+      "base_commit": "13b3a0d31947ccdb20108febb5432d4f46f5a677"
+    },
+    {
+      "instance_id": "microsoft__vscode-123294",
+      "repo": "microsoft/vscode",
+      "language": "TypeScript",
+      "base_commit": "133ae5ecee8b5bdb1e6257a44c2e1b5368905669"
+    },
+    {
+      "instance_id": "mui__material-ui-26623",
+      "repo": "mui/material-ui",
+      "language": "TypeScript",
+      "base_commit": "f336e03acfadfe0171cee5a469be02953337d20f"
+    },
+    {
+      "instance_id": "sveltejs__svelte-464",
+      "repo": "sveltejs/svelte",
+      "language": "JavaScript",
+      "base_commit": "79c456333c255a8ae23acf02ed714b624cd1cca9"
+    },
+    {
+      "instance_id": "sveltejs__svelte-1137",
+      "repo": "sveltejs/svelte",
+      "language": "JavaScript",
+      "base_commit": "86a07652d8d0c2f2895a7fea4610cf7beb43609b"
+    },
+    {
+      "instance_id": "sveltejs__svelte-3749",
+      "repo": "sveltejs/svelte",
+      "language": "JavaScript",
+      "base_commit": "8d7d0ff7dd7b248ca6d9b6b4cac098430c6e6ffa"
+    },
+    {
+      "instance_id": "prettier__prettier-666",
+      "repo": "prettier/prettier",
+      "language": "JavaScript",
+      "base_commit": "6632b95497423ed07ddaee8035abed99aaf5a777"
+    },
+    {
+      "instance_id": "sveltejs__svelte-4288",
+      "repo": "sveltejs/svelte",
+      "language": "JavaScript",
+      "base_commit": "e4460e38ba58d5209514f0fa93dc61b6bb1ebb54"
+    },
+    {
+      "instance_id": "prettier__prettier-4667",
+      "repo": "prettier/prettier",
+      "language": "JavaScript",
+      "base_commit": "4a16319470cfb929799783118ad78afcf99461d2"
+    },
+    {
+      "instance_id": "prettier__prettier-3515",
+      "repo": "prettier/prettier",
+      "language": "JavaScript",
+      "base_commit": "d1c97b362219d62669145bb6bdd66a4be5423257"
+    },
+    {
+      "instance_id": "sveltejs__svelte-4332",
+      "repo": "sveltejs/svelte",
+      "language": "JavaScript",
+      "base_commit": "70d17950880e56f78c0a919b41ad2a356a9e37ff"
+    },
+    {
+      "instance_id": "sveltejs__svelte-6458",
+      "repo": "sveltejs/svelte",
+      "language": "JavaScript",
+      "base_commit": "b662c7fd41b3b778ea1ae80b0a4d86c239ffcfe7"
+    },
+    {
+      "instance_id": "sveltejs__svelte-738",
+      "repo": "sveltejs/svelte",
+      "language": "JavaScript",
+      "base_commit": "ae060cfa3b228ff2d1646e60700e77aace1e4780"
+    },
+    {
+      "instance_id": "prettier__prettier-6604",
+      "repo": "prettier/prettier",
+      "language": "JavaScript",
+      "base_commit": "affa24ce764bd14ac087abeef0603012f5c635d6"
+    },
+    {
+      "instance_id": "sveltejs__svelte-3702",
+      "repo": "sveltejs/svelte",
+      "language": "JavaScript",
+      "base_commit": "565931dff957545bf1b8a9ea57cfc097ed1a7e83"
+    }
+  ]
+}
