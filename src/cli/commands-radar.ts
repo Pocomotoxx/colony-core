@@ -1,15 +1,18 @@
 import fs from 'node:fs/promises';
+import path from 'node:path';
 import { scanText } from '../injection-scan.js';
 import { redactText } from '../redact.js';
 import { resolveInside, SafePathError } from '../safe-path.js';
 import { DEFAULT_TTL_DAYS, listSignals, MAX_SIGNALS, parseSummaries, projectOfSource, SIGNALS_NAMESPACE, SIGNAL_LABEL, tagOfSource } from '../radar/signals.js';
+import { MAX_APPROVED, ApprovedSource, proposeSources, readApproved, REPO_NAME, writeApproved } from '../radar/sources.js';
+import { STATE_DIR } from './session.js';
 import { CliError, CommandContext, CommandResult, Handler } from './context.js';
 
 // Commands: radar
 
 export const radarHandlers: Record<string, Handler> = {};
 
-const USAGE_LINE = 'usage: radar import <summaries.json> [--ttl-days N] [--project NAME] | radar list [--project NAME] [--k N] [--include-expired] | radar forget <id> | radar forget --expired | radar forget --all';
+const USAGE_LINE = 'usage: radar import <summaries.json> [--ttl-days N] [--project NAME] | radar list [--project NAME] [--k N] [--include-expired] | radar forget <id> | radar forget --expired | radar forget --all | radar sources | radar sources approve <owner/repo>... | radar sources approve --all | radar sources remove <owner/repo>...';
 const DAY = 24 * 60 * 60 * 1000;
 
 /**
@@ -50,6 +53,8 @@ async function handle_radar(ctx: CommandContext): Promise<CommandResult> {
     await session.save();
     return reply({ forgotten: gone.length, ids: gone });
   }
+
+  if (sub === 'sources') return handleSources(ctx);
 
   if (sub !== 'import') throw new CliError(USAGE_LINE);
 
@@ -138,6 +143,94 @@ async function handle_radar(ctx: CommandContext): Promise<CommandResult> {
     skipped: parsed.skipped,
     note: `${SIGNAL_LABEL}. Only items with status ok and a source link are imported; the rest are listed under skipped.`,
   });
+}
+
+/**
+ * `radar sources`: which GitHub repositories the radar may fetch. The proposal is read from the dependencies of the
+ * project (package.json, and the package.json of each installed dependency); nothing is fetched and nothing is chosen
+ * for you: you approve by name (`approve <owner/repo>` or `approve --all`), and `scripts/radar-fetch.mjs --from-sources`
+ * reads only that list.
+ */
+async function handleSources(ctx: CommandContext): Promise<CommandResult> {
+  const { values, positionals, dir, session, warnings, log, reply } = ctx;
+  const action = positionals[2];
+  const names = positionals.slice(3);
+  const stateDir = path.join(dir, STATE_DIR);
+
+  let proposal;
+  try {
+    proposal = await proposeSources(dir);
+  } catch (err) {
+    // a list can still be edited without a package.json: only the proposal needs it
+    if (action === 'approve' && !values.all && names.length > 0) proposal = null;
+    else if (action === 'remove') proposal = null;
+    else throw new CliError(`${(err as Error).message}. The proposal is made from the dependencies of the project: run this in the folder that holds package.json (and run the install, so that node_modules has the packages).`);
+  }
+  let approved = await readApproved(stateDir);
+  const has = (repo: string) => approved.some((a) => a.repo.toLowerCase() === repo.toLowerCase());
+
+  if (action === undefined) {
+    return reply({
+      package: proposal!.packageName,
+      considered: proposal!.considered,
+      ...(proposal!.truncated ? { truncated: 'only the first 500 dependencies were looked at' } : {}),
+      approved: approved.map((a) => ({ repo: a.repo, how: a.how, via: a.via })),
+      proposed: proposal!.repos.map((r) => ({ repo: r.repo, via: r.via, approved: has(r.repo) })),
+      unresolved: proposal!.unresolved,
+      note: 'Nothing was fetched. The proposal comes from files on disk (the repository field of each installed dependency). Approve by name: `radar sources approve <owner/repo>` or `approve --all`; then `node scripts/radar-fetch.mjs --dir <project> --from-sources --dry-run`. A repository named in a package.json is data from the package author: check the name before you approve it.',
+    });
+  }
+
+  if (action === 'remove') {
+    if (names.length === 0) throw new CliError(USAGE_LINE);
+    const gone = approved.filter((a) => names.some((n) => n.toLowerCase() === a.repo.toLowerCase())).map((a) => a.repo);
+    if (gone.length === 0) throw new CliError('none of these is on the approved list');
+    approved = approved.filter((a) => !gone.includes(a.repo));
+    await writeApproved(stateDir, approved);
+    log('radar.sources.removed', gone[0], { repos: gone });
+    await session.save();
+    return reply({ removed: gone, approved: approved.map((a) => a.repo) });
+  }
+
+  if (action !== 'approve') throw new CliError(USAGE_LINE);
+  if (Boolean(values.all) === (names.length > 0)) throw new CliError('approve needs either one or more owner/repo names, or --all (the whole proposal)');
+
+  const wanted: Array<{ repo: string; via: string[]; how: 'proposal' | 'manual' }> = [];
+  if (values.all) {
+    for (const r of proposal!.repos) wanted.push({ repo: r.repo, via: r.via, how: 'proposal' });
+  } else {
+    for (const n of names) {
+      if (!REPO_NAME.test(n) || n.includes('..')) throw new CliError(`'${n}' is not an owner/repo name`);
+      const known = proposal?.repos.find((r) => r.repo.toLowerCase() === n.toLowerCase());
+      wanted.push({ repo: n, via: known?.via ?? [], how: known ? 'proposal' : 'manual' });
+    }
+  }
+  const added: string[] = [];
+  const already: string[] = [];
+  const leftOut: string[] = [];
+  const manual: string[] = [];
+  for (const w of wanted) {
+    if (has(w.repo)) {
+      already.push(w.repo);
+      continue;
+    }
+    if (approved.length >= MAX_APPROVED) {
+      leftOut.push(w.repo);
+      continue;
+    }
+    const entry: ApprovedSource = { repo: w.repo, via: w.via, approvedAt: Date.now(), how: w.how };
+    approved.push(entry);
+    added.push(w.repo);
+    if (w.how === 'manual') manual.push(w.repo);
+  }
+  if (leftOut.length > 0) warnings.push(`the list holds at most ${MAX_APPROVED} repositories: ${leftOut.length} left out (${leftOut.join(', ')}); remove some first`);
+  if (manual.length > 0) warnings.push(`not found among your dependencies, approved by name: ${manual.join(', ')}`);
+  if (added.length > 0) {
+    await writeApproved(stateDir, approved);
+    log('radar.sources.approved', added[0], { repos: added, how: values.all ? 'all' : 'named' });
+    await session.save();
+  }
+  return reply({ added, alreadyApproved: already, leftOut, approved: approved.map((a) => a.repo) });
 }
 
 radarHandlers['radar'] = handle_radar;

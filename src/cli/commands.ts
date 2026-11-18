@@ -81,6 +81,8 @@ export const USAGE = `colony <command> [options]    (every command prints JSON; 
   eval report --set <file>                runs and pass rates per variant
   radar import <summaries.json> [--ttl-days N] [--project NAME]   keep the checked summaries of outside text (written by scripts/groq-summarize.mjs --out) as unverified external signals with source and expiry
   radar list [--project NAME] [--k N] [--include-expired] | radar forget <id> | radar forget --expired | radar forget --all
+  radar sources                           the GitHub repositories of your dependencies (read from package.json and node_modules; no network) and the approved list
+  radar sources approve <owner/repo>... | radar sources approve --all | radar sources remove <owner/repo>...   you approve by name; scripts/radar-fetch.mjs --from-sources reads only that list
   anomaly add <text> --as <member> [--task <fromTaskId>]   record something set aside as noise; it becomes a task for the exobiologist
   anomaly list [--k N]                    the recorded anomalies
   memory add <text>                       [--ns NAMESPACE] [--allow-risky]   hostile text is refused unless --allow-risky

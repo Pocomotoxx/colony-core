@@ -253,3 +253,52 @@ test('version-like numbers stay in the text, other personal data is still redact
   assert.deepEqual(list[0].redactSkip, ['ip_address']);
   assert.equal(out.totals.redacted, 1);
 });
+
+test('--from-sources fetches only the repositories you approved; without an approved list it refuses', async () => {
+  const dir = await project();
+  routes = { '/o/r/releases.atom': () => ({ body: GOOD }), '/p/q/releases.atom': () => ({ body: GOOD }) };
+
+  const none = await run(dir, ['--from-sources', '--dry-run']);
+  assert.equal(none.code, 2);
+  assert.match(none.stderr, /no approved list yet/);
+
+  assert.equal((await runCommand(['radar', 'sources', 'approve', 'o/r', '--dir', dir], process.cwd())).code, 0);
+  const dry = await run(dir, ['--from-sources', '--dry-run']);
+  assert.equal(dry.code, 0, dry.stderr);
+  assert.deepEqual(JSON.parse(dry.stdout).plan.feeds, [`${base}/o/r/releases.atom`], 'only the approved one');
+  assert.equal(requests.length, 0);
+
+  const real = await run(dir, ['--from-sources', '--yes']);
+  assert.equal(real.code, 0, real.stderr);
+  assert.deepEqual(requests.map((r) => r.url), ['/o/r/releases.atom'], 'the other repository was not asked');
+  assert.equal(JSON.parse(real.stdout).totals.written, 3);
+
+  assert.equal((await runCommand(['radar', 'sources', 'remove', 'o/r', '--dir', dir], process.cwd())).code, 0);
+  const empty = await run(dir, ['--from-sources', '--dry-run']);
+  assert.equal(empty.code, 2);
+  assert.match(empty.stderr, /approved list is empty/);
+});
+
+test('--repos and --from-sources exclude each other, and one of them is needed', async () => {
+  const dir = await project();
+  routes = {};
+  const both = await run(dir, ['--repos', 'o/r', '--from-sources', '--dry-run']);
+  assert.equal(both.code, 2);
+  assert.match(both.stderr, /either --repos or --from-sources/);
+  const neither = await run(dir, ['--dry-run']);
+  assert.equal(neither.code, 2);
+  assert.match(neither.stderr, /either --repos or --from-sources/);
+});
+
+test('a damaged approved list is refused, and a name in it that is not owner/repo never becomes a URL', async () => {
+  const dir = await project();
+  routes = {};
+  await fs.mkdir(path.join(dir, '.colony', 'radar'), { recursive: true });
+  await fs.writeFile(path.join(dir, '.colony', 'radar', 'sources.json'), '{ nope');
+  assert.match((await run(dir, ['--from-sources', '--dry-run'])).stderr, /not valid JSON/);
+  await fs.writeFile(path.join(dir, '.colony', 'radar', 'sources.json'), JSON.stringify({ repos: [{ repo: '../../etc/passwd' }] }));
+  const r = await run(dir, ['--from-sources', '--dry-run']);
+  assert.equal(r.code, 2);
+  assert.match(r.stderr, /not an owner\/repo name/);
+  assert.equal(requests.length, 0);
+});
