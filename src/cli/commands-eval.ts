@@ -1,6 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { compareVariants, estimateRuns, EvalResult, EvalSet, parseEvalSet, summarize, VARIANT_NAME } from '../eval/eval-core.js';
+import { compareVariants, estimateRuns, EvalResult, EvalSet, MODEL_NAMES, parseEvalSet, summarize, VARIANT_NAME } from '../eval/eval-core.js';
 import { resolveInside, SafePathError } from '../safe-path.js';
 import { runVerification, VerifyError } from '../verify/run.js';
 import { CliError, CommandContext, CommandResult, Handler } from './context.js';
@@ -20,7 +20,7 @@ const DEFAULT_MIN_RUNS = 20;
 const USAGE_LINE =
   'usage: eval validate --set <file> | eval estimate --set <file> --variants A,B --repeats N [--cost-per-run USD] [--budget-usd USD] | ' +
   'eval check --set <file> --variant V --task T --run N --workspace <dir> | ' +
-  'eval record --set <file> --variant V --task T --run N (--passed|--failed) [--cost-usd X] [--input-tokens N] [--output-tokens N] [--duration-ms N] [--turns N] | ' +
+  'eval record --set <file> --variant V --task T --run N (--passed|--failed) [--cost-usd X] [--input-tokens N] [--output-tokens N] [--duration-ms N] [--turns N] [--model NAME] | ' +
   'eval compare --set <file> --variants A,B [--min-runs N] [--include-reported] | eval report --set <file>';
 
 async function inside(dir: string, input: string, label: string): Promise<string> {
@@ -72,6 +72,12 @@ function numOpt(value: string | undefined, name: string): number | undefined {
   const n = Number(value);
   if (!Number.isFinite(n) || n < 0) throw new CliError(`${name} must be a number >= 0`);
   return n;
+}
+
+function modelOpt(value: string | undefined): string | undefined {
+  if (value === undefined) return undefined;
+  if (!MODEL_NAMES.test(value)) throw new CliError('--model must be one or more model names (letters, digits and . _ : / @ + -) separated by commas');
+  return value;
 }
 
 function variantList(value: string | undefined): string[] {
@@ -148,6 +154,7 @@ async function handle_eval(ctx: CommandContext): Promise<CommandResult> {
       ...(intOpt(values['input-tokens'], '--input-tokens', 0, 1e9) !== undefined ? { inputTokens: intOpt(values['input-tokens'], '--input-tokens', 0, 1e9) } : {}),
       ...(intOpt(values['output-tokens'], '--output-tokens', 0, 1e9) !== undefined ? { outputTokens: intOpt(values['output-tokens'], '--output-tokens', 0, 1e9) } : {}),
       ...(intOpt(values.turns, '--turns', 0, 10_000) !== undefined ? { turns: intOpt(values.turns, '--turns', 0, 10_000) } : {}),
+      ...(modelOpt(values.model) !== undefined ? { model: modelOpt(values.model) } : {}),
     };
     await storeResult(ctx, set, result);
     return reply({ result: { ...result, timedOut: run_.timedOut, exitCode: run_.exitCode } });
@@ -169,6 +176,7 @@ async function handle_eval(ctx: CommandContext): Promise<CommandResult> {
       ...(outputTokens !== undefined ? { outputTokens } : {}),
       ...(durationMs !== undefined ? { durationMs } : {}),
       ...(turns !== undefined ? { turns } : {}),
+      ...(modelOpt(values.model) !== undefined ? { model: modelOpt(values.model) } : {}),
     };
     await storeResult(ctx, set, result);
     warnings.push('recorded as `reported`: the colony did not run the check, so a comparison leaves it out unless --include-reported is given');

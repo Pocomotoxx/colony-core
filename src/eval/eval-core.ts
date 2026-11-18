@@ -41,8 +41,13 @@ export interface EvalResult {
   /** How long the colony's own check took. Not the run's duration. */
   checkDurationMs?: number;
   turns?: number;
+  /** The model(s) the host says it used, from its own usage report, joined by commas. The host's statement, not checked. */
+  model?: string;
   at: number;
 }
+
+/** One or more model names, separated by commas. */
+export const MODEL_NAMES = /^[A-Za-z0-9._:/@+-]{1,100}(?:,[A-Za-z0-9._:/@+-]{1,100}){0,7}$/;
 
 const NAME = /^[a-z0-9][a-z0-9_-]{0,63}$/;
 export const VARIANT_NAME = /^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/;
@@ -157,6 +162,8 @@ export interface VariantSummary {
   tasks: number;
   cost: { samples: number; meanUsd: number | null; totalUsd: number };
   meanTurns: number | null;
+  /** The models the host reported for these runs (empty when it reported none). */
+  models: string[];
 }
 
 const mean = (xs: number[]): number | null => (xs.length === 0 ? null : xs.reduce((a, b) => a + b, 0) / xs.length);
@@ -175,6 +182,7 @@ export function summarize(results: EvalResult[], variant: string): VariantSummar
     tasks: new Set(mine.map((r) => r.task)).size,
     cost: { samples: costs.length, meanUsd: mean(costs), totalUsd: costs.reduce((a, b) => a + b, 0) },
     meanTurns: mean(turns),
+    models: [...new Set(mine.flatMap((r) => (r.model ? r.model.split(',') : [])))].sort(),
   };
 }
 

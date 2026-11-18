@@ -74,7 +74,7 @@ export const USAGE = `colony <command> [options]    (every command prints JSON; 
   debate <proposalId> judge <entryId> --as <member> --outcome supported|refuted [--verified-by-test] | debate <proposalId> show | debate stats
   eval validate --set <file>              check a task set (a JSON file with objective checks); nothing runs
   eval estimate --set <file> --variants A,B --repeats N   [--cost-per-run USD] [--budget-usd USD]   runs and cost still needed; start nothing without it
-  eval check --set <file> --variant V --task T --run N --workspace <dir>   [--cost-usd X] [--duration-ms N] [--turns N] [--input-tokens N] [--output-tokens N]   the colony runs the task's check itself and records the result
+  eval check --set <file> --variant V --task T --run N --workspace <dir>   [--cost-usd X] [--duration-ms N] [--turns N] [--model NAME] [--input-tokens N] [--output-tokens N]   the colony runs the task's check itself and records the result
   eval record --set <file> --variant V --task T --run N (--passed|--failed)   a runner's report (kept apart as "reported")
                                           [--cost-usd X] [--input-tokens N] [--output-tokens N] [--duration-ms N] [--turns N]
   eval compare --set <file> --variants A,B [--min-runs N] [--include-reported]   names a winner only beyond noise and with enough runs

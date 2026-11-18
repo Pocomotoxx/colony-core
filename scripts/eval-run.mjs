@@ -216,6 +216,8 @@ function readReport(stdout) {
     keys: Object.keys(obj),
     costUsd: num(obj.total_cost_usd) ?? num(obj.cost_usd),
     turns: num(obj.num_turns),
+    // the model(s) the host says it used: the keys of its usage report (a statement of the host, kept as such)
+    models: Object.keys(obj.modelUsage && typeof obj.modelUsage === 'object' ? obj.modelUsage : {}).filter((m) => /^[A-Za-z0-9._:/@+-]{1,100}$/.test(m)).slice(0, 8),
     inputTokens: num(obj.usage?.input_tokens),
     outputTokens: num(obj.usage?.output_tokens),
   };
@@ -244,6 +246,7 @@ for (const item of queue.slice(0, planned)) {
   const host = await runHost(variantDefs[variant], task.prompt, workspace);
   const hostMs = Date.now() - hostStarted;
   const report = readReport(host.stdout);
+  if (started === 1 && report.models?.length) console.error(`the host says it used: ${report.models.join(', ')}`);
   if (started === 1) console.error(`the host's JSON output has these fields: ${report.keys.length ? report.keys.join(', ') : '(none: it is not JSON)'}`);
   if (report.costUsd !== undefined) spent += report.costUsd;
 
@@ -251,6 +254,7 @@ for (const item of queue.slice(0, planned)) {
   if (report.costUsd !== undefined) args.push('--cost-usd', String(report.costUsd));
   args.push('--duration-ms', String(hostMs)); // measured by this script around the host, not taken from the host's own output
   if (report.turns !== undefined) args.push('--turns', String(report.turns));
+  if (report.models?.length) args.push('--model', report.models.join(','));
   if (report.inputTokens !== undefined) args.push('--input-tokens', String(report.inputTokens));
   if (report.outputTokens !== undefined) args.push('--output-tokens', String(report.outputTokens));
   const check = spawnSync(process.execPath, args, { encoding: 'utf-8' });
