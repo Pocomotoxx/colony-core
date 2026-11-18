@@ -130,7 +130,7 @@ A guard mellett a colony három további hookot használ (`colony hook install -
 
 ### Párhuzamos hostok és a keresés minősége
 
-- **Zárolás:** minden parancs a `.colony/state.lock` zár alatt fut, így két host nem írja felül egymás állapotát. A holt folyamat zárját a következő parancs átveszi; foglalt zárnál érthető hibával lejár.
+- **Zárolás:** minden parancs a `.colony/state.lock` zár alatt fut, így két host nem írja felül egymás állapotát. A holt folyamat zárját a következő parancs átveszi; foglalt zárnál érthető hibával lejár. Az ugyanezen a gépen élő birtokost nem veszi át akkor sem, ha a parancsa hosszú (egy ellenőrzés percekig futhat); a birtokos időnként frissíti a zár idejét.
 - **Keresés:** a helyi beágyazás szavakat és szórészleteket (3- és 4-gramm) kivonatol, ékezetet hajtogat, és magyar–angol töltelékszavakat hagy el, így a ragozott alakok (`feladatokat` ~ `feladat`) közel esnek. Ez **lexikális** hasonlóság, nem jelentésmodell: közös betű nélküli rokonértelmű szavakat (`car` és `automobile`) nem köt össze. A `retrieval-quality` teszt méri: 16 kérdésen az 1. helyen találja a helyes régi munkát a kérdések 94%-ában (a korábbi beágyazás 6%). Saját modellt az `IEmbeddingProvider` felületen lehet bekötni; a régebbi memória egyszer újraszámolódik.
 
 A boot állapotai (a Colony bootlogikája):

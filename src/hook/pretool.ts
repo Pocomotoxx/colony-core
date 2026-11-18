@@ -31,7 +31,8 @@ const LARGE_WRITE_LINES = 300;
 const PROTECTED_TOP = new Set(['.colony', '.git']);
 
 /** Judge one tool call. */
-export async function evaluateToolCall(call: ToolCall, projectDir: string): Promise<GuardVerdict> {
+/** `projectDir` is the project; `cwd` is where the host is (a subdirectory after a cd), and relative paths start there. */
+export async function evaluateToolCall(call: ToolCall, projectDir: string, cwd: string = projectDir): Promise<GuardVerdict> {
   const results: GateResult[] = [];
   const add = (r: GateResult | null) => {
     if (r) results.push(r);
@@ -43,7 +44,7 @@ export async function evaluateToolCall(call: ToolCall, projectDir: string): Prom
   if (call.kind === 'shell') {
     add(checkDestructive(call.command));
     add(checkSecrets(call.command));
-    const protectedWrite = findProtectedWrite(call.command, projectDir);
+    const protectedWrite = findProtectedWrite(call.command, projectDir, cwd);
     if (protectedWrite) {
       if (protectedWrite.decision === 'deny') deny = true;
       else ask = true;
@@ -60,7 +61,7 @@ export async function evaluateToolCall(call: ToolCall, projectDir: string): Prom
       reasons.push(`${call.tool} without a file path is refused`);
     } else {
       try {
-        const { relative } = await resolveInside(projectDir, call.path);
+        const { relative } = await resolveInside(projectDir, path.isAbsolute(call.path) ? call.path : path.resolve(cwd, call.path));
         const segments = relative.split(path.sep).map((s) => s.toLowerCase()); // .COLONY is the same directory on Windows and macOS
         const top = segments[0];
         if (top === '.claude' && /^settings(?:\.local)?\.json$/.test(segments[1] ?? '')) {
@@ -101,6 +102,6 @@ export async function evaluateToolCall(call: ToolCall, projectDir: string): Prom
 }
 
 /** Judge a Claude Code PreToolUse payload (kept for callers and tests that hold the host's own format). */
-export async function evaluatePreToolUse(input: HookInput, projectDir: string): Promise<GuardVerdict> {
-  return evaluateToolCall(toHostRequest(input).call, projectDir);
+export async function evaluatePreToolUse(input: HookInput, projectDir: string, cwd: string = projectDir): Promise<GuardVerdict> {
+  return evaluateToolCall(toHostRequest(input).call, projectDir, cwd);
 }

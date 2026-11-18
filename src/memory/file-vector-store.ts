@@ -44,6 +44,8 @@ export class FileVectorStore implements IVectorStore {
   private storagePath: string;
   private docs = new Map<string, MemoryDocument>();
   private isLoaded = false;
+  /** Set when the file was not read cleanly (damaged, unreadable, or rows that are not documents). Nothing is written then. */
+  private loadProblem?: string;
   private loading?: Promise<void>;
   private writeChain: Promise<void> = Promise.resolve();
   private readonly mode: 'linear' | 'hnsw' | 'auto';
@@ -103,12 +105,20 @@ export class FileVectorStore implements IVectorStore {
       // v2: { v: 2, docs: [...] } with base64 Float32 vectors. Legacy: a plain array with number[] vectors.
       const rows: StoredDocument[] = Array.isArray(parsed) ? parsed : parsed?.v === 2 && Array.isArray(parsed.docs) ? parsed.docs : [];
       this.docs.clear();
+      let unreadable = 0;
       for (const row of rows) {
-        this.docs.set(row.id, decodeDocument(row));
+        try {
+          if (!row || typeof row !== 'object' || typeof row.id !== 'string') throw new Error('not a document');
+          this.docs.set(row.id, decodeDocument(row));
+        } catch {
+          unreadable++;
+        }
       }
+      if (unreadable > 0) this.loadProblem = unreadable + ' of ' + rows.length + ' rows are not readable documents';
     } catch (err) {
       if (errorCode(err) !== 'ENOENT') {
         console.warn(`[FileVectorStore] Warning reading ${this.storagePath}:`, errorMessage(err));
+        this.loadProblem = errorMessage(err);
       }
       this.docs.clear();
     }
@@ -123,6 +133,10 @@ export class FileVectorStore implements IVectorStore {
    */
   private persist(): Promise<void> {
     const write = async () => {
+      // The file was not read cleanly, so what is in memory is a part of it: writing it would delete the rest.
+      if (this.loadProblem) {
+        throw new Error(`the memory file ${this.storagePath} was not read cleanly (${this.loadProblem}); nothing was written, so the stored memory is not overwritten. Repair or restore the file first.`);
+      }
       const dir = path.dirname(this.storagePath);
       await fs.mkdir(dir, { recursive: true });
       const serialized = JSON.stringify({ v: 2, docs: Array.from(this.docs.values(), encodeDocument) });

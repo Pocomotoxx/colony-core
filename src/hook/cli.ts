@@ -5,6 +5,7 @@ import { writeFileAtomic } from '../atomic-write.js';
 import { errorCode, errorMessage } from '../errors.js';
 import { contextOutput, hookSettings, mergeHookSettings, preToolUseOutput, promptText, sessionIdOf, toHostRequest, toToolOutcome } from '../host/claude-code.js';
 import { evaluateToolCall } from './pretool.js';
+import { findProjectRoot } from './project-root.js';
 
 export interface HookRun {
   code: number;
@@ -59,12 +60,16 @@ export async function runHook(sub: string | undefined, stdinText: string, defaul
       ? { code: 2, stdout: '', stderr: 'Colony guard: the hook input is not valid JSON, so the tool call is refused.\n' }
       : { code: 0, stdout: '', stderr: `Colony hook ${sub}: the input is not valid JSON; nothing was done.\n` };
   }
-  const projectDir = path.resolve(dirArg ?? (typeof input.cwd === 'string' ? input.cwd : defaultDir));
+  // The host reports where it is, which after a cd is a subdirectory: the project is the nearest directory above it with
+  // a .colony (see project-root.ts). --dir fixes the project explicitly.
+  const base = path.resolve(dirArg ?? defaultDir);
+  const hostCwd = typeof input.cwd === 'string' ? path.resolve(input.cwd) : base;
+  const projectDir = dirArg ? base : await findProjectRoot(hostCwd);
 
   if (sub === 'pretool') {
     let verdict;
     try {
-      verdict = await evaluateToolCall(toHostRequest(input).call, projectDir);
+      verdict = await evaluateToolCall(toHostRequest(input).call, projectDir, hostCwd);
     } catch (err) {
       return { code: 2, stdout: '', stderr: `Colony guard: the check failed (${errorMessage(err)}), so the tool call is refused.\n` };
     }

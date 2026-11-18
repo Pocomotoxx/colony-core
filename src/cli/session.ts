@@ -240,6 +240,9 @@ export class ColonySession {
       const parsed = JSON.parse(memoryText);
       const ok = Array.isArray(parsed) || (parsed?.v === 2 && Array.isArray(parsed.docs));
       if (!ok) throw new Error(`${MEMORY_FILE} must be a JSON array (legacy) or a v2 document file`);
+      const rows: unknown[] = Array.isArray(parsed) ? parsed : parsed.docs;
+      const bad = rows.findIndex((r) => typeof r !== 'object' || r === null || typeof (r as { id?: unknown }).id !== 'string');
+      if (bad >= 0) throw new Error(`${MEMORY_FILE} row ${bad + 1} is not a document (a document needs an id)`);
     }
 
     const session = new ColonySession(dir, hub);
