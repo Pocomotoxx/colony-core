@@ -42,6 +42,10 @@ export function resolveApiBase(value) {
 
 // ---- quota bookkeeping
 
+import { TextDecoder } from 'node:util';
+
+const validEntry = (e) => Boolean(e) && typeof e === 'object' && typeof e.at === 'number' && typeof e.tokens === 'number' && (e.role === 'guard' || e.role === 'summary');
+
 export class Usage {
   constructor(file, now = Date.now) {
     this.file = file;
@@ -50,7 +54,7 @@ export class Usage {
     if (file && existsSync(file)) {
       try {
         const parsed = JSON.parse(readFileSync(file, 'utf-8'));
-        if (Array.isArray(parsed.entries)) this.entries = parsed.entries.filter((e) => typeof e.at === 'number' && typeof e.tokens === 'number' && (e.role === 'guard' || e.role === 'summary'));
+        if (Array.isArray(parsed.entries)) this.entries = parsed.entries.filter(validEntry);
       } catch { /* a damaged file starts a fresh count: the server enforces the real limit anyway */ }
     }
     this.prune();
@@ -75,6 +79,22 @@ export class Usage {
   save() {
     if (!this.file) return;
     mkdirSync(dirname(this.file), { recursive: true });
+    // Another process may have recorded since this one read the file: its entries are kept (a union), so a record is not
+    // lost. A small window between this read and the rename remains; the server enforces the real limit anyway.
+    try {
+      const key = (e) => e.at + '|' + e.role + '|' + e.tokens;
+      const known = new Set(this.entries.map(key));
+      const parsed = JSON.parse(readFileSync(this.file, 'utf-8'));
+      for (const e of Array.isArray(parsed.entries) ? parsed.entries.filter(validEntry) : []) {
+        if (!known.has(key(e))) {
+          this.entries.push(e);
+          known.add(key(e));
+        }
+      }
+      this.prune();
+    } catch {
+      /* no file yet, or a damaged one: this process's entries are written */
+    }
     const tmp = `${this.file}.${process.pid}.tmp`;
     writeFileSync(tmp, JSON.stringify({ entries: this.entries }), 'utf-8');
     renameSync(tmp, this.file);
@@ -119,7 +139,7 @@ export async function reserve(usage, limits, role, tokens, { maxWaitMs, sleep })
 export async function errorDetail(res, key) {
   let text = '';
   try {
-    text = (await res.text()).slice(0, 4000);
+    text = (await readCapped(res, 64 * 1024)).slice(0, 4000);
   } catch {
     return '';
   }
@@ -138,6 +158,32 @@ export async function errorDetail(res, key) {
   return clean.length > 200 ? `${clean.slice(0, 200)}...` : clean;
 }
 
+const MAX_RESPONSE_BYTES = 2 * 1024 * 1024;
+
+/** The body of an answer as text, read up to `maxBytes` and no further: the rest is not downloaded. */
+export async function readCapped(res, maxBytes) {
+  const reader = res.body?.getReader?.();
+  if (!reader) {
+    const text = await res.text();
+    if (text.length > maxBytes) throw Object.assign(new Error('the answer is too large'), { name: 'BodyTooLarge' });
+    return text;
+  }
+  const decoder = new TextDecoder();
+  let total = 0;
+  let text = '';
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value.length;
+    if (total > maxBytes) {
+      await reader.cancel().catch(() => undefined);
+      throw Object.assign(new Error('the answer is too large'), { name: 'BodyTooLarge' });
+    }
+    text += decoder.decode(value, { stream: true });
+  }
+  return text + decoder.decode();
+}
+
 /** One chat completion. Returns { ok, content, tokens, finishReason } or { ok: false, error, retryAfterMs }. */
 export async function chat({ base, key, body, fetchImpl = fetch, timeoutMs = 60_000 }) {
   const controller = new AbortController();
@@ -148,30 +194,33 @@ export async function chat({ base, key, body, fetchImpl = fetch, timeoutMs = 60_
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
       body: JSON.stringify(body),
       signal: controller.signal,
+      redirect: 'error', // the key goes to the host that was checked, and to no other
     });
     if (!res.ok) {
       const retry = Number(res.headers.get('retry-after'));
       const detail = await errorDetail(res, key);
       return { ok: false, error: detail ? `HTTP ${res.status}: ${detail}` : `HTTP ${res.status}`, status: res.status, retryAfterMs: Number.isFinite(retry) && retry >= 0 ? retry * 1000 : null };
     }
-    const json = await res.json();
+    const json = JSON.parse(await readCapped(res, MAX_RESPONSE_BYTES));
     const choice = json?.choices?.[0];
     const content = typeof choice?.message?.content === 'string' ? choice.message.content : '';
     const total = json?.usage?.total_tokens;
     return { ok: true, content, tokens: typeof total === 'number' ? total : null, finishReason: choice?.finish_reason ?? null };
   } catch (err) {
-    return { ok: false, error: err?.name === 'AbortError' ? 'timeout' : 'network error' };
+    return { ok: false, error: err?.name === 'AbortError' ? 'timeout' : err?.name === 'BodyTooLarge' ? 'the answer is larger than ' + MAX_RESPONSE_BYTES + ' bytes' : err instanceof SyntaxError ? 'the answer is not JSON' : 'network error' };
   } finally {
     clearTimeout(timer);
   }
 }
 
 /** Run `chat`, waiting for a 429 answer up to `maxRetries` times (the wait is capped). */
-export async function chatWithRetry(args, { maxRetries = 2, maxRetryWaitMs = 30_000, sleep }) {
+export async function chatWithRetry(args, { maxRetries = 2, maxRetryWaitMs = 30_000, sleep, record }) {
   let result = await chat(args);
+  record?.(result); // every HTTP attempt is booked by the caller, not only the last one
   for (let i = 0; i < maxRetries && !result.ok && result.status === 429; i++) {
     await sleep(Math.min(result.retryAfterMs ?? 2000, maxRetryWaitMs));
     result = await chat(args);
+    record?.(result);
   }
   return result;
 }

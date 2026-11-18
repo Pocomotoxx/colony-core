@@ -66,6 +66,8 @@ export interface BootRecord {
   evidence: Array<{ path: string; sha256: string; bytes: number }>;
   rules: Array<{ path: string; sha256: string; bytes: number }>;
   problems: string[];
+  /** Things that do not block but are worth knowing (for example a missing integrity record). */
+  notes?: string[];
   /** Head of the audit log when this boot finished; the next boot checks the log still holds it. */
   audit?: AuditAnchor;
 }
@@ -170,15 +172,19 @@ async function readIfExists(file: string): Promise<string | null> {
 
 const sha256 = (text: string): string => createHash('sha256').update(text).digest('hex');
 
-async function readIntegrity(stateDir: string): Promise<IntegrityRecord | null> {
+/** ok; missing (no file); damaged (a file that is not a valid record). The two bad cases are told apart because they mean different things. */
+async function readIntegrity(stateDir: string): Promise<{ state: 'ok' | 'missing' | 'damaged'; record: IntegrityRecord | null }> {
   const text = await readIfExists(path.join(stateDir, INTEGRITY_FILE));
-  if (text === null) return null; // a state from before this check: the next save writes one
+  if (text === null) return { state: 'missing', record: null };
   try {
     const parsed = JSON.parse(text);
-    return parsed?.v === 1 && typeof parsed.ledger === 'string' && typeof parsed.audit?.entries === 'number' && typeof parsed.audit?.head === 'string' ? (parsed as IntegrityRecord) : null;
+    if (parsed?.v === 1 && typeof parsed.ledger === 'string' && typeof parsed.audit?.entries === 'number' && typeof parsed.audit?.head === 'string') {
+      return { state: 'ok', record: parsed as IntegrityRecord };
+    }
   } catch {
-    return null;
+    /* damaged, below */
   }
+  return { state: 'damaged', record: null };
 }
 
 /**
@@ -196,6 +202,8 @@ export class ColonySession {
 
   /** Differences between the state files and what the colony wrote at its last save. Empty when they agree. */
   public integrityProblems: string[] = [];
+  /** Things to tell the user that do not block (for example a missing integrity record). */
+  public integrityNotes: string[] = [];
 
   private get stateDir(): string {
     return path.join(this.dir, STATE_DIR);
@@ -209,6 +217,7 @@ export class ColonySession {
     await codex.reindex(); // memory written by an older embedding is re-embedded once
 
     const integrityProblems: string[] = [];
+    const integrityNotes: string[] = [];
     const ledgerText = await readIfExists(path.join(stateDir, LEDGER_FILE));
     if (ledgerText !== null) {
       const ledger = JSON.parse(ledgerText) as LedgerFile;
@@ -216,7 +225,12 @@ export class ColonySession {
         throw new Error(`${LEDGER_FILE} has an unsupported shape`);
       }
       const integrity = await readIntegrity(stateDir);
-      if (integrity && !options.acceptExternalChanges && integrity.ledger !== sha256(ledgerText)) {
+      if (!options.acceptExternalChanges && integrity.state === 'damaged') {
+        integrityProblems.push(`${INTEGRITY_FILE} is damaged (it is not a valid record), so the state cannot be checked against the last save. Review the state, then run \`colony boot --accept-changes\` to record it as the new baseline.`);
+      } else if (integrity.state === 'missing') {
+        integrityNotes.push(`${INTEGRITY_FILE} is missing, so this state could not be checked against a last save. That is normal for a state from before the record existed; it is also what deleting the record looks like, and the colony cannot tell which. The next save writes a new record.`);
+      }
+      if (integrity.record && !options.acceptExternalChanges && integrity.record.ledger !== sha256(ledgerText)) {
         integrityProblems.push(`${LEDGER_FILE} was changed outside the colony since its last save (its hash differs from the one recorded). Review the change, then run \`colony boot --accept-changes\` to take it as it is.`);
       }
       hub.registry.restore(ledger.members);
@@ -247,6 +261,7 @@ export class ColonySession {
 
     const session = new ColonySession(dir, hub);
     session.integrityProblems = integrityProblems;
+    session.integrityNotes = integrityNotes;
     const auditText = await readIfExists(path.join(stateDir, AUDIT_FILE));
     if (auditText !== null) {
       const entries = auditText
@@ -263,7 +278,7 @@ export class ColonySession {
       session.auditPersisted = entries.length;
     }
     const integrity = await readIntegrity(stateDir);
-    if (integrity && !options.acceptExternalChanges && !hub.audit.contains(integrity.audit)) {
+    if (integrity.record && !options.acceptExternalChanges && !hub.audit.contains(integrity.record.audit)) {
       session.integrityProblems.push(`${AUDIT_FILE} no longer holds the entries recorded at the last save (cut short or rewritten). Review it, then run \`colony boot --accept-changes\` to take it as it is.`);
     }
     await hub.consensus.expireDue(); // a proposal past its deadline is closed now, not at the next vote
@@ -377,6 +392,7 @@ export class ColonySession {
       evidence,
       rules: loaded.map(({ path: p, sha256: h, bytes }) => ({ path: p, sha256: h, bytes })),
       problems,
+      ...(session && session.integrityNotes.length > 0 ? { notes: session.integrityNotes } : {}),
       // A blocked boot keeps the older anchor, so the check survives it.
       audit: session && problems.length === 0 ? session.hub.audit.anchor() : previous?.audit,
     };

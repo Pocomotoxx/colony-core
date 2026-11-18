@@ -128,6 +128,20 @@ test('guard eval compares the guard with the local scan, per threshold, and neve
   assert.match(out.limits.join(' '), /small-sample/);
 });
 
+test('guard eval: a text longer than the chunks that are checked is not scored, and not given the score of its first part', async () => {
+  const long = { id: 'long', label: 'attack', style: 'long', text: 'filler words. '.repeat(150) + 'ATTACK at the very end.' };
+  const dir = await project({ 'set.json': { items: [SET.items[0], long] } });
+  guardAnswer = () => '0.001';
+  const out = JSON.parse((await run(evalScript, dir, ['--in', 'set.json', '--yes', '--guard-chunk-chars', '200'])).stdout);
+  const row = out.rows.find((x: any) => x.id === 'long');
+  assert.equal(row.truncated, true);
+  assert.match(row.error, /longer than the 8 chunks/);
+  assert.equal(row.guardScore, null);
+  assert.equal(out.counts.errors, 1);
+  assert.equal(out.counts.scored, 1);
+  assert.ok(!calls.some((c) => c.text.includes('filler')), 'no part of it was sent');
+});
+
 test('guard eval: an error is counted as an error, not as a miss or a catch; bad sets are refused', async () => {
   const dir = await project({ 'set.json': SET });
   guardAnswer = (t) => (t.includes('cycle') ? 'not a number' : '0.5');

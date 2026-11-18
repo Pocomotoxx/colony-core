@@ -67,6 +67,12 @@ function intOpt(value: string | undefined, name: string, min: number, max: numbe
   return n;
 }
 
+function hostStatusOpt(value: string | undefined): EvalResult['hostStatus'] {
+  if (value === undefined) return undefined;
+  if (value !== 'ok' && value !== 'failed' && value !== 'timed_out') throw new CliError('--host-status must be ok, failed or timed_out');
+  return value;
+}
+
 function numOpt(value: string | undefined, name: string): number | undefined {
   if (value === undefined) return undefined;
   const n = Number(value);
@@ -146,8 +152,10 @@ async function handle_eval(ctx: CommandContext): Promise<CommandResult> {
       if (err instanceof VerifyError) throw new CliError(err.message);
       throw err;
     }
+    const hostStatus = hostStatusOpt(values['host-status']);
     const result: EvalResult = {
       set: set.set, variant, task: task.id, run, passed: run_.passed, source: 'colony',
+      ...(hostStatus ? { hostStatus } : {}),
       checkDurationMs: run_.durationMs, at: Date.now(),
       ...(intOpt(values['duration-ms'], '--duration-ms', 0, 1e9) !== undefined ? { durationMs: intOpt(values['duration-ms'], '--duration-ms', 0, 1e9) } : {}),
       ...(numOpt(values['cost-usd'], '--cost-usd') !== undefined ? { costUsd: numOpt(values['cost-usd'], '--cost-usd') } : {}),

@@ -13,7 +13,7 @@ Egyfejlesztős segédeszköz egy AI-kódolóasszisztens (elsőként a Claude Cod
 - **Teszt:** a megbízhatatlan alakok (csővezeték, `|| true`) nem számítanak bizonyítéknak.
 
 ### 2. Őr a veszélyes műveletekre
-- **Teszt és élő használat (Claude Code 2.1.281):** a hook megtagadja az állapotmappa, a `.git` és a hook-beállítások módosítását, a romboló és kódfuttató parancsokat. Az útvonalakat feloldja (`cd`, `..`, abszolút útvonal, kis- és nagybetű, a már létező symlink és junction). A védett mappát a projekt gyökeréből számolja (a `.colony` keresése felfelé), nem a host aktuális könyvtárából.
+- **Teszt és élő használat (Claude Code 2.1.281):** a hook megtagadja az állapotmappa és a `.git` módosítását, valamint a romboló és kódfuttató parancsokat; a hook-beállítások (`.claude/settings*.json`) módosításánál rákérdez (`ask`), mert azt a felhasználó engedheti. Az útvonalakat feloldja (`cd`, `..`, abszolút útvonal, kis- és nagybetű, a már létező symlink és junction). A védett mappát a projekt gyökeréből számolja (a `.colony` keresése felfelé), nem a host aktuális könyvtárából.
 - **Korlát:** szöveges szabályok. Egy kreatív parancs elkerülheti. A hook a védelem egyik rétege, nem homokozó.
 
 ### 3. Hash-láncolt audit és integritás
@@ -29,7 +29,7 @@ Egyfejlesztős segédeszköz egy AI-kódolóasszisztens (elsőként a Claude Cod
 - **Mérés:** nincs. Hogy a felidézés segít-e a munkában, **nem mértük**. Ez a legfontosabb nyitott kérdés.
 
 ### 6. Eval-keret: mérni, mielőtt bevezetünk
-- **Teszt:** feladatkészlet objektív ellenőrzéssel, futtató (`scripts/eval-run.mjs`) kötelező becsléssel, költségkerettel, időkorláttal, és Fisher-féle egzakt próbával, amely csak elég futás és zajon kívüli különbség esetén nevez nyertest.
+- **Teszt:** feladatkészlet objektív ellenőrzéssel, futtató (`scripts/eval-run.mjs`): kötelező `--yes` és költségkeret (a keret leállítás, nem plafon: az első futás átléphet, utána a legdrágább eddigi futás alapján nem indít olyat, amely valószínűleg átlépné; a keret hívásonként érvényes), host-időkorlát (POSIX-on a teljes folyamatcsoportra); a becslés (`--dry-run`) nem kötelező; és Fisher-féle egzakt próbával, amely csak elég futás és zajon kívüli különbség esetén nevez nyertest.
 - **Mérés:**
   - `hard-1` (5 feladat, 3 ismétlés): az alapmodell 15/15, a Haiku 15/15 (egy kétértelmű ellenőrzés javítása után; előtte 14/15).
   - Plafonhatás: a készlet **regressziós ellenőrzésnek** jó (romlást mutat), javulást nem.
@@ -76,3 +76,16 @@ Egyfejlesztős segédeszköz egy AI-kódolóasszisztens (elsőként a Claude Cod
 2. **Negatív kontroll** az eval-hez, hogy a mérőeszköz érzékenysége ismert legyen.
 3. **Függetlenebb minták** a védelemhez: nem a szerző írta, és valódi, külső forrásból származnak.
 4. **Cowork-ellenőrzés** a `start` parancsnak, ha a Cowork a fő környezet.
+
+## Ismert korlátok (külső audit, 2026-11-18)
+
+Az auditból ezek maradtak szándékosan megoldatlanul, vagy csak dokumentálva:
+
+- A nagybetűs `.GIT/…` útvonalat az őr Linuxon is tiltja (a nevet kisbetűsítve hasonlítja): túlvédés, nem megkerülés.
+- A radar-import a fájl `status: ok` és Guard-pontszám állítását nem tudja ellenőrizni. A helyi átvizsgálás újra lefut, a gyanús tétel "unverified" címkével kerül a memóriába.
+- A radar útvonalán a valódi IPv4-címek megmaradnak (a verziószámok megőrzése miatt), IPv6-ot a kitakarás nem fed.
+- A szűrő az idézett támadómondatot tartalmazó oktatási szöveget `hostile`-nak minősíti (hamis pozitív).
+- Az eval-futtató a hostot nem zárja homokozóba: a munkamappa csak kezdőkönyvtár, a host a felhasználó jogaival fut, és a környezetét örökli.
+- A mentés három külön fájlt ír (főkönyv, audit, integritásrekord). Egy megszakadás utáni boot BLOCKED, nem csendes; `--accept-changes` kell hozzá.
+- Hiányzó integritásrekord: a régi (a rekord bevezetése előtti) állapot és a törölt rekord megkülönböztethetetlen. A boot nem blokkol (a régi állapot támogatott), de `notes` mezőben szól, és a következő mentés új rekordot ír: aki törli a rekordot, így kapcsolja ki az ellenőrzést a következő bootig. A sérült rekord viszont blokkol.
+- Az eval tárolt `passed` értéke a colony ellenőrzésének eredménye akkor is, ha a host hibázott; a `hostStatus` mező külön rögzíti, hogyan ért véget.

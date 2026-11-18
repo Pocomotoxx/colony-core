@@ -43,6 +43,8 @@ export interface EvalResult {
   turns?: number;
   /** The model(s) the host says it used, from its own usage report, joined by commas. The host's statement, not checked. */
   model?: string;
+  /** How the host ended: ok, failed (non-zero exit or could not start) or timed_out. The passed flag is what the colony's check found in the workspace either way. */
+  hostStatus?: 'ok' | 'failed' | 'timed_out';
   at: number;
 }
 
@@ -210,6 +212,8 @@ export function compareVariants(results: EvalResult[], a: string, b: string, min
     'Runs are treated as independent, but repeated runs on the same tasks are correlated: the p value is optimistic.',
     'The result holds for this host and model, and for this task set only.',
   ];
+  const hostProblems = results.filter((r) => (r.variant === a || r.variant === b) && r.hostStatus !== undefined && r.hostStatus !== 'ok').length;
+  if (hostProblems > 0) caveats.push(hostProblems + ' counted run(s) ended with a host failure or a time-out; passed is what the check found in the workspace, whatever the host did.');
   if (sa.runs < minRuns || sb.runs < minRuns) {
     return { a: sa, b: sb, minRuns, p: null, verdict: 'too-few-runs', statement: `no claim: needs at least ${minRuns} runs per variant (has ${sa.runs} and ${sb.runs})`, caveats };
   }

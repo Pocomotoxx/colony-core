@@ -121,6 +121,7 @@ export const OPTIONS = {
     'include-reported': { type: 'boolean' },
     'ttl-days': { type: 'string' },
     model: { type: 'string' },
+    'host-status': { type: 'string' },
     useful: { type: 'string' },
     unrated: { type: 'boolean' },
     project: { type: 'string' },
