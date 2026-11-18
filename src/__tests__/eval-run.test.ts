@@ -17,7 +17,7 @@ const FAKE_HOST = [
   "const prompt = fs.readFileSync(0, 'utf-8');",
   "if (process.argv.includes('--sleep')) await new Promise((r) => setTimeout(r, 8000));",
   "if (prompt.includes('PASS')) fs.writeFileSync('out.txt', 'done');",
-  "const body = process.argv.includes('--nocost') ? { result: 'ok' } : { result: 'ok', total_cost_usd: 0.3, num_turns: 2, usage: { input_tokens: 10, output_tokens: 5 } };",
+  "const body = process.argv.includes('--nocost') ? { result: 'ok' } : { result: 'ok', total_cost_usd: 0.3, num_turns: 2, usage: { input_tokens: 10, output_tokens: 5 }, modelUsage: { 'fake-model-1': { inputTokens: 10 } } };",
   'console.log(JSON.stringify(body));',
 ].join('\n');
 const CHECK = "import fs from 'node:fs';\nprocess.exit(fs.existsSync('out.txt') ? 0 : 1);\n";
@@ -99,6 +99,7 @@ test('a real run records what the colony checked, with the cost the host reporte
   assert.equal(t1.costUsd, 0.3);
   assert.equal(t1.turns, 2);
   assert.equal(t1.inputTokens, 10);
+  assert.equal(t1.model, 'fake-model-1', 'the model the host reported is stored');
   assert.equal(typeof t1.durationMs, 'number', 'the runner measured the host duration');
   assert.equal(typeof t1.checkDurationMs, 'number');
   assert.match(r.stderr, /the host's JSON output has these fields: result, total_cost_usd/);

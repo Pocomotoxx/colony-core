@@ -35,13 +35,14 @@ const cases = [
   [[[1, 4], [0, 4]], undefined, [[0, 4]]],
   [[[1, 4], [1, 2]], undefined, [[1, 4]]],
   [[[2, 2], [2, 2]], undefined, [[2, 2]]],
-  [[[2, 2], [2, 2]], { touching: false }, [[2, 2], [2, 2]]],
+  // (left out on purpose: [[2,2],[2,2]] and [[1,5],[5,5],[5,9]] with touching:false. The README says both "an interval
+  // inside another disappears" and "merge only when they overlap by more than a single point": a point on the end of
+  // another interval fits both rules, so the README does not decide it. A weaker model read it the first way.)
   [[[1, 3], [2, 2]], { touching: false }, [[1, 3]]],
   [[[1, 2], [3, 4]], undefined, [[1, 2], [3, 4]]],
   [[[-5, -1], [-3, 2], [4, 4]], undefined, [[-5, 2], [4, 4]]],
   [[[0.5, 1.5], [1.5, 2.5]], undefined, [[0.5, 2.5]]],
   [[[1, 5], [2, 3], [4, 8], [9, 9], [8, 9]], undefined, [[1, 9]]],
-  [[[1, 5], [5, 5], [5, 9]], { touching: false }, [[1, 5], [5, 5], [5, 9]]],
   [[[1, 6], [2, 3], [5, 9]], { touching: false }, [[1, 9]]],
 ];
 for (const [input, options, expected] of cases) {

@@ -120,6 +120,7 @@ export const OPTIONS = {
     'min-runs': { type: 'string' },
     'include-reported': { type: 'boolean' },
     'ttl-days': { type: 'string' },
+    model: { type: 'string' },
     project: { type: 'string' },
     'include-expired': { type: 'boolean' },
     expired: { type: 'boolean' },

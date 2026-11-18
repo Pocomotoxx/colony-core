@@ -283,3 +283,19 @@ test('{setDir} in a check stands for the folder of the task set file, so a set c
   const no = await ok(dir, 'eval', 'check', '--set', 'sets/x/set.json', '--variant', 'A', '--task', 't', '--run', '2', '--workspace', 'work/pass');
   assert.equal(no.result.passed, false);
 });
+
+test('the model the host says it used is stored with the run and shown per variant; a bad name is refused', async () => {
+  const dir = await project();
+  const r = await ok(dir, 'eval', 'check', '--set', 'set.json', '--variant', 'A', '--task', 't1', '--run', '1', '--workspace', 'work/pass', '--model', 'claude-model-a');
+  assert.equal(r.result.model, 'claude-model-a');
+  await ok(dir, 'eval', 'check', '--set', 'set.json', '--variant', 'A', '--task', 't1', '--run', '2', '--workspace', 'work/pass', '--model', 'claude-model-a,claude-sub-b');
+  await ok(dir, 'eval', 'check', '--set', 'set.json', '--variant', 'B', '--task', 't1', '--run', '1', '--workspace', 'work/pass');
+  await ok(dir, 'eval', 'record', '--set', 'set.json', '--variant', 'B', '--task', 't1', '--run', '2', '--passed', '--model', 'other-model');
+  const report = await ok(dir, 'eval', 'report', '--set', 'set.json');
+  const a = report.variants.find((v: any) => v.variant === 'A');
+  assert.deepEqual(a.models, ['claude-model-a', 'claude-sub-b']);
+  const b = report.variants.find((v: any) => v.variant === 'B');
+  assert.deepEqual(b.models, [], 'a run without a reported model adds none (the reported record is not in the report)');
+  assert.match(await bad(dir, 'eval', 'check', '--set', 'set.json', '--variant', 'A', '--task', 't1', '--run', '3', '--workspace', 'work/pass', '--model', 'bad name'), /--model must be/);
+  assert.match(await bad(dir, 'eval', 'record', '--set', 'set.json', '--variant', 'A', '--task', 't1', '--run', '4', '--passed', '--model', 'x;rm -rf'), /--model must be/);
+});

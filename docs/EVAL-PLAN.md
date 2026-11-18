@@ -1,6 +1,6 @@
 # Eval terv: az ügynökök pontosítása méréssel, költségkerettel
 
-Állapot: **részben megvalósítva.** A tárolás, a becslés, az összehasonlítás, az `eval` parancsok és a futtató szkript (`scripts/eval-run.mjs`) kész (hamis hoszttal tesztelve, majd valódi ügynökkel kipróbálva). Két **próbafutás** futott valódi ügynökkel (2026-11-17: egy apró feladat 2 futással, egy kis hibajavítás 5 futással, együtt kb. 0,76 USD becsült, API-egyenértékű költség; Pro-előfizetéssel a valódi ár a használati keret): a mért adatok a "Mért adatok" fejezetben vannak. Összehasonlítás még nem készült, mert a próbafeladatok túl könnyűek a variánsok megkülönböztetéséhez. Ami nincs igazolva, azt a "Nyitott kérdések" fejezet sorolja fel.
+Állapot: **részben megvalósítva** (a kalibráló futás a `hard-1` készleten mindkét modellnél plafont mutatott, lásd lent). A tárolás, a becslés, az összehasonlítás, az `eval` parancsok és a futtató szkript (`scripts/eval-run.mjs`) kész (hamis hoszttal tesztelve, majd valódi ügynökkel kipróbálva). Két **próbafutás** futott valódi ügynökkel (2026-11-17: egy apró feladat 2 futással, egy kis hibajavítás 5 futással, együtt kb. 0,76 USD becsült, API-egyenértékű költség; Pro-előfizetéssel a valódi ár a használati keret): a mért adatok a "Mért adatok" fejezetben vannak. Összehasonlítás még nem készült, mert a próbafeladatok túl könnyűek a variánsok megkülönböztetéséhez. Ami nincs igazolva, azt a "Nyitott kérdések" fejezet sorolja fel.
 
 ## Cél
 
@@ -181,6 +181,28 @@ Az első két próbafeladat (egy fájl létrehozása, egy kis függvény javít�
 - **A rejtett ellenőrzések a készlet mappájában vannak**, a `check` és a `setup` mezőben a `{setDir}` a készletfájl mappáját jelenti. A készletet így bárhová át lehet másolni, a projekten belülre kell kerülnie (a `setup` a projekten belül marad).
 - **A sikerarány még nem mért.** Hogy ezek a feladatok a 30–70%-os sávba esnek-e, csak egy kalibráló futás mutatja meg (a Claude Code alapbeállításával, Bash nélkül: az ügynök a kódot nem tudja futtatni, csak olvasni és szerkeszteni). Ha egy feladat mindig sikeres vagy soha, a készletből ki kell venni vagy át kell írni.
 - **Korlát:** öt feladat, egy szerző (a feladatok, a referenciák és az ellenőrzések is tőlem származnak), és mindegyik tiszta, egy modulos függvény. Valódi, nagyobb kódbázison végzett munkát (több fájl, függőségek, tesztfuttatás) ez nem képvisel.
+
+## Kalibráló futás a `hard-1` készleten (2026-11-18)
+
+Két variáns, mindkettő 5 feladat × 3 ismétlés = 15 futás, ugyanaz a beállítás (`claude -p`, `acceptEdits`, a `Bash` tiltva, futásonként legfeljebb 0,5 USD-egyenérték). **A**: a `claude` alapértelmezett modellje (a futás idején a modellnevet még nem rögzítettük). **H**: `--model haiku`, a host saját használati jelentése szerint `claude-haiku-5-5` (ez a host állítása, nem független ellenőrzés).
+
+| Feladat | A: siker | A: becsült költség/futás | H: siker (eredeti ellenőrzés) | H: becsült költség/futás |
+|---|---|---|---|---|
+| `interval-merge` | 3 / 3 | 0,10–0,20 | 2 / 3 | 0,007–0,012 |
+| `csv-parse` | 3 / 3 | 0,14–0,16 | 3 / 3 | 0,010–0,017 |
+| `money-split` | 3 / 3 | 0,11–0,12 | 3 / 3 | 0,010–0,013 |
+| `rate-limiter` | 3 / 3 | 0,11 | 3 / 3 | 0,012 |
+| `iso-weeks` | 3 / 3 | 0,14–0,15 | 3 / 3 | 0,011–0,017 |
+| **Összesen** | **15 / 15** | átlag 0,13, összesen 1,96 | **14 / 15** | átlag 0,012, összesen 0,18 |
+
+(A költségek API-egyenértékű becslések USD-ben, lásd a Költségterv elejét. A két futás együtt kb. 2,1 USD-egyenérték a Pro-keretből.) A futások sebessége: A 16–41 s, 4–13 kör; H 17–63 s, 5–16 kör.
+
+- **Mindkét modell eléri a plafont.** Az A 15 / 15, a H 14 / 15, és az egyetlen bukás a feladat hibája volt (lásd lent), a kijavított ellenőrzéssel a H is 15 / 15. A gyengébb modell tehát **nem ad fejteret**, a készlet két variánst nem tud megkülönböztetni. Egy 100%-os alapon csak **romlás** mutatható ki (például 9 / 15 a 15 / 15-tel szemben, Fisher p ≈ 0,01), javulás nem. A készlet ezért **regressziós ellenőrzésnek** jó: ha egy profil- vagy vitamód-változtatás után a sikerarány leesik, az jelzés.
+- **A gyengébb modell kb. tizedannyiba kerül** (0,012 és 0,13 USD-egyenérték futásonként), de ugyanazokat a feladatokat oldja meg. Az eval-keret költségtervéhez: egy 90 futásos variáns kb. 1 USD-egyenérték a gyengébb és kb. 12 az alapmodellel.
+- **A bukás oka kétértelműség volt.** Az `interval-merge` egyik futása `touching: false` mellett a `[2,2]`-t a `[2,2]`-be és a `[5,5]`-öt az `[1,5]`-be olvasztotta ("az intervallum a másikon belül eltűnik"). A leírásom azt is mondja, hogy a `touching: false` csak "egynél több pontban átfedőket" von össze, és egy pont a másik intervallum végén mindkét szabályra illik, tehát a leírás **nem döntötte el**. A két esetet az ellenőrzésből kivettük, a H futás a kijavított ellenőrzéssel átmegy (kézi újraértékelés a munkamappán; a tárolt sor az eredeti ítéletet őrzi). **Tanulság:** a kétértelműséget a referenciamegoldás-ellenőrzés nem fogja meg (a referencia a szerző olvasatát követi), két különböző modell eltérő olvasata viszont jelzi.
+- **Nem csalt, amit ellenőrizni tudtam:** mind a 30 munkamappában a `README.md` változatlan, csak a `src/` fájlok módosultak, a megoldásokban nincs hivatkozás a rejtett ellenőrzésekre. A `permission_denials` mezőt a futtató nem rögzíti.
+- **Új: a `model` mező.** A futtató a host használati jelentéséből (`modelUsage` kulcsai) kiolvassa a modellnevet, az `eval check` és `eval record` rögzíti (`--model`), és a `report` variánsonként mutatja. Ez a host állítása, nem ellenőrzött, de a következő kísérleteknél látni lehet, hogy a variáns tényleg azon a modellen futott-e.
+- **Következő lépések (nincsenek megvalósítva):** (1) egy **negatív kontroll**: egy szándékosan rontott variáns (például túl kicsi költségkorláttal, hogy a futások korán megszakadjanak), hogy lássuk, a mérőeszköz **észleli-e a romlást**; (2) **nagyobb vagy pontatlanabb leírású feladatok**, ahol a követelmény egy részét a meglévő kódból és tesztekből kell kitalálni, és ahol az ellenőrzés mégsem igazságtalan.
 
 ## Kockázatok
 
