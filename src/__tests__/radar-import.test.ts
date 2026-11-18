@@ -4,7 +4,7 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { runCommand } from '../cli/commands.js';
-import { parseSummaries, projectOfSource } from '../radar/signals.js';
+import { parseSummaries, projectNames, projectOfSource, tagOfSource } from '../radar/signals.js';
 import { InMemoryVectorStore } from '../memory/vector-store.js';
 import { DeterministicEmbeddingProvider } from '../memory/embedding-providers.js';
 
@@ -234,4 +234,90 @@ test('the radar commands are in the usage text', async () => {
   const help = (await runCommand(['help'], process.cwd())).output as any;
   assert.match(help.usage, /radar import <summaries\.json>/);
   assert.match(help.usage, /radar forget --expired/);
+});
+
+// ---- which signals a task gets
+
+
+const sig = (project: string, tag: string, summary: string) => ({
+  id: `gh-${project.replace('/', '_')}-${tag.replace(/[^A-Za-z0-9]/g, '')}`,
+  source: `https://github.com/${project}/releases/tag/${tag}`,
+  truncated: false, redacted: [], guard: { score: 0.003 }, status: 'ok', summary,
+});
+
+test('the release tag comes from the source link, and a project is named by its repository unless that is too general', () => {
+  assert.equal(tagOfSource('https://github.com/eslint/eslint/releases/tag/v10.15.0'), 'v10.15.0');
+  assert.equal(tagOfSource('https://github.com/microsoft/TypeScript/releases/tag/vscode-typescript%2Fv1.0.2'), 'vscode-typescript/v1.0.2');
+  assert.equal(tagOfSource('https://github.com/pnpm/pnpm/releases/tag/pnpr%400.1.0-alpha.21'), 'pnpr@0.1.0-alpha.21');
+  assert.equal(tagOfSource('https://github.com/eslint/eslint/releases'), null);
+  assert.equal(tagOfSource('https://github.com/o/r/releases/tag/%3Cscript%3E'), null, 'odd characters give no tag');
+  assert.deepEqual(projectNames('eslint/eslint'), ['eslint']);
+  assert.deepEqual(projectNames('nodejs/node'), ['node']);
+  assert.deepEqual(projectNames('microsoft/TypeScript'), ['typescript']);
+  assert.deepEqual(projectNames('acme/core'), [], 'core is too general to mean a project');
+  assert.deepEqual(projectNames('o/ab'), [], 'too short');
+  assert.deepEqual(projectNames(null), []);
+});
+
+test('the stored text starts with the project and the release tag; list shows the plain summary and the tag', async () => {
+  const dir = await project(file(sig('eslint/eslint', 'v10.15.0', 'Version 10.15.0 adds checks for proto targets and fixes several bugs.')));
+  await ok(dir, 'radar', 'import', 'summaries.json');
+  const found = await ok(dir, 'memory', 'search', 'eslint 10.15.0', '--ns', 'signals');
+  assert.match(found.results[0].text, /^eslint\/eslint v10\.15\.0: Version 10\.15\.0 adds checks/);
+  const list = await ok(dir, 'radar', 'list');
+  assert.equal(list.signals[0].tag, 'v10.15.0');
+  assert.match(list.signals[0].summary, /^Version 10\.15\.0 adds checks/, 'the plain summary, without the header');
+});
+
+test('a task that names a project gets that project newest signals, with the reason; a name inside another word does not count', async () => {
+  const many = [1, 2, 3, 4, 5].map((i) => sig('eslint/eslint', `v10.${i}.0`, `Version 10.${i}.0 changes a rule and fixes bug number ${i}.`));
+  const dir = await project(file(
+    ...many,
+    sig('nodejs/node', 'v24.1.0', 'A security release that fixes http2 issues.'),
+    sig('acme/core', 'v1.0.0', 'The core module got a new cache and a faster start.'),
+  ));
+  await ok(dir, 'radar', 'import', 'summaries.json');
+  const forTask = async (title: string, description: string) => {
+    await ok(dir, 'task', 'add', title, description, '--role', 'engineer');
+    const next = await ok(dir, 'next', '--as', 'engineer');
+    await ok(dir, 'done', next.task.id, '--result', 'only a try');
+    return next.externalSignals as Array<{ project: string; tag: string; why: string; label: string }>;
+  };
+
+  const named = await forTask('Bump eslint', 'Bump eslint in the repo and fix what the new rules report');
+  assert.equal(named.length, 3, 'at most three');
+  assert.ok(named.every((s) => s.project === 'eslint/eslint'));
+  assert.deepEqual(named.map((s) => s.tag), ['v10.1.0', 'v10.2.0', 'v10.3.0'], 'in the order of the feed, newest first');
+  assert.match(named[0].why, /the task names "eslint"/);
+  assert.match(named[0].label, /unverified/);
+
+  const nodeJs = await forTask('Update Node.js', 'Update the Node.js runtime of the build image');
+  assert.ok(nodeJs.some((s) => s.project === 'nodejs/node' && /names "node"/.test(s.why)), 'Node.js names node');
+
+  const mailer = await forTask('Fix nodemailer', 'Fix the nodemailer settings of the contact form');
+  assert.ok(!mailer.some((s) => /names "node"/.test(s.why)), 'nodemailer is another word');
+
+  const generic = await forTask('Refactor the core', 'Refactor the core module of the billing service');
+  assert.ok(!generic.some((s) => /names "core"/.test(s.why)), 'core is too general to name a project');
+
+  const unrelated = await forTask('Write a poem', 'Write a short poem about autumn leaves');
+  assert.deepEqual(unrelated, []);
+});
+
+test('the reason of a similar-text signal carries the similarity; an expired signal is never shown', async () => {
+  const dir = await project(file(sig('nodejs/node', 'v24.1.0', 'A security release that patches http2 and TLS high-severity issues, and updates llhttp to 9.4.4.')));
+  await ok(dir, 'radar', 'import', 'summaries.json');
+  await ok(dir, 'task', 'add', 'Plan the runtime update', 'Plan the update of our runtime to the latest LTS security release and check the http2 and TLS fixes', '--role', 'engineer');
+  const next = await ok(dir, 'next', '--as', 'engineer');
+  assert.equal(next.externalSignals.length, 1);
+  assert.match(next.externalSignals[0].why, /^similar text \(0\.\d\d\)$/);
+
+  // expired: the same project is named, but nothing is shown
+  const memFile = path.join(dir, '.colony', 'memory.json');
+  const mem = JSON.parse(await fs.readFile(memFile, 'utf-8'));
+  for (const d of (Array.isArray(mem) ? mem : mem.documents ?? mem.docs ?? [])) if (d.namespace === 'signals') d.metadata.expiresAt = 1;
+  await fs.writeFile(memFile, JSON.stringify(mem));
+  await ok(dir, 'done', next.task.id, '--result', 'only a try');
+  await ok(dir, 'task', 'add', 'Update Node.js again', 'Update Node.js and check the http2 and TLS fixes', '--role', 'engineer');
+  assert.deepEqual((await ok(dir, 'next', '--as', 'engineer')).externalSignals, []);
 });

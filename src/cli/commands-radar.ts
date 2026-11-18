@@ -2,7 +2,7 @@ import fs from 'node:fs/promises';
 import { scanText } from '../injection-scan.js';
 import { redactText } from '../redact.js';
 import { resolveInside, SafePathError } from '../safe-path.js';
-import { DEFAULT_TTL_DAYS, listSignals, MAX_SIGNALS, parseSummaries, projectOfSource, SIGNALS_NAMESPACE, SIGNAL_LABEL } from '../radar/signals.js';
+import { DEFAULT_TTL_DAYS, listSignals, MAX_SIGNALS, parseSummaries, projectOfSource, SIGNALS_NAMESPACE, SIGNAL_LABEL, tagOfSource } from '../radar/signals.js';
 import { CliError, CommandContext, CommandResult, Handler } from './context.js';
 
 // Commands: radar
@@ -103,14 +103,20 @@ async function handle_radar(ctx: CommandContext): Promise<CommandResult> {
     if (redacted.changed) redactedCount++;
     if (isNew) fresh++;
     else updated++;
+    // The stored text starts with the project and the release tag, taken from the source link (not from the model): the
+    // summaries often do not name the project, and the search reads this text.
+    const project = values.project ?? projectOfSource(item.source);
+    const tag = tagOfSource(item.source);
     batch.push({
       id: `signal_${item.id}`,
-      text: redacted.text,
+      text: `${project ?? 'external'}${tag ? ` ${tag}` : ''}: ${redacted.text}`,
       namespace: SIGNALS_NAMESPACE,
       metadata: {
         origin: 'radar',
         source: item.source,
-        project: values.project ?? projectOfSource(item.source),
+        project,
+        tag,
+        summary: redacted.text,
         fetchedAt: now,
         expiresAt: now + ttlDays * DAY,
         guardScore: item.guardScore,

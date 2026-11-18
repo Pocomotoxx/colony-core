@@ -57,7 +57,12 @@ Minden `signals` bejegyzés mezői: `source` (URL), `fetchedAt`, `expiresAt`, `p
 | `radar list [--project P] [--k N] [--include-expired]` | **megvalósítva** | A jelek címkével, forrással, idővel és lejárattal; alapból a lejártak nélkül. |
 | `radar forget <id> \| --expired \| --all` | **megvalósítva** | Törlés. |
 
-A jelek a `signals` névtérben vannak, **a szokásos felidézésbe nem keverednek** (a keresés `excludeNamespaces` opciót kapott). A `next` kimenetének `externalSignals` mezője mutat legfeljebb hármat a feladathoz közelit (nem lejárt, hasonlósági küszöb 0,25, **kalibrálatlan**), mindegyiket "nem igazolt" címkével és forrással.
+A jelek a `signals` névtérben vannak, **a szokásos felidézésbe nem keverednek** (a keresés `excludeNamespaces` opciót kapott). A `next` kimenetének `externalSignals` mezője legfeljebb hármat mutat, mindegyiket "nem igazolt" címkével, forrással és a `why` indokkal:
+
+1. **A feladat névvel említi a projektet** ("eslint", "Node.js", "pnpm"): a projekt legfrissebb jelei, a hasonlóságtól függetlenül. A projekt neve a tároló neve, szó egészként (a `nodemailer` nem `node`), az általános nevek (`core`, `app`, `lib`...) és a 3 karakternél rövidebbek nem számítanak.
+2. **Hasonló szöveg:** a jel szövege hasonlít a feladathoz (a hasonlósági küszöb, 0,25, **kalibrálatlan**), a `why` mutatja a pontszámot.
+
+A tárolt szöveg elején a **projekt és a kiadás címkéje** áll, mindkettő a forráslinkből származik (nem a modell írja), mert a kivonatok gyakran nem nevezik meg a projektet ("Version 10.15.0 adds…"), a keresés pedig a szöveget olvassa. A `radar list` és a `next` a tiszta kivonatot mutatja.
 
 ## Költség
 
@@ -112,6 +117,19 @@ node dist/cli.js radar import .colony/radar/summaries.json --dir <projekt>
 3. **Import a magba** (hálózat nélkül): csak a `ok` státuszú, forráslinkes elem kerül be, a szöveg újra átmegy a `scan`-en és a kitakaráson.
 
 Az eredeti elem sorsa a lánc minden pontján látható: `radar-fetch` jelentése (karantén), a kivonatoló `results` listája (`quarantined`, `deferred`, `failed`), az import `skipped` és `refused` listája.
+
+## Mért adatok: milyen jeleket kap egy feladat (2026-11-18)
+
+A 25 valódi jel (5 projekt) a próbamappában, 8 **új** feladattal, amelyeket a keresés módosítása **előtt** rögzítettem (öt név szerint említ egy projektet, három független):
+
+| | Jó találat (5 említett projekt) | Helyes "nincs jel" (3 független) | Téves jelzés |
+|---|---|---|---|
+| Előtte (csak hasonló szöveg, 0,25-ös küszöb) | 2 | 2 | 1 |
+| Utána (projektnév + fejléc a szövegben) | **5** | 2 | 1 |
+
+- **Mi volt a hiba:** a releváns jelek hasonlósági pontszáma (0,16–0,24 az ESLint, a pnpm és a vitest feladatnál) alig különbözött a független feladatokétól (0,14–0,17), ezért **semmilyen küszöb nem választotta szét őket**; a kivonatok gyakran nem is nevezik meg a projektet. A rangsor viszont jó volt (az 1–2. helyen álltak).
+- **Mi marad:** az "Onboarding docs" feladat egy ESLint-jelet kapott a hasonló szöveg útján (0,270, a "documentation updates" szavak miatt, a küszöb 0,25), a többi független feladat legfeljebb 0,17-et ért el. A küszöböt **nem módosítottam**, mert csak ezeken a feladatokon hangolnám; a téves jelzés ára egy címkézett, irreleváns jel.
+- **Korlátok:** 8 feladat, mindet én írtam, a jeleket ismerve; a projektnév-találat a tárolók neveire épül (az ismertebb nevek, mint a `node`, tágabban értelmezhetők); a hasonlósági útnak valódi, külső feladatszövegeken kell kalibrálás. Nem mértük, hogy a jelek **segítik-e** a munkát: az eval-keretben mérhető (lásd [EVAL-PLAN.md](EVAL-PLAN.md)).
 
 ## Mért adatok: az első valódi futás (2026-11-17)
 
