@@ -163,12 +163,31 @@ const PLAIN_ARG = /^[A-Za-z0-9@._/:=+\\-]+$/;
 function killTree(child) {
   if (!child.pid) return;
   if (WIN) spawn('taskkill', ['/pid', String(child.pid), '/t', '/f'], { windowsHide: true, stdio: 'ignore' });
-  else child.kill('SIGKILL');
+  else {
+    // the host leads its own process group (see startHost): the signal goes to the whole group
+    try {
+      process.kill(-child.pid, 'SIGKILL');
+    } catch {
+      child.kill('SIGKILL');
+    }
+  }
+}
+
+// The host leads its own process group on POSIX, so the terminal no longer reaches it: a Ctrl-C or a termination
+// of the runner has to stop it here, then the signal takes its default course.
+let activeHost = null;
+if (!WIN) {
+  for (const signal of ['SIGINT', 'SIGTERM']) {
+    process.once(signal, () => {
+      if (activeHost) killTree(activeHost);
+      process.kill(process.pid, signal);
+    });
+  }
 }
 
 function startHost(command, cwd) {
   const [tool, ...args] = command;
-  const options = { cwd, shell: false, windowsHide: true, stdio: ['pipe', 'pipe', 'pipe'] };
+  const options = { cwd, shell: false, windowsHide: true, detached: !WIN, stdio: ['pipe', 'pipe', 'pipe'] };
   return new Promise((resolveStart) => {
     const first = spawn(tool, args, options);
     first.once('error', (err) => {
@@ -193,9 +212,11 @@ async function runHost(def, prompt, cwd) {
   if (def.promptVia === 'arg') child.stdin.end();
   else child.stdin.end(prompt);
   let timedOut = false;
+  activeHost = child;
   const timer = setTimeout(() => { timedOut = true; killTree(child); }, hostTimeoutMs);
   const code = await new Promise((resolveExit) => child.once('close', resolveExit));
   clearTimeout(timer);
+  activeHost = null;
   return { ok: code === 0 && !timedOut, code, stdout, stderr: stderr.slice(-500), timedOut };
 }
 

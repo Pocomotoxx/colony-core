@@ -4,7 +4,7 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { runCommand } from '../cli/commands.js';
-import { EXIT_SESSIONS } from '../recall/ratings.js';
+import { EXIT_SESSIONS, recallStats } from '../recall/ratings.js';
 
 let root: string;
 let n = 0;
@@ -98,7 +98,8 @@ test('stats count sessions once, weigh partly as a half, and say whether the pha
   assert.equal(s.events, 5);
   assert.equal(s.rated, 4);
   assert.equal(s.unrated, 1);
-  assert.equal(s.ratedSessions, 3, 'a and b, and the event without a session on its own; a is counted once');
+  assert.equal(s.ratedSessions, 2, 'a and b; a is counted once; the event without a session is not a session');
+  assert.equal(s.unattributed, 1);
   assert.equal(s.usefulShare, 0.625, '(1 + 0 + 0.5 + 1) / 4');
   assert.equal(s.exit.sessions.need, EXIT_SESSIONS);
   assert.equal(s.exit.sessions.met, false);
@@ -138,6 +139,17 @@ test('a recall log that does not exist yet gives an empty report, and bad option
   assert.equal(s.exit.sessions.met, false);
   assert.match(await bad(dir, 'recall', 'list', '--k', '0'), /--k/);
   assert.match(await bad(dir, 'recall'), /usage: recall/);
+});
+
+test('recalls without a session id count toward the share but never toward the sessions', () => {
+  const events = Array.from({ length: 40 }, (_, i) => ({ seq: i + 1, at: i, session: null, ids: [] as string[] }));
+  const ratings = new Map(events.map((e) => [e.seq, { seq: e.seq, at: e.at, session: null, useful: 'yes' as const, ratedAt: 1 }]));
+  const s = recallStats(events, ratings);
+  assert.equal(s.rated, 40);
+  assert.equal(s.unattributed, 40);
+  assert.equal(s.ratedSessions, 0);
+  assert.equal(s.exit.sessions.met, false, 'forty ratings of unknown sessions are not forty sessions');
+  assert.equal(s.exit.share.met, true);
 });
 
 test('the recall commands are in the usage text', async () => {

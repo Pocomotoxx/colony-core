@@ -186,18 +186,32 @@ function field(block, tag) {
   return m ? m[1] : '';
 }
 
+/** The page of an entry: its alternate link (a link without rel is an alternate one too), whatever the order or the quotes of its attributes. */
+function entryLink(block) {
+  for (const tag of block.match(/<link\b[^>]*>/g) ?? []) {
+    const attr = (name) => {
+      const m = new RegExp('\\s' + name + '\\s*=\\s*(?:"([^"]*)"|\'([^\']*)\')', 'i').exec(tag);
+      return m ? (m[1] ?? m[2]) : undefined;
+    };
+    const href = attr('href');
+    if (!href) continue;
+    const rel = attr('rel');
+    if (rel === undefined || rel.trim().toLowerCase() === 'alternate') return decodeEntities(href);
+  }
+  return '';
+}
+
 function parseEntries(xml, limit) {
   const entries = [];
   const re = /<entry(?:\s[^>]*)?>([\s\S]*?)<\/entry>/g;
   let m;
   while ((m = re.exec(xml)) !== null && entries.length < limit) {
     const block = m[1];
-    const link = /<link\b[^>]*\brel="alternate"[^>]*\bhref="([^"]+)"/.exec(block) ?? /<link\b[^>]*\bhref="([^"]+)"/.exec(block);
     entries.push({
       atomId: decodeEntities(field(block, 'id')).trim(),
       title: decodeEntities(field(block, 'title')).trim(),
       updated: field(block, 'updated').trim(),
-      link: link ? decodeEntities(link[1]) : '',
+      link: entryLink(block),
       html: decodeEntities(field(block, 'content')),
     });
   }
