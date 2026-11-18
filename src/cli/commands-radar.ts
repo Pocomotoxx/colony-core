@@ -3,7 +3,7 @@ import path from 'node:path';
 import { scanText } from '../injection-scan.js';
 import { redactText } from '../redact.js';
 import { resolveInside, SafePathError } from '../safe-path.js';
-import { DEFAULT_TTL_DAYS, listSignals, MAX_SIGNALS, parseSummaries, projectOfSource, SIGNALS_NAMESPACE, SIGNAL_LABEL, tagOfSource } from '../radar/signals.js';
+import { DEFAULT_TTL_DAYS, listSignals, MAX_SIGNALS, parseSummaries, projectOfSource, purgeExpired, SIGNALS_NAMESPACE, SIGNAL_LABEL, tagOfSource } from '../radar/signals.js';
 import { MAX_APPROVED, ApprovedSource, proposeSources, readApproved, REPO_NAME, writeApproved } from '../radar/sources.js';
 import { STATE_DIR } from './session.js';
 import { CliError, CommandContext, CommandResult, Handler } from './context.js';
@@ -84,6 +84,8 @@ async function handle_radar(ctx: CommandContext): Promise<CommandResult> {
   const parsed = parseSummaries(json);
   if (parsed.problem) throw new CliError(parsed.problem);
 
+  // expired signals go first: a long-running colony must not keep old third-party text forever
+  const expiredRemoved = await purgeExpired(hub.codex, now);
   const existing = new Set((await listSignals(hub.codex, now)).map((s) => s.id));
   const refused: Array<{ id: string; reason: string }> = [];
   const batch: Array<{ id: string; text: string; namespace: string; metadata: Record<string, unknown> }> = [];
@@ -137,6 +139,7 @@ async function handle_radar(ctx: CommandContext): Promise<CommandResult> {
   return reply({
     imported: fresh,
     updated,
+    expiredRemoved,
     redacted: redactedCount,
     expiresInDays: ttlDays,
     refused,

@@ -107,6 +107,18 @@ export async function listSignals(codex: VectorCodex, now: number): Promise<Sign
   return docs.map((d) => signalView(d, now)).sort((a, b) => b.fetchedAt - a.fetchedAt);
 }
 
+/** The newest unexpired signals, for `start` (read only): a short list, always labelled. */
+export async function freshSignals(codex: VectorCodex, now: number, limit = 5): Promise<SignalView[]> {
+  return (await listSignals(codex, now)).filter((s) => !s.expired).slice(0, limit);
+}
+
+/** Removes the expired signals (their expiry has passed) and returns how many went. Used by the import. */
+export async function purgeExpired(codex: VectorCodex, now: number): Promise<number> {
+  const gone = (await listSignals(codex, now)).filter((s) => s.expired).map((s) => `signal_${s.id}`);
+  if (gone.length > 0) await codex.store.delete(gone);
+  return gone.length;
+}
+
 /** Below this similarity to the task text a signal is not shown. A starting value, not calibrated on data. */
 export const SIGNAL_MIN_SCORE = 0.25;
 export const SIGNALS_PER_TASK = 3;
