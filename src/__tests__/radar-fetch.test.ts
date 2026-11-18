@@ -14,8 +14,10 @@ const repo = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..')
 const script = path.join(repo, 'scripts', 'radar-fetch.mjs');
 
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-const entry = (id: string, title: string, html: string) =>
-  `<entry><id>tag:github.com,2008:Repository/1/${id}</id><updated>2026-11-01T10:00:00Z</updated><link rel="alternate" type="text/html" href="https://github.com/o/r/releases/tag/${id}"/><title>${esc(title)}</title><content type="html">${esc(html)}</content></entry>`;
+// The date of an entry is relative to now: the tests must not depend on the day they run.
+const daysAgo = (d: number) => new Date(Date.now() - d * 86_400_000).toISOString();
+const entry = (id: string, title: string, html: string, updated: string = daysAgo(1)) =>
+  `<entry><id>tag:github.com,2008:Repository/1/${id}</id><updated>${updated}</updated><link rel="alternate" type="text/html" href="https://github.com/o/r/releases/tag/${id}"/><title>${esc(title)}</title><content type="html">${esc(html)}</content></entry>`;
 const feed = (...entries: string[]) => `<?xml version="1.0" encoding="UTF-8"?><feed xmlns="http://www.w3.org/2005/Atom">${entries.join('')}</feed>`;
 
 let server: http.Server;
@@ -99,7 +101,7 @@ test('a feed becomes plain-text items with a source link; the request is plain (
   const r = await run(dir, ['--repos', 'o/r', '--yes', '--per-feed', '2']);
   assert.equal(r.code, 0, r.stderr);
   const out = JSON.parse(r.stdout);
-  assert.deepEqual(out.feeds, [{ repo: 'o/r', status: 'ok', entries: 2, new: 2 }]);
+  assert.deepEqual(out.feeds, [{ repo: 'o/r', status: 'ok', entries: 2, stale: 0, new: 2 }]);
   assert.equal(out.totals.written, 2);
   assert.equal(out.totals.quarantined, 0);
   const list = await items(dir);
@@ -166,7 +168,7 @@ test('an item already seen is skipped on the next run, unless --all is given', a
   assert.equal(first.totals.written, 3);
   const second = await run(dir, ['--repos', 'o/r', '--yes']);
   const out = JSON.parse(second.stdout);
-  assert.deepEqual(out.feeds, [{ repo: 'o/r', status: 'ok', entries: 3, new: 0 }]);
+  assert.deepEqual(out.feeds, [{ repo: 'o/r', status: 'ok', entries: 3, stale: 0, new: 0 }]);
   assert.equal(out.totals.written, 0);
   assert.equal(out.out, null);
   assert.equal((await items(dir)).length, 3, 'the earlier file is left as it was');
@@ -301,4 +303,62 @@ test('a damaged approved list is refused, and a name in it that is not owner/rep
   assert.equal(r.code, 2);
   assert.match(r.stderr, /not an owner\/repo name/);
   assert.equal(requests.length, 0);
+});
+
+// ---- age
+
+const AGED = () => feed(
+  entry('v5', 'v5', '<p>Fresh notes.</p>', daysAgo(5)),
+  entry('v4', 'v4', '<p>Notes from a few months ago.</p>', daysAgo(100)),
+  entry('v3', 'v3', '<p>Ancient notes.</p>', daysAgo(400)),
+  entry('v2', 'v2', '<p>Notes without a readable date.</p>', ''),
+  entry('v1', 'v1', '<p>Notes from the future of a wrong clock.</p>', daysAgo(-3)),
+);
+
+test('an entry older than --max-age-days (default 90) is skipped and counted; undated and future-dated entries are kept', async () => {
+  const dir = await project();
+  routes = { '/o/r/releases.atom': () => ({ body: AGED() }) };
+  const out = JSON.parse((await run(dir, ['--repos', 'o/r', '--yes'])).stdout);
+  assert.deepEqual(out.feeds, [{ repo: 'o/r', status: 'ok', entries: 5, stale: 2, new: 3 }]);
+  assert.equal(out.totals.stale, 2);
+  assert.equal(out.totals.undated, 1);
+  assert.equal(out.totals.written, 3);
+  const text = JSON.stringify(await items(dir));
+  assert.ok(text.includes('Fresh notes.') && text.includes('without a readable date') && text.includes('wrong clock'));
+  assert.ok(!text.includes('a few months ago') && !text.includes('Ancient notes'), 'the old ones are not written');
+});
+
+test('--max-age-days changes the limit, 0 turns it off, and a skipped entry is not marked as seen', async () => {
+  const dir = await project();
+  routes = { '/o/r/releases.atom': () => ({ body: AGED() }) };
+  const tight = JSON.parse((await run(dir, ['--repos', 'o/r', '--yes', '--max-age-days', '30'])).stdout);
+  assert.equal(tight.totals.stale, 2, '100 and 400 days are over 30 days');
+  assert.equal(tight.totals.written, 3);
+  const off = JSON.parse((await run(dir, ['--repos', 'o/r', '--yes', '--max-age-days', '0'])).stdout);
+  assert.equal(off.totals.stale, 0);
+  assert.equal(off.totals.written, 2, 'the two that were skipped before come now; the three seen ones are not repeated');
+  const text = JSON.stringify(await items(dir));
+  assert.ok(text.includes('a few months ago') && text.includes('Ancient notes'));
+});
+
+test('the limit is part of the plan, and a bad value is refused', async () => {
+  const dir = await project();
+  routes = {};
+  const plan = JSON.parse((await run(dir, ['--repos', 'o/r', '--dry-run'])).stdout).plan;
+  assert.equal(plan.maxAgeDays, 90);
+  assert.equal(JSON.parse((await run(dir, ['--repos', 'o/r', '--dry-run', '--max-age-days', '10'])).stdout).plan.maxAgeDays, 10);
+  for (const bad of ['-1', 'abc', '4000', '1.5']) {
+    const r = await run(dir, ['--repos', 'o/r', '--dry-run', '--max-age-days', bad]);
+    assert.equal(r.code, 2, bad);
+    assert.match(r.stderr, /--max-age-days must be an integer 0-3650/);
+  }
+});
+
+test('a date that is not a date is treated as no date, not as old', async () => {
+  const dir = await project();
+  routes = { '/o/r/releases.atom': () => ({ body: feed(entry('v1', 'v1', '<p>Odd date.</p>', 'yesterday')) }) };
+  const out = JSON.parse((await run(dir, ['--repos', 'o/r', '--yes'])).stdout);
+  assert.equal(out.totals.undated, 1);
+  assert.equal(out.totals.stale, 0);
+  assert.equal(out.totals.written, 1);
 });
