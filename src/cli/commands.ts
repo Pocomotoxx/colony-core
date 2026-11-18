@@ -10,6 +10,7 @@ import { tasksHandlers } from './commands-tasks.js';
 import { claimsHandlers } from './commands-claims.js';
 import { consensusHandlers } from './commands-consensus.js';
 import { debateHandlers } from './commands-debate.js';
+import { radarHandlers } from './commands-radar.js';
 import { evalHandlers } from './commands-eval.js';
 import { inspectHandlers } from './commands-inspect.js';
 import { safetyHandlers } from './commands-safety.js';
@@ -20,7 +21,7 @@ import { hooksStatus, workflow } from './start-info.js';
 
 export type { CommandResult } from './context.js';
 
-const HANDLERS: Record<string, Handler> = { ...tasksHandlers, ...claimsHandlers, ...consensusHandlers, ...debateHandlers, ...evalHandlers, ...inspectHandlers, ...safetyHandlers, ...memoryHandlers, ...anomalyHandlers };
+const HANDLERS: Record<string, Handler> = { ...tasksHandlers, ...claimsHandlers, ...consensusHandlers, ...debateHandlers, ...radarHandlers, ...evalHandlers, ...inspectHandlers, ...safetyHandlers, ...memoryHandlers, ...anomalyHandlers };
 
 /** Read-only commands that may run on a state whose integrity check failed. */
 const DIAGNOSTIC_COMMANDS: ReadonlySet<string> = new Set(['audit', 'watch']);
@@ -78,6 +79,8 @@ export const USAGE = `colony <command> [options]    (every command prints JSON; 
                                           [--cost-usd X] [--input-tokens N] [--output-tokens N] [--duration-ms N] [--turns N]
   eval compare --set <file> --variants A,B [--min-runs N] [--include-reported]   names a winner only beyond noise and with enough runs
   eval report --set <file>                runs and pass rates per variant
+  radar import <summaries.json> [--ttl-days N] [--project NAME]   keep the checked summaries of outside text (written by scripts/groq-summarize.mjs --out) as unverified external signals with source and expiry
+  radar list [--project NAME] [--k N] [--include-expired] | radar forget <id> | radar forget --expired | radar forget --all
   anomaly add <text> --as <member> [--task <fromTaskId>]   record something set aside as noise; it becomes a task for the exobiologist
   anomaly list [--k N]                    the recorded anomalies
   memory add <text>                       [--ns NAMESPACE] [--allow-risky]   hostile text is refused unless --allow-risky

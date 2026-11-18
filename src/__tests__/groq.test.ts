@@ -349,3 +349,30 @@ test('after a split the later items of the run start from the smaller size', asy
   assert.equal(out.results[1].guard.chunks, 2);
   assert.equal(guardCalls(), 5, '3 calls for the first item (one refused), 2 for the second');
 });
+
+test('the summariser carries the source link into each result and writes --out as JSON that radar import reads; a bad --out is refused before anything is sent', async () => {
+  const text = 'A public note about a library release and what changed in it.';
+  const dir = await project([
+    { id: 'a', source: 'https://github.com/o/r/releases/tag/v1', text },
+    { id: 'b', source: 'javascript:alert(1)', text },
+  ]);
+  behaviour = { [GUARD]: () => ok('0.01', 10), [SUMMARY]: () => ok('A summary of the release.', 60) };
+  const r = await run(dir, ['--yes', '--out', '.colony/radar/summaries.json']);
+  assert.equal(r.code, 0, r.stderr);
+  const out = JSON.parse(r.stdout);
+  assert.equal(out.results[0].source, 'https://github.com/o/r/releases/tag/v1');
+  assert.equal(out.results[1].source, undefined, 'a link that is not http(s) is not carried');
+  const written = JSON.parse(await fs.readFile(path.join(dir, '.colony', 'radar', 'summaries.json'), 'utf-8'));
+  assert.deepEqual(written, out, 'the file holds the same report as stdout');
+
+  const imported = await runCommand(['radar', 'import', '.colony/radar/summaries.json', '--dir', dir], process.cwd());
+  assert.equal(imported.code, 0, JSON.stringify(imported.output));
+  const result = imported.output as any;
+  assert.equal(result.imported, 1);
+  assert.deepEqual(result.skipped.map((s: any) => s.id), ['b']);
+
+  const refused = await run(dir, ['--yes', '--out', '../outside.json']);
+  assert.equal(refused.code, 2);
+  assert.match(refused.stderr, /--out must be inside the project/);
+  assert.equal(seen.length, 0, 'nothing was sent: the path was checked first');
+});

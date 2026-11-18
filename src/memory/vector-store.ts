@@ -40,11 +40,15 @@ export class InMemoryVectorStore implements IVectorStore {
     const topK = options.topK ?? 5;
     const minScore = options.minScore ?? 0.0;
     const namespace = options.namespace;
+    const excluded = new Set(options.excludeNamespaces ?? []);
 
     const results: SearchResult[] = [];
 
     for (const doc of this.docs.values()) {
       if (namespace && doc.namespace !== namespace) {
+        continue;
+      }
+      if (doc.namespace !== undefined && excluded.has(doc.namespace)) {
         continue;
       }
 

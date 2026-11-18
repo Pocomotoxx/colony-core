@@ -162,24 +162,30 @@ export class FileVectorStore implements IVectorStore {
     const topK = options.topK ?? 5;
     const minScore = options.minScore ?? 0.0;
     const namespace = options.namespace;
+    const excluded = new Set(options.excludeNamespaces ?? []);
+    const filtered = Boolean(namespace) || excluded.size > 0;
 
     const results: SearchResult[] = [];
 
     const index = this.ensureIndex();
     if (index) {
-      const hits = index.search(queryVector, namespace ? this.docs.size : Math.max(topK * 4, 64), Math.max(topK * 4, 64));
+      const hits = index.search(queryVector, filtered ? this.docs.size : Math.max(topK * 4, 64), Math.max(topK * 4, 64));
       for (const hit of hits) {
         const document = this.docs.get(hit.id);
         if (!document || (namespace && document.namespace !== namespace)) continue;
+        if (document.namespace !== undefined && excluded.has(document.namespace)) continue;
         if (hit.score >= minScore) results.push({ document, score: hit.score });
       }
-      // With a namespace the graph may hold too few matching vectors near the query: fall back to the exact scan.
-      if (!namespace || results.length >= topK) return results.slice(0, topK);
+      // With a namespace (or an excluded one) the graph may hold too few matching vectors near the query: fall back to the exact scan.
+      if (!filtered || results.length >= topK) return results.slice(0, topK);
       results.length = 0;
     }
 
     for (const doc of this.docs.values()) {
       if (namespace && doc.namespace !== namespace) {
+        continue;
+      }
+      if (doc.namespace !== undefined && excluded.has(doc.namespace)) {
         continue;
       }
       // A vector from another embedding size cannot be compared: skip it (reindex fixes it) instead of failing the search.
