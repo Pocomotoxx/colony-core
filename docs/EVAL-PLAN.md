@@ -204,6 +204,18 @@ Két variáns, mindkettő 5 feladat × 3 ismétlés = 15 futás, ugyanaz a beál
 - **Új: a `model` mező.** A futtató a host használati jelentéséből (`modelUsage` kulcsai) kiolvassa a modellnevet, az `eval check` és `eval record` rögzíti (`--model`), és a `report` variánsonként mutatja. Ez a host állítása, nem ellenőrzött, de a következő kísérleteknél látni lehet, hogy a variáns tényleg azon a modellen futott-e.
 - **Következő lépések (nincsenek megvalósítva):** (1) egy **negatív kontroll**: egy szándékosan rontott variáns (például túl kicsi költségkorláttal, hogy a futások korán megszakadjanak), hogy lássuk, a mérőeszköz **észleli-e a romlást**; (2) **nagyobb vagy pontatlanabb leírású feladatok**, ahol a követelmény egy részét a meglévő kódból és tesztekből kell kitalálni, és ahol az ellenőrzés mégsem igazságtalan.
 
+### Számlálómérés: 15 haiku-futás a keret százalékában (2026-11-18)
+
+A Pro-előfizetés 5 órás használati számlálóját a claude.ai használati oldalán olvastuk le a mérés előtt és után. Egyetlen köteg: a `hard-1` készlet 15 új futása a `claude-haiku-5-5` modellel (a futtató kimenete szerint), 5 feladat × 3 ismétlés, 15/15 sikeres, API-egyenértékű becsült költség **0,246 USD**.
+
+| Mérés | Számláló |
+|---|---|
+| Előtte (modellváltás után, nincs futó eval) | 0% |
+| Utána (a 15 futás után) | 6% |
+
+- **Ebből becsült arány:** 6 százalékpont / 0,246 USD-egyenérték ≈ **0,04 USD-egyenérték százalékpontonként**, felső becslésként, mert a beszélgetés saját fogyasztása (a mérés közben írt üzenetek és olvasások) nincs levonva, és a számláló egész százalékot mutat (±1 pont).
+- **Következmény a tervezéshez:** egy 90 futásos haiku-variáns (kb. 0,016 USD-egyenérték/futás, ez 1,5 USD-egyenérték) a becslés szerint **kb. 35–40 százalékpont**. Egy alapmodelles variáns (kb. 0,13 USD-egyenérték/futás) ennek sokszorosát fogyasztja. A kísérleteket ezért a keret százalékában érdemes tervezni, nem USD-egyenértékben.
+- **Nem igazolt:** a beszélgetés többi részének fogyasztása (a számláló nem bontja szét), és az, hogy az arány más modellekre vagy más feladatokra is igaz-e. Egy tiszta mérés (üres beszélgetés, csak a köteg) pontosítaná.
 ## Kockázatok
 
 | Kockázat | Védelem |
