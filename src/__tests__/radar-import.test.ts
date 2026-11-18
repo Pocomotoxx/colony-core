@@ -321,3 +321,29 @@ test('the reason of a similar-text signal carries the similarity; an expired sig
   await ok(dir, 'task', 'add', 'Update Node.js again', 'Update Node.js and check the http2 and TLS fixes', '--role', 'engineer');
   assert.deepEqual((await ok(dir, 'next', '--as', 'engineer')).externalSignals, []);
 });
+
+test('an import removes the expired signals first and reports how many went', async () => {
+  const dir = await project();
+  await ok(dir, 'radar', 'import', 'summaries.json');
+  const memFile = path.join(dir, '.colony', 'memory.json');
+  const mem = JSON.parse(await fs.readFile(memFile, 'utf-8'));
+  const docs = Array.isArray(mem) ? mem : mem.documents ?? mem.docs ?? [];
+  for (const d of docs) if (d.namespace === 'signals' && d.id.endsWith('pnpm_pnpm-bbb')) d.metadata.expiresAt = 1;
+  await fs.writeFile(memFile, JSON.stringify(mem));
+  const again = await ok(dir, 'radar', 'import', 'summaries.json');
+  assert.equal(again.expiredRemoved, 1, 'the expired one is removed');
+  assert.equal(again.imported, 1, 'and the removed one is imported again as new');
+  assert.equal((await ok(dir, 'radar', 'list', '--include-expired')).total, 2);
+});
+
+test('start shows the fresh signals, labelled, and no expired one; without signals the field is empty', async () => {
+  const dir = await project();
+  const none = JSON.parse(JSON.stringify(await ok(dir, 'start')));
+  assert.deepEqual(none.externalSignals, []);
+  await ok(dir, 'radar', 'import', 'summaries.json');
+  const started = await ok(dir, 'start');
+  assert.equal(started.externalSignals.length, 2);
+  assert.match(started.externalSignals[0].label, /unverified/);
+  assert.ok(started.externalSignals.every((s: any) => !s.expired && s.source.startsWith('https://')));
+  assert.ok(started.externalSignals.length <= 5);
+});

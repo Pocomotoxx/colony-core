@@ -18,6 +18,7 @@ import { memoryHandlers } from './commands-memory.js';
 import { anomalyHandlers } from './commands-anomaly.js';
 import { errorMessage } from '../errors.js';
 import { hooksStatus, workflow } from './start-info.js';
+import { freshSignals } from '../radar/signals.js';
 
 export type { CommandResult } from './context.js';
 
@@ -130,7 +131,14 @@ async function dispatch(argv: string[], cwd: string): Promise<CommandResult> {
       const ok = record.status !== 'BLOCKED';
       // `start` is a boot that also says how to work and whether the host's hooks are installed
       const cli = fileURLToPath(new URL('../cli.js', import.meta.url));
-      const startInfo = command === 'start' && ok ? { hooks: await hooksStatus(dir, cli), workflow: workflow(dir, cli) } : {};
+      const startInfo = command === 'start' && ok
+        ? {
+          hooks: await hooksStatus(dir, cli),
+          workflow: workflow(dir, cli),
+          // unverified third-party summaries (radar): read only, labelled, never instructions
+          externalSignals: session ? await freshSignals(session.hub.codex, Date.now()) : [],
+        }
+        : {};
       return {
         code: ok ? 0 : 2,
         output: {
