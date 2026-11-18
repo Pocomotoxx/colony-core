@@ -163,6 +163,23 @@ Ez azt jelenti, hogy egy komoly összehasonlítás költséges. Ésszerű sorren
 - A kudarc korai felismerése (körszámkeret), hogy a zsákutcák ne fussanak végig.
 - Eredmények újrahasznosítása: azonos variáns és feladat nem fut újra, ha már van elég ismétlés.
 
+## A nehezebb feladatkészlet: `eval/hard-1`
+
+Az első két próbafeladat (egy fájl létrehozása, egy kis függvény javítása) 100%-os sikerarányt adott, így két variánst nem tud megkülönböztetni. A `hard-1` öt feladata ugyanolyan szerkezetű (leírás a `README.md`-ben, hibás kiinduló kód, **a munkamappán kívüli rejtett ellenőrzés**), de szándékosan nehezebb: sok szélsőséges eset, kétértelműséget nem tartalmazó, de pontos leírás, és olyan csapdák, amelyeket egy gyors megoldás elnéz.
+
+| Feladat | Mit kér | Mi a nehéz benne (a leírás mindent kimond, az ellenőrzés mindent számon kér) |
+|---|---|---|
+| `interval-merge` | zárt intervallumok összevonása | a bemenet nem módosítható (befagyasztott bemenet is), a "érintkezik" és "átfed" különbsége (`touching`), a tartalmazott intervallum, a hibaosztály (`RangeError` vagy `TypeError`) és az egész bemenet előzetes ellenőrzése |
+| `csv-parse` | CSV-elemző | idézőjeles mezők és `""`, sortörés az idézőjelben (`\n`, `\r\n`, `\r`), üres sor, záró sortörés, BOM, `SyntaxError` pontos sorszámmal (az idézőjelen belüli sortörésekkel is) |
+| `money-split` | összeg elosztása súlyok szerint | pontos számítás (0,1 + 0,2 + 0,7 nem lehet lebegőpontos hibás), legnagyobb maradék módszer, döntetlennél az alacsonyabb index, negatív összeg, nincs `-0`, `Number.MAX_SAFE_INTEGER`-ig működik |
+| `rate-limiter` | csúszóablakos limitáló | félig nyitott ablak (a pontosan `windowMs`-sel korábbi esemény már nem számít), csak az engedett kérést naplózza, `retryAfterMs`, `size()` és a kulcsok felejtése időzítő nélkül |
+| `iso-weeks` | ISO 8601 hetek három modulban | az év eleji és év végi napok, a 53 hetes évek, a hetek éve eltérhet a naptári évtől; a hibát két fájlban is ki kell javítani (a `dates.js` és a `report.js`), a `calendar.js`-t pedig újraírni |
+
+- **A készlet önellenőrző** (`src/__tests__/eval-tasks.test.ts`): minden feladatnál a hibás kiinduló kódon az ellenőrzésnek **buknia** kell, a referenciamegoldással **át kell mennie** (a referenciamegoldások az `eval/hard-1/reference` mappában vannak, az ügynök munkamappájába nem kerülnek). Ez kizárja a lehetetlen vagy téves feladatot. A validáció közben ki is derült egy hiba: a `delimiter: null` esetét a leírás nem rögzítette, de az ellenőrzés számon kérte, ezt kivettük (kétértelmű esetet nem kérünk számon).
+- **A rejtett ellenőrzések a készlet mappájában vannak**, a `check` és a `setup` mezőben a `{setDir}` a készletfájl mappáját jelenti. A készletet így bárhová át lehet másolni, a projekten belülre kell kerülnie (a `setup` a projekten belül marad).
+- **A sikerarány még nem mért.** Hogy ezek a feladatok a 30–70%-os sávba esnek-e, csak egy kalibráló futás mutatja meg (a Claude Code alapbeállításával, Bash nélkül: az ügynök a kódot nem tudja futtatni, csak olvasni és szerkeszteni). Ha egy feladat mindig sikeres vagy soha, a készletből ki kell venni vagy át kell írni.
+- **Korlát:** öt feladat, egy szerző (a feladatok, a referenciák és az ellenőrzések is tőlem származnak), és mindegyik tiszta, egy modulos függvény. Valódi, nagyobb kódbázison végzett munkát (több fájl, függőségek, tesztfuttatás) ez nem képvisel.
+
 ## Kockázatok
 
 | Kockázat | Védelem |

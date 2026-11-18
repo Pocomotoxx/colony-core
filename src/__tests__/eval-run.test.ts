@@ -174,3 +174,21 @@ test('an invalid task set or variants file is refused before anything starts', a
   const badVia = spawnSync(process.execPath, [runner, '--dir', dir, '--set', 'set.json', '--variants-file', 'bad-variants.json', '--repeats', '1', '--dry-run', '--variants', 'B'], { encoding: 'utf-8' });
   assert.match(badVia.stderr, /"promptVia" must be/);
 });
+
+test('the runner resolves {setDir} in the setup folder, and the hidden check next to the set judges the host work', async () => {
+  const dir = await project();
+  const set = path.join(dir, 'sets', 'h');
+  await fs.mkdir(path.join(set, 'fixtures', 'start'), { recursive: true });
+  await fs.writeFile(path.join(set, 'fixtures', 'start', 'seed.txt'), 'seed');
+  await fs.writeFile(path.join(set, 'check.mjs'), "import fs from 'node:fs';\nprocess.exit(fs.existsSync('seed.txt') && fs.existsSync('out.txt') ? 0 : 1);\n");
+  await fs.writeFile(path.join(set, 'set.json'), JSON.stringify({
+    set: 'h', split: 'tune',
+    tasks: [{ id: 't1', title: 'one', prompt: 'PASS this one', check: ['node', '{setDir}/check.mjs'], setup: '{setDir}/fixtures/start' }],
+  }));
+  const r = spawnSync(process.execPath, [runner, '--dir', dir, '--set', 'sets/h/set.json', '--variants-file', 'variants.json', '--repeats', '1', '--budget-usd', '5', '--yes', '--variants', 'A'], { encoding: 'utf-8', timeout: 120_000 });
+  assert.equal(r.status, 0, r.stderr);
+  const rows = await stored(dir);
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].passed, true, 'the workspace had the seed from the set folder, and the host wrote the file the hidden check wants');
+  await fs.access(path.join(dir, 'eval-work', 'h', 'A', 't1', '1', 'seed.txt'));
+});

@@ -230,7 +230,8 @@ for (const item of queue.slice(0, planned)) {
   rmSync(workspace, { recursive: true, force: true });
   mkdirSync(workspace, { recursive: true });
   if (task.setup) {
-    const source = insideProject(task.setup, `the setup of task '${task.id}'`);
+    const setupPath = task.setup.split('{setDir}').join(dirname(setPath)); // {setDir}: the folder of the task set file
+    const source = insideProject(setupPath, `the setup of task '${task.id}'`);
     if (!existsSync(source)) fail(`the setup folder of task '${task.id}' does not exist: ${task.setup}`, 1);
     cpSync(source, workspace, { recursive: true });
   }

@@ -50,8 +50,11 @@ const TASK_ID = /^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/;
 const MAX_TASKS = 200;
 
 /** Parse and validate a task set. Never throws: the problems come back as a list. */
-export function parseEvalSet(text: string): { set?: EvalSet; problems: string[] } {
+export function parseEvalSet(text: string, options: { setDir?: string } = {}): { set?: EvalSet; problems: string[] } {
   const problems: string[] = [];
+  // `{setDir}` in a check stands for the folder of the task set file, so that a set can bring its own hidden checks
+  // (outside every workspace) wherever the set is copied to.
+  const withSetDir = (a: string) => (options.setDir === undefined ? a : a.split('{setDir}').join(options.setDir));
   let raw: unknown;
   try {
     raw = JSON.parse(text.charCodeAt(0) === 0xfeff ? text.slice(1) : text);
@@ -81,7 +84,7 @@ export function parseEvalSet(text: string): { set?: EvalSet; problems: string[] 
       if (!Array.isArray(x.check) || x.check.length === 0 || x.check.some((a) => typeof a !== 'string' || !a || a.length > 500)) {
         bad('`check` must be a non-empty list of argument strings (no shell string)');
       } else {
-        const joined = (x.check as string[]).join(' ');
+        const joined = (x.check as string[]).map(withSetDir).join(' ');
         const refused = [checkDestructive(joined), checkSecrets(joined)].filter((r) => r !== null);
         if (refused.length > 0) bad(`the check is refused by the gates: ${refused.map((r) => r!.reason).join('; ')}`);
       }
@@ -92,7 +95,7 @@ export function parseEvalSet(text: string): { set?: EvalSet; problems: string[] 
           id: x.id as string,
           title: (x.title as string).trim(),
           prompt: x.prompt as string,
-          check: x.check as string[],
+          check: (x.check as string[]).map(withSetDir),
           ...(x.setup !== undefined ? { setup: x.setup as string } : {}),
           ...(x.timeoutSec !== undefined ? { timeoutSec: x.timeoutSec as number } : {}),
         });

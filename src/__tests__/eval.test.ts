@@ -267,3 +267,19 @@ test('the eval commands are in the usage text', async () => {
   const help = (await runCommand(['help'], process.cwd())).output as any;
   assert.match(help.usage, /eval compare --set <file> --variants A,B/);
 });
+
+test('{setDir} in a check stands for the folder of the task set file, so a set can carry its own hidden checks', async () => {
+  const dir = await project();
+  await fs.mkdir(path.join(dir, 'sets', 'x', 'fixtures'), { recursive: true });
+  await fs.writeFile(path.join(dir, 'sets', 'x', 'c.mjs'), "import fs from 'node:fs';\nprocess.exit(fs.existsSync('out.txt') ? 0 : 1);\n");
+  await fs.writeFile(path.join(dir, 'sets', 'x', 'set.json'), JSON.stringify({
+    set: 'x', split: 'tune',
+    tasks: [{ id: 't', title: 'one', prompt: 'p', check: ['node', '{setDir}/c.mjs'], setup: '{setDir}/fixtures' }],
+  }));
+  await fs.mkdir(path.join(dir, 'work', 'with'), { recursive: true });
+  await fs.writeFile(path.join(dir, 'work', 'with', 'out.txt'), 'x');
+  const yes = await ok(dir, 'eval', 'check', '--set', 'sets/x/set.json', '--variant', 'A', '--task', 't', '--run', '1', '--workspace', 'work/with');
+  assert.equal(yes.result.passed, true, 'the check in the set folder ran in the workspace');
+  const no = await ok(dir, 'eval', 'check', '--set', 'sets/x/set.json', '--variant', 'A', '--task', 't', '--run', '2', '--workspace', 'work/pass');
+  assert.equal(no.result.passed, false);
+});
