@@ -123,14 +123,20 @@ for (const it of items) {
   const local = scanText(it.text);
   const row = { id: it.id, label: it.label, style: it.style ?? null, localVerdict: local.verdict, guardScore: null, error: null };
   const chunks = chunkText(it.text, chunkChars, MAX_CHUNKS);
+  if (it.text.length > chunkChars * MAX_CHUNKS) {
+    // only the first chunks would be checked: a score for a part of the text must not stand for the text
+    row.truncated = true;
+    row.error = 'the text is longer than the ' + MAX_CHUNKS + ' chunks that are checked (' + chunkChars * MAX_CHUNKS + ' of ' + it.text.length + ' characters): not scored';
+    rows.push(row);
+    continue;
+  }
   let max = 0;
   for (const chunk of chunks) {
     if (stopped) { row.error = stopped; break; }
     const need = estimateTokens(chunk) + 20;
     const room = await reserve(usage, limits, 'guard', need, { maxWaitMs, sleep });
     if (!room.ok) { stopped = room.reason; row.error = room.reason; break; }
-    const r = await chatWithRetry({ base, key, body: { model: limits.guard.model, messages: [{ role: 'user', content: chunk }] } }, { sleep });
-    usage.record('guard', r.ok ? tokensUsed(r.tokens, need) : need);
+    const r = await chatWithRetry({ base, key, body: { model: limits.guard.model, messages: [{ role: 'user', content: chunk }] } }, { sleep, record: (a) => usage.record('guard', a.ok ? tokensUsed(a.tokens, need) : need) });
     if (!r.ok) { row.error = `guard call failed (${r.error})`; break; }
     const score = parseGuardScore(r.content);
     if (score === null) { row.error = 'the guard answer could not be read as a score'; break; }

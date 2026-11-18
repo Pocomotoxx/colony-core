@@ -219,8 +219,7 @@ async function guardPiece(piece, depth, raw) {
     guardStopped = room.reason;
     return { deferred: room.reason };
   }
-  const r = await chatWithRetry({ base, key, body: { model: limits.guard.model, messages: [{ role: 'user', content: piece }] } }, retry);
-  usage.record('guard', r.ok ? tokensUsed(r.tokens, need) : need);
+  const r = await chatWithRetry({ base, key, body: { model: limits.guard.model, messages: [{ role: 'user', content: piece }] } }, { ...retry, record: (a) => usage.record('guard', a.ok ? tokensUsed(a.tokens, need) : need) });
   if (!r.ok) {
     if (r.status === 400 && LENGTH_ERROR.test(r.error) && piece.length > MIN_PIECE && depth < MAX_SPLIT_DEPTH) {
       splits++;
@@ -295,8 +294,7 @@ for (const p of prepared) {
     results.push({ ...out, status: 'deferred', reason: room.reason });
     continue;
   }
-  const r = await chatWithRetry({ base, key, body: { model: limits.summary.model, messages, temperature: 0.2, max_completion_tokens: maxOut } }, retry);
-  usage.record('summary', r.ok ? tokensUsed(r.tokens, need) : need);
+  const r = await chatWithRetry({ base, key, body: { model: limits.summary.model, messages, temperature: 0.2, max_completion_tokens: maxOut } }, { ...retry, record: (a) => usage.record('summary', a.ok ? tokensUsed(a.tokens, need) : need) });
   if (!r.ok) {
     results.push({ ...out, status: r.status === 429 ? 'deferred' : 'failed', reason: `the summary call failed (${r.error})` });
     continue;

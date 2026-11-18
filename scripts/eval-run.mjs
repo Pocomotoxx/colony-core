@@ -245,12 +245,19 @@ function readReport(stdout) {
 }
 
 let spent = 0;
+let maxRun = 0; // the most expensive run so far: the best guess for the next one
 let started = 0;
 let stopped = null;
 const outcomes = [];
 
 for (const item of queue.slice(0, planned)) {
   if (budget !== null && spent >= budget) { stopped = `the budget (${budget} USD) is reached (the cost is the host's API-equivalent estimate)`; break; }
+  // The cost of a run is known only afterwards, so the budget is a stop, not a cap: the first run can go over it. After that the
+  // next run is not started when, by the most expensive run so far, it would probably go over. The budget is per invocation.
+  if (budget !== null && maxRun > 0 && spent + maxRun > budget) {
+    stopped = `the next run would probably go over the budget (${budget} USD): ${spent.toFixed(2)} spent in this run of the script, and the most expensive run so far cost ${maxRun.toFixed(2)} (the cost is the host's API-equivalent estimate)`;
+    break;
+  }
   const { variant, task, run } = item;
   const workspace = join(workRoot, taskSet.set, variant, task.id, String(run));
   rmSync(workspace, { recursive: true, force: true });
@@ -269,10 +276,14 @@ for (const item of queue.slice(0, planned)) {
   const report = readReport(host.stdout);
   if (started === 1 && report.models?.length) console.error(`the host says it used: ${report.models.join(', ')}`);
   if (started === 1) console.error(`the host's JSON output has these fields: ${report.keys.length ? report.keys.join(', ') : '(none: it is not JSON)'}`);
-  if (report.costUsd !== undefined) spent += report.costUsd;
+  if (report.costUsd !== undefined) {
+    spent += report.costUsd;
+    maxRun = Math.max(maxRun, report.costUsd);
+  }
 
   const args = [cli, 'eval', 'check', '--set', setPath, '--variant', variant, '--task', task.id, '--run', String(run), '--workspace', workspace, '--dir', project];
   if (report.costUsd !== undefined) args.push('--cost-usd', String(report.costUsd));
+  args.push('--host-status', host.timedOut ? 'timed_out' : host.ok ? 'ok' : 'failed'); // the check judges the work either way; this says how the host ended
   args.push('--duration-ms', String(hostMs)); // measured by this script around the host, not taken from the host's own output
   if (report.turns !== undefined) args.push('--turns', String(report.turns));
   if (report.models?.length) args.push('--model', report.models.join(','));

@@ -24,7 +24,7 @@ Cél: a rendszer magától gyűjtsön, ne a modellre bízzuk.
 …"`); a `SessionStart` és `UserPromptSubmit` kontextusát a modell látja; a `CLAUDE_ENV_FILE`-ba írt `export` a Bash-parancsokhoz eljut. A `Stop` payload (`last_assistant_message`, `stop_hook_active`) mérve, még nem használjuk.
 - [x] Automatikus bizonyíték: a teszt- és build-futtatások eredményét a hook rögzíti (`posttool`), a `done` ellenőrzésként használja. Élő végpontok közötti próba 2026-11-10-én sikeres valódi modellel (lásd `scripts/live/` és a README).
 - [~] Munkamenet-azonosító: a `session` hook exportálja `COLONY_SESSION` néven (Bash-eszköznél mérve igazolt), a bizonyíték szűrése ezt használja. **Még nincs kész:** az audit `actor` mezője és a szavazás továbbra is a `--as` szöveg; a PowerShell-eszköz megkapja-e a változót, nem igazolt.
-- [x] Felidézés a prompt előtt (`prompt` hook); a modellt arra kéri, hogy mutassa meg a felhasználónak. A megjelenítést a `recall.jsonl` rögzíti (az 1. fázis alapja).
+- [x] Felidézés a prompt előtt (`prompt` hook); a modellt arra kéri, hogy mutassa meg a felhasználónak. A `recall.jsonl` azt rögzíti, hogy a felidézést átadta a modellnek (az 1. fázis alapja), nem azt, hogy megjelent neked.
 - [ ] Felidézés a munkamenet elején (`session` hook): **nincs megvalósítva**. A session hook csak a projekt-kontextust és a beállításokat adja; a korábbi terv ezt tévesen állította.
 - [x] `colony hook install [--apply]`: a hookok beolvasztása a `.claude/settings.json` fájlba **kifejezett kapcsolóval**, biztonsági másolattal. (A `.gitignore` beírása nincs: a `.colony/` tartalmát neked kell eldöntened, hogy verziókezelt-e.)
 

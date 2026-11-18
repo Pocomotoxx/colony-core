@@ -125,9 +125,18 @@ test('the run stops when the reported cost reaches the budget', async () => {
   const r = run(dir, '--repeats', '3', '--budget-usd', '0.5', '--yes', '--variants', 'A');
   assert.equal(r.status, 0, r.stderr);
   const out = JSON.parse(r.stdout);
-  assert.equal(out.started, 2, 'two runs of 0.3 reach 0.5');
-  assert.match(out.stopped, /budget \(0\.5 USD\) is reached/);
-  assert.equal((await stored(dir)).length, 2);
+  assert.equal(out.started, 1, 'a second run of 0.3 would probably go over 0.5, so it is not started');
+  assert.match(out.stopped, /next run would probably go over the budget \(0\.5 USD\)/);
+  assert.equal((await stored(dir)).length, 1);
+});
+
+test('a budget that two runs fit in lets two run, and then says it is reached', async () => {
+  const dir = await project();
+  const r = run(dir, '--repeats', '3', '--budget-usd', '0.6', '--yes', '--variants', 'A');
+  assert.equal(r.status, 0, r.stderr);
+  const out = JSON.parse(r.stdout);
+  assert.equal(out.started, 2);
+  assert.match(out.stopped, /budget \(0\.6 USD\) is reached/);
 });
 
 test('a host that reports no cost stops after one run, unless the number of runs is limited', async () => {
@@ -158,6 +167,7 @@ test('a host that runs too long is stopped and the run counts as failed', async 
   assert.equal(r.status, 0, r.stderr);
   const out = JSON.parse(r.stdout);
   assert.equal(out.outcomes[0].timedOut, true);
+  assert.equal((await stored(dir))[0].hostStatus, 'timed_out', 'the stored result says how the host ended');
   assert.equal(out.outcomes[0].hostOk, false);
   assert.equal(out.outcomes[0].passed, false);
   assert.match(r.stderr, /host timed out/);
