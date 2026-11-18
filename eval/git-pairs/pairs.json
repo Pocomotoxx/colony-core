@@ -1,0 +1,45 @@
+{
+  "note": "Red/green pairs taken from the colony-core history. The red state is made by reverting the source part of a real fix; the tests of the fix commit are the check. Holdout: these pairs must not be used to tune a variant. Not yet runnable as an eval set: a workspace needs the TypeScript build and its dependencies (see README.md).",
+  "split": "holdout",
+  "pairs": [
+    {
+      "id": "run-dir-check-cost",
+      "commit": "cc90a85",
+      "subject": "fix: record the host run time, not the check time; update the eval plan with the pilot data",
+      "tests": ["src/__tests__/eval-run.test.ts", "src/__tests__/eval.test.ts"],
+      "source_files": ["scripts/eval-run.mjs", "src/eval/eval-core.ts", "src/cli/commands-eval.ts"],
+      "green": { "passed": 21, "failed": 0 },
+      "red": { "passed": 19, "failed": 2, "failing": ["a real run records what the colony checked, with the cost the host reported, and a rerun does nothing", "check runs the task check itself and stores the result once; a second try is refused"] },
+      "verified": "2026-11-18, the tests of the fix commit pass on the fixed code and fail on the reverted source"
+    },
+    {
+      "id": "hook-powershell-case",
+      "commit": "f733db6",
+      "subject": "fix(hook): cover the PowerShell and NotebookEdit tools, compare directory names without case",
+      "tests": ["src/__tests__/hook.test.ts"],
+      "source_files": ["src/hook/bash-rules.ts", "src/hook/pretool.ts", "src/hook/shell-paths.ts"],
+      "green": { "passed": 15, "failed": 0 },
+      "red": { "passed": 11, "failed": 4, "failing": ["hook protocol: allow prints nothing, deny prints the host JSON, bad input blocks, install writes nothing", "the PowerShell tool is guarded like Bash, and NotebookEdit like a file write", "directory names are compared without regard to case, as the file system does"] },
+      "verified": "2026-11-18, same method"
+    },
+    {
+      "id": "groq-error-and-version-numbers",
+      "commit": "4ef136b",
+      "subject": "fix: show the Groq error message; keep version numbers out of the IP redaction",
+      "tests": ["src/__tests__/groq.test.ts", "src/__tests__/radar-fetch.test.ts", "src/__tests__/redact-skip.test.ts"],
+      "source_files": ["scripts/lib/groq.mjs", "src/redact.ts", "scripts/groq-summarize.mjs"],
+      "green": { "passed": 26, "failed": 0 },
+      "red": { "passed": 21, "failed": 5, "failing": ["an item that asks to keep version-like numbers keeps them", "version-like numbers stay in the text, other personal data is still redacted", "skipping ip_address keeps the version and still redacts everything else"] },
+      "caveat": "the reverted source also failed to compile (type errors), so part of the red state is a type error, not only a behaviour difference",
+      "verified": "2026-11-18, same method"
+    }
+  ],
+  "rejected": [
+    {
+      "commit": "2a2a2f4",
+      "subject": "fix(hook): read a backslash as a path separator on every platform",
+      "reason": "the red state passes all 15 tests: the tests of this commit do not catch the fixed behaviour, so it cannot be used as a pair"
+    }
+  ],
+  "not_checked": ["c9ce5f7 and 3667fde (their source is under scripts/, outside the source filter used here)", "dad9676 (22 source files, too large for one task)", "a4d0003 (documentation-like change)"]
+}
