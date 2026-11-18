@@ -9,9 +9,12 @@ import { errorCode } from './errors.js';
  * runs under the lock.
  *
  * The lock is a file created with `wx` (it fails if it exists). A lock is stale, and may be taken
- * over, when its owner is a dead process on this machine, or when it is older than `staleMs` (a
- * command is short; the age is the fallback when the owner cannot be checked, for example on
- * another machine).
+ * over, when its owner is a dead process on this machine, or, when the owner cannot be checked
+ * (another machine), when the lock is older than `staleMs`. A live owner on this machine is never
+ * taken over however long its command runs (a verification can take minutes); to the others it shows
+ * that it is alive by rewriting the lock's time every third of `staleMs`. A lock whose owner seems
+ * alive but whose time is older than 30 minutes is taken over too: its process id may have been
+ * reused by an unrelated process.
  *
  * Taking over a stale lock is itself guarded by a second `wx` file (the takeover mutex): only its
  * holder may remove a stale lock, and it re-reads the lock first and removes it only if it is still
@@ -20,9 +23,9 @@ import { errorCode } from './errors.js';
  * stale" lets a slow waiter delete the FRESH lock another waiter had just created; renaming the
  * lock away and back has a gap in which a third process creates a second lock.)
  *
- * Honest limit: the one remaining window is a live holder that is merely older than `staleMs`
- * finishing at exactly the moment of the takeover. Commands take milliseconds to seconds, the
- * default is a minute.
+ * Honest limit: a holder whose event loop is blocked for longer than the limit above (30 minutes on
+ * this machine, `staleMs` on another) stops rewriting the time and is taken over; and a holder that is
+ * taken over finishes at exactly the moment of the takeover.
  */
 
 export class LockTimeoutError extends Error {}
@@ -47,6 +50,8 @@ const LOCK_FILE = 'state.lock';
 const TAKEOVER_FILE = 'state.lock.takeover';
 /** A takeover takes microseconds; a mutex file older than this was left by a crash. */
 const TAKEOVER_STALE_MS = 10_000;
+/** A lock whose owner is alive on this machine but whose time is older than this belongs to a reused process id. */
+const LIVE_OWNER_STALE_MS = 30 * 60_000;
 
 /**
  * `open(..., 'wx')` failed because the file is there (EEXIST), or, on Windows, because the previous
@@ -85,6 +90,23 @@ async function ageOf(file: string): Promise<number> {
 }
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/** Rewrite the lock's time if the lock is still ours. It never creates the file: a lock someone took over stays theirs. */
+async function refresh(file: string, info: LockInfo): Promise<void> {
+  try {
+    if ((await readInfo(file))?.token !== info.token) return;
+    const handle = await fs.open(file, 'r+');
+    try {
+      const text = JSON.stringify({ ...info, at: Date.now() });
+      await handle.writeFile(text);
+      await handle.truncate(Buffer.byteLength(text));
+    } finally {
+      await handle.close();
+    }
+  } catch {
+    /* the next beat tries again */
+  }
+}
 
 /**
  * Remove the lock at `file` if, and only if, it is still the one judged stale (`held`, or an
@@ -129,7 +151,8 @@ export async function withStateLock<T>(stateDir: string, work: () => Promise<T>,
     }
     const held = await readInfo(file);
     const sameHost = held?.host === info.host;
-    const stale = held === null ? (await ageOf(file)) > staleMs : (sameHost && !processAlive(held.pid)) || Date.now() - held.at > staleMs;
+    const age = held === null ? await ageOf(file) : Date.now() - held.at;
+    const stale = held === null ? age > staleMs : sameHost ? !processAlive(held.pid) || age > LIVE_OWNER_STALE_MS : age > staleMs;
     if (stale) {
       await takeOverStale(stateDir, file, held, staleMs);
       continue;
@@ -140,9 +163,13 @@ export async function withStateLock<T>(stateDir: string, work: () => Promise<T>,
     await sleep(pollMs);
   }
 
+  // While the work runs the lock is kept fresh, so a waiter on another machine does not take a long command for an abandoned one.
+  const beat = setInterval(() => void refresh(file, info), Math.max(1000, Math.floor(staleMs / 3)));
+  beat.unref();
   try {
     return await work();
   } finally {
+    clearInterval(beat);
     // Remove the lock only if it is still ours: if this command ran past `staleMs` and was taken
     // over, the file belongs to someone else now.
     const current = await readInfo(file);

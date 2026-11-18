@@ -1,3 +1,4 @@
+import fs from 'node:fs';
 import path from 'node:path';
 
 /**
@@ -12,7 +13,7 @@ import path from 'node:path';
  *
  * Honest limit: it is a reading of text, not a sandbox. It does not run the shell, so it cannot
  * see variables it does not know, command substitution, aliases, globs, a script file's contents,
- * or a symlink that points into a protected directory.
+ * or a link that the same command creates. A symlink or junction that already exists is followed.
  */
 
 const PROTECTED = new Set(['.colony', '.git']);
@@ -90,11 +91,12 @@ function words(simple: string): string[] {
   return out;
 }
 
-function expand(text: string, projectDir: string): string {
-  const here = projectDir.replace(/\\/g, '/');
+function expand(text: string, projectDir: string, cwd: string): string {
+  const here = cwd.replace(/\\/g, '/');
+  const project = projectDir.replace(/\\/g, '/');
   return text
     .replace(/\$\{PWD\}|\$PWD|\$\(pwd\)|`pwd`|%CD%|\$env:PWD|\$\(Get-Location\)|\$PSScriptRoot/gi, here)
-    .replace(/\$\{?(?:CLAUDE_PROJECT_DIR|PROJECT_DIR)\}?/g, here);
+    .replace(/\$\{?(?:CLAUDE_PROJECT_DIR|PROJECT_DIR)\}?/g, project);
 }
 
 /** `.colony`, `.git`, or `settings` (the host's `.claude/settings.json` / `settings.local.json`, where the guard's hooks live). */
@@ -103,7 +105,23 @@ function protectedHit(target: string, cwd: string, projectDir: string): string |
   // A backslash is read as a separator on every platform: PowerShell accepts it on Linux and macOS too,
   // and for a guard the safe mistake is to see a separator where a shell sees an escape.
   const resolved = path.resolve(cwd, target.replace(/\\/g, '/'));
-  const rel = path.relative(projectDir, resolved);
+  // The path as written, and the path once the symlinks and junctions that exist are followed: a link that points
+  // into .colony/ is that directory.
+  return hitIn(projectDir, resolved) ?? hitIn(realPath(projectDir), realPath(resolved));
+}
+
+/** realpath of the longest existing ancestor, with the missing rest re-attached (as in safe-path.ts, but synchronous). */
+function realPath(p: string): string {
+  try {
+    return fs.realpathSync(p);
+  } catch {
+    const parent = path.dirname(p);
+    return parent === p ? p : path.join(realPath(parent), path.basename(p));
+  }
+}
+
+function hitIn(root: string, abs: string): string | null {
+  const rel = path.relative(root, abs);
   if (rel.startsWith('..') || path.isAbsolute(rel)) return null;
   const segments = rel.split(path.sep).map((s) => s.toLowerCase());
   if (PROTECTED.has(segments[0])) return segments[0];
@@ -129,10 +147,14 @@ function redirectTargets(ws: string[]): string[] {
 }
 
 /** The first protected-path write found in `command`, or null. */
-export function findProtectedWrite(command: string, projectDirInput: string): ShellWrite | null {
+/**
+ * `projectDirInput` is the project (what is protected); `cwdInput` is where the command runs (what relative paths are
+ * resolved against). They differ when the host is in a subdirectory.
+ */
+export function findProtectedWrite(command: string, projectDirInput: string, cwdInput: string = projectDirInput): ShellWrite | null {
   const projectDir = path.resolve(projectDirInput);
-  const text = expand(command, projectDir);
-  let cwd = projectDir;
+  let cwd = path.resolve(cwdInput);
+  const text = expand(command, projectDir, cwd);
 
   for (const simple of splitSimple(text)) {
     const ws = words(simple);
