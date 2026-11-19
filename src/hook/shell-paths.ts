@@ -33,7 +33,7 @@ export interface ShellWrite {
 }
 
 /** Split on `;`, `&&`, `||`, `|`, `&` and newlines, outside quotes. */
-function splitSimple(command: string): string[] {
+export function splitSimple(command: string): string[] {
   const parts: string[] = [];
   let current = '';
   let quote: string | null = null;
@@ -62,7 +62,7 @@ function splitSimple(command: string): string[] {
 }
 
 /** Whitespace-separated words with quotes removed. Redirection operators glued to a word stay in it. */
-function words(simple: string): string[] {
+export function words(simple: string): string[] {
   const out: string[] = [];
   let current = '';
   let quote: string | null = null;

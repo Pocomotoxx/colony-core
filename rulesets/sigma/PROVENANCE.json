@@ -1,0 +1,213 @@
+{
+  "format": 1,
+  "name": "sigma",
+  "version": "r2026-07-01",
+  "commit": "552f3fee420ef232a8e5790c4fae591847e32347",
+  "sourceUrl": "https://github.com/SigmaHQ/sigma/releases/tag/r2026-07-01",
+  "license": "DRL-1.1",
+  "licenseFile": {
+    "file": "NOTICE",
+    "sha256": "9f02b656d8b457dc9419f70cc3c2b73a0222f685effa0b2615c8a70604465b01"
+  },
+  "archive": {
+    "name": "sigma_core.zip",
+    "sha256": "45ccbd62cbf0d7ccca6f44eaa010f86bb24f082b5411c5e22c71907e7770ee46",
+    "bytes": 1399726,
+    "url": "https://github.com/SigmaHQ/sigma/releases/download/r2026-07-01/sigma_core.zip",
+    "digest": "sha256:45ccbd62cbf0d7ccca6f44eaa010f86bb24f082b5411c5e22c71907e7770ee46"
+  },
+  "sources": [
+    {
+      "file": "source/rules/linux/process_creation/proc_creation_lnx_awk_shell_spawn.yml",
+      "sha256": "e79ec9f19754454997835bf43ca0a28274a5eb9c51642ca54eadaceb292cb32c",
+      "bytes": 1283
+    },
+    {
+      "file": "source/rules/linux/process_creation/proc_creation_lnx_capsh_shell_invocation.yml",
+      "sha256": "e2f8ca06e33d13990fd9866031115a591ce153d70d6965f7f0ed248689b08094",
+      "bytes": 718
+    },
+    {
+      "file": "source/rules/linux/process_creation/proc_creation_lnx_clear_syslog.yml",
+      "sha256": "e291c68ed6fc6fb1d6629e5ed48849c935c92acca53c9e51980cda1756e6ccff",
+      "bytes": 3138
+    },
+    {
+      "file": "source/rules/linux/process_creation/proc_creation_lnx_cp_passwd_or_shadow_tmp.yml",
+      "sha256": "fdf0a32b9104b4261a2be24e633c0a758095b0831da02cb0b0c927caa7776aff",
+      "bytes": 763
+    },
+    {
+      "file": "source/rules/linux/process_creation/proc_creation_lnx_crypto_mining.yml",
+      "sha256": "5e6041f1d175d91f877da25024205444fc725aff06dffa4f7312200a9c8b378a",
+      "bytes": 1386
+    },
+    {
+      "file": "source/rules/linux/process_creation/proc_creation_lnx_env_shell_invocation.yml",
+      "sha256": "180ca9f21e2a573cb944b32c60414c70f8fb1f003dafabbb40b60bc1e165670c",
+      "bytes": 1011
+    },
+    {
+      "file": "source/rules/linux/process_creation/proc_creation_lnx_esxcli_permission_change_admin.yml",
+      "sha256": "007174648038642fcb3d2b14cf0582181d232d448d4d19712cdabaf536bad07a",
+      "bytes": 936
+    },
+    {
+      "file": "source/rules/linux/process_creation/proc_creation_lnx_find_shell_execution.yml",
+      "sha256": "c4cfb63110923f1f3fd5d9b3f2130aa8d856c47297e71487b4535f54c89fc7aa",
+      "bytes": 1061
+    },
+    {
+      "file": "source/rules/linux/process_creation/proc_creation_lnx_flock_shell_execution.yml",
+      "sha256": "30eab4b6edad6439634e405944e9eef641beba507cbbcff91744a6e3eb718d5b",
+      "bytes": 1049
+    },
+    {
+      "file": "source/rules/linux/process_creation/proc_creation_lnx_gcc_shell_execution.yml",
+      "sha256": "f9ecc685a401ff181227570f25997aa17f4faa184437ff8948cb29d2c7063669",
+      "bytes": 1219
+    },
+    {
+      "file": "source/rules/linux/process_creation/proc_creation_lnx_git_shell_execution.yml",
+      "sha256": "d4b5ccea4904e8f522d51d36d18606e9c9941d65cf514bb6a396e90908a44331",
+      "bytes": 898
+    },
+    {
+      "file": "source/rules/linux/process_creation/proc_creation_lnx_malware_gobrat_grep_payload_discovery.yml",
+      "sha256": "3e29e82c96e6422eb6dfb245390e5e281bc0bd87c0ca76ab1e85592aeffa1c2d",
+      "bytes": 915
+    },
+    {
+      "file": "source/rules/linux/process_creation/proc_creation_lnx_netcat_reverse_shell.yml",
+      "sha256": "b3d8c9ea4b7cc26165ca8f16f3d988aecd84c0c6cede8e346c5f6f27569d5c56",
+      "bytes": 1697
+    },
+    {
+      "file": "source/rules/linux/process_creation/proc_creation_lnx_nice_shell_execution.yml",
+      "sha256": "6beba1bc8053aa5b9f62f981944a3736ca590111e62b080244f0dd9a0a7a0254",
+      "bytes": 976
+    },
+    {
+      "file": "source/rules/linux/process_creation/proc_creation_lnx_nohup_susp_execution.yml",
+      "sha256": "70d4b79ddbcc17eb0466de9d1a29c19cee9d43943c9696c36aac39a816fad2b4",
+      "bytes": 941
+    },
+    {
+      "file": "source/rules/linux/process_creation/proc_creation_lnx_omigod_scx_runasprovider_executescript.yml",
+      "sha256": "1a56119232c93847f321a4ba84449fd72ab43ed286e411500b56f419ae8badac",
+      "bytes": 1448
+    },
+    {
+      "file": "source/rules/linux/process_creation/proc_creation_lnx_omigod_scx_runasprovider_executeshellcommand.yml",
+      "sha256": "140dab57f8b12608c9f554a4513677650b6d1fd326d582f6fedb1d0485cef91f",
+      "bytes": 1219
+    },
+    {
+      "file": "source/rules/linux/process_creation/proc_creation_lnx_perl_reverse_shell.yml",
+      "sha256": "1f7e2b2f0285c95dffe44ed87e13e947616b57cdde739f0e93c3efa0cfd4916b",
+      "bytes": 950
+    },
+    {
+      "file": "source/rules/linux/process_creation/proc_creation_lnx_php_reverse_shell.yml",
+      "sha256": "0585ef7aa3fe2ee4b66514125281542a03c4c0d2aeccb1aa95a9abadadb9e8ee",
+      "bytes": 1083
+    },
+    {
+      "file": "source/rules/linux/process_creation/proc_creation_lnx_python_reverse_shell.yml",
+      "sha256": "4fab805544bcc415a4c2e8d7fd2bd1d5bd36e421d6004e38f158f0fc76124d71",
+      "bytes": 872
+    },
+    {
+      "file": "source/rules/linux/process_creation/proc_creation_lnx_python_shell_os_system.yml",
+      "sha256": "069a50387e5f7a29ae2bf38d0052ad5e1aa6b2c3269879d2c9ea59f98df3c271",
+      "bytes": 1184
+    },
+    {
+      "file": "source/rules/linux/process_creation/proc_creation_lnx_ssh_shell_execution.yml",
+      "sha256": "ffc31b99deb7c3b4e4d2b96df1a8edb5c0fc0bee16816b78ab847970b161f154",
+      "bytes": 1183
+    },
+    {
+      "file": "source/rules/linux/process_creation/proc_creation_lnx_susp_history_delete.yml",
+      "sha256": "9c3bf79206f58ad03d1725eb3bea479980b9e36c6cac6debc2623dd77b99833b",
+      "bytes": 1053
+    },
+    {
+      "file": "source/rules/linux/process_creation/proc_creation_lnx_susp_hktl_execution.yml",
+      "sha256": "a2feefb4d5c0e858f3dc1f45ec35f873463c364d98846728a15592ad75128301",
+      "bytes": 2893
+    },
+    {
+      "file": "source/rules/linux/process_creation/proc_creation_lnx_susp_java_children.yml",
+      "sha256": "0c4b2328ff576866aa33df227b368e3fd477e3bfafdd07fb48e844a6fefb3a95",
+      "bytes": 783
+    },
+    {
+      "file": "source/rules/linux/process_creation/proc_creation_lnx_susp_recon_indicators.yml",
+      "sha256": "dfe976233dba77be958a1f2240a0eadfc09c3adccd1dc5f21a739c74b7e2cb92",
+      "bytes": 763
+    },
+    {
+      "file": "source/rules/linux/process_creation/proc_creation_lnx_susp_shell_child_process_from_parent_tmp_folder.yml",
+      "sha256": "295c097b66143ada46bf09294da974a896d72d32e5dcd9255a3c005433bc7559",
+      "bytes": 1036
+    },
+    {
+      "file": "source/rules/linux/process_creation/proc_creation_lnx_triple_cross_rootkit_execve_hijack.yml",
+      "sha256": "620ea505d635e1f338094ca2d5dd0a44a8de27c539c1ebf3310c329c599b08a7",
+      "bytes": 732
+    },
+    {
+      "file": "source/rules/linux/process_creation/proc_creation_lnx_triple_cross_rootkit_install.yml",
+      "sha256": "da8be06ec4628635c6f43c03992c3e82f202e5b7c8f40267d40f4cb847eb75f3",
+      "bytes": 796
+    },
+    {
+      "file": "source/rules/linux/process_creation/proc_creation_lnx_vim_shell_execution.yml",
+      "sha256": "13805f6867c77130862866e5ed24bef49db9b404745abfc9fcea8ae9b9a5400b",
+      "bytes": 1464
+    },
+    {
+      "file": "source/rules/linux/process_creation/proc_creation_lnx_webshell_detection.yml",
+      "sha256": "f06ebe5127af93986a01d17b1ddbbf3d52f54b8eb2a65e1934784855dbd12f71",
+      "bytes": 1529
+    }
+  ],
+  "normalized": {
+    "file": "ruleset.json",
+    "sha256": "97b1b32dee5fc1a1bc34b93e58c4be5705a3ed7b5d844791e9f57b64f5e060f0"
+  },
+  "converter": "colony rulesets converter 1 (sigma linux process_creation)",
+  "retrievedAt": "2026-11-19",
+  "report": {
+    "total": 31,
+    "converted": 25,
+    "skipped": [
+      {
+        "id": "proc_creation_lnx_git_shell_execution",
+        "reason": "needs ParentImage, ParentCommandLine, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_lnx_omigod_scx_runasprovider_executescript",
+        "reason": "needs User, LogonId, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_lnx_omigod_scx_runasprovider_executeshellcommand",
+        "reason": "needs User, LogonId, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_lnx_susp_java_children",
+        "reason": "needs ParentImage, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_lnx_susp_shell_child_process_from_parent_tmp_folder",
+        "reason": "needs ParentImage, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_lnx_webshell_detection",
+        "reason": "needs ParentImage, ParentCommandLine, which a command does not have before it runs"
+      }
+    ],
+    "dropped": {}
+  }
+}

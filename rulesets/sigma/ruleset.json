@@ -1,0 +1,1511 @@
+{
+  "format": 1,
+  "kind": "commands",
+  "name": "sigma",
+  "version": "r2026-07-01",
+  "rules": [
+    {
+      "id": "8c1a5675-cb85-452f-a298-b01b22a51856",
+      "title": "Suspicious Invocation of Shell via AWK - Linux",
+      "author": "Li Ling, Andy Parkidomo, Robert Rakowski, Blake Hartstein (Bloomberg L.P.)",
+      "level": "high",
+      "status": "test",
+      "description": "Detects the execution of \"awk\" or it's sibling commands, to invoke a shell using the system() function. This behavior is commonly associated with attempts to execute arbitrary commands or escalate privileges, potentially leading to unauthorized access or further exploitation.",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/linux/process_creation/proc_creation_lnx_awk_shell_spawn.yml",
+      "selections": {
+        "selection_img": [
+          [
+            {
+              "field": "Image",
+              "op": "endswith",
+              "values": [
+                "/awk",
+                "/gawk",
+                "/mawk",
+                "/nawk"
+              ],
+              "all": false
+            },
+            {
+              "field": "CommandLine",
+              "op": "contains",
+              "values": [
+                "BEGIN {system"
+              ],
+              "all": false
+            }
+          ]
+        ],
+        "selection_cli": [
+          [
+            {
+              "field": "CommandLine",
+              "op": "contains",
+              "values": [
+                "/bin/bash",
+                "/bin/dash",
+                "/bin/fish",
+                "/bin/sh",
+                "/bin/zsh"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "of",
+        "quant": "all",
+        "pattern": "selection_*"
+      }
+    },
+    {
+      "id": "db1ac3be-f606-4e3a-89e0-9607cbe6b98a",
+      "title": "Capsh Shell Invocation - Linux",
+      "author": "Li Ling, Andy Parkidomo, Robert Rakowski, Blake Hartstein (Bloomberg L.P.)",
+      "level": "high",
+      "status": "test",
+      "description": "Detects the use of the \"capsh\" utility to invoke a shell.",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/linux/process_creation/proc_creation_lnx_capsh_shell_invocation.yml",
+      "selections": {
+        "selection": [
+          [
+            {
+              "field": "Image",
+              "op": "endswith",
+              "values": [
+                "/capsh"
+              ],
+              "all": false
+            },
+            {
+              "field": "CommandLine",
+              "op": "endswith",
+              "values": [
+                " --"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "sel",
+        "name": "selection"
+      }
+    },
+    {
+      "id": "3fcc9b35-39e4-44c0-a2ad-9e82b6902b31",
+      "title": "Syslog Clearing or Removal Via System Utilities",
+      "author": "Max Altgelt (Nextron Systems), Roberto Rodriguez (Cyb3rWard0g), OTR (Open Threat Research), MSTIC",
+      "level": "high",
+      "status": "test",
+      "description": "Detects specific commands commonly used to remove or empty the syslog. Which is a technique often used by attacker as a method to hide their tracks",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/linux/process_creation/proc_creation_lnx_clear_syslog.yml",
+      "selections": {
+        "selection_file": [
+          [
+            {
+              "field": "CommandLine",
+              "op": "contains",
+              "values": [
+                "/var/log/syslog"
+              ],
+              "all": false
+            }
+          ]
+        ],
+        "selection_command_rm": [
+          [
+            {
+              "field": "Image",
+              "op": "endswith",
+              "values": [
+                "/rm"
+              ],
+              "all": false
+            },
+            {
+              "field": "CommandLine",
+              "op": "contains",
+              "values": [
+                " -r ",
+                " -f ",
+                " -rf ",
+                "/var/log/syslog"
+              ],
+              "all": false
+            }
+          ]
+        ],
+        "selection_command_unlink": [
+          [
+            {
+              "field": "Image",
+              "op": "endswith",
+              "values": [
+                "/unlink"
+              ],
+              "all": false
+            }
+          ]
+        ],
+        "selection_command_mv": [
+          [
+            {
+              "field": "Image",
+              "op": "endswith",
+              "values": [
+                "/mv"
+              ],
+              "all": false
+            }
+          ]
+        ],
+        "selection_command_truncate": [
+          [
+            {
+              "field": "Image",
+              "op": "endswith",
+              "values": [
+                "/truncate"
+              ],
+              "all": false
+            },
+            {
+              "field": "CommandLine",
+              "op": "contains",
+              "values": [
+                "0 ",
+                "/var/log/syslog"
+              ],
+              "all": true
+            },
+            {
+              "field": "CommandLine",
+              "op": "contains",
+              "values": [
+                "-s ",
+                "-c ",
+                "--size"
+              ],
+              "all": false
+            }
+          ]
+        ],
+        "selection_command_ln": [
+          [
+            {
+              "field": "Image",
+              "op": "endswith",
+              "values": [
+                "/ln"
+              ],
+              "all": false
+            },
+            {
+              "field": "CommandLine",
+              "op": "contains",
+              "values": [
+                "/dev/null ",
+                "/var/log/syslog"
+              ],
+              "all": true
+            },
+            {
+              "field": "CommandLine",
+              "op": "contains",
+              "values": [
+                "-sf ",
+                "-sfn ",
+                "-sfT "
+              ],
+              "all": false
+            }
+          ]
+        ],
+        "selection_command_cp": [
+          [
+            {
+              "field": "Image",
+              "op": "endswith",
+              "values": [
+                "/cp"
+              ],
+              "all": false
+            },
+            {
+              "field": "CommandLine",
+              "op": "contains",
+              "values": [
+                "/dev/null"
+              ],
+              "all": false
+            }
+          ]
+        ],
+        "selection_command_shred": [
+          [
+            {
+              "field": "Image",
+              "op": "endswith",
+              "values": [
+                "/shred"
+              ],
+              "all": false
+            },
+            {
+              "field": "CommandLine",
+              "op": "contains",
+              "values": [
+                "-u "
+              ],
+              "all": false
+            }
+          ]
+        ],
+        "selection_unique_other": [
+          [
+            {
+              "field": "CommandLine",
+              "op": "contains",
+              "values": [
+                " > /var/log/syslog",
+                " >/var/log/syslog",
+                " >| /var/log/syslog",
+                ": > /var/log/syslog",
+                ":> /var/log/syslog",
+                ":>/var/log/syslog",
+                ">|/var/log/syslog"
+              ],
+              "all": false
+            }
+          ]
+        ],
+        "selection_unique_journalctl": [
+          [
+            {
+              "field": "CommandLine",
+              "op": "contains",
+              "values": [
+                "journalctl --vacuum",
+                "journalctl --rotate"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "or",
+        "l": {
+          "t": "and",
+          "l": {
+            "t": "sel",
+            "name": "selection_file"
+          },
+          "r": {
+            "t": "of",
+            "quant": "one",
+            "pattern": "selection_command_*"
+          }
+        },
+        "r": {
+          "t": "of",
+          "quant": "one",
+          "pattern": "selection_unique_*"
+        }
+      }
+    },
+    {
+      "id": "fa4aaed5-4fe0-498d-bbc0-08e3346387ba",
+      "title": "Copy Passwd Or Shadow From TMP Path",
+      "author": "Joseliyo Sanchez, @Joseliyo_Jstnk",
+      "level": "high",
+      "status": "test",
+      "description": "Detects when the file \"passwd\" or \"shadow\" is copied from tmp path",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/linux/process_creation/proc_creation_lnx_cp_passwd_or_shadow_tmp.yml",
+      "selections": {
+        "selection_img": [
+          [
+            {
+              "field": "Image",
+              "op": "endswith",
+              "values": [
+                "/cp"
+              ],
+              "all": false
+            }
+          ]
+        ],
+        "selection_path": [
+          [
+            {
+              "field": "CommandLine",
+              "op": "contains",
+              "values": [
+                "/tmp/"
+              ],
+              "all": false
+            }
+          ]
+        ],
+        "selection_file": [
+          [
+            {
+              "field": "CommandLine",
+              "op": "contains",
+              "values": [
+                "passwd",
+                "shadow"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "of",
+        "quant": "all",
+        "pattern": "selection_*"
+      }
+    },
+    {
+      "id": "9069ea3c-b213-4c52-be13-86506a227ab1",
+      "title": "Linux Crypto Mining Indicators",
+      "author": "Florian Roth (Nextron Systems)",
+      "level": "high",
+      "status": "test",
+      "description": "Detects command line parameters or strings often used by crypto miners",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/linux/process_creation/proc_creation_lnx_crypto_mining.yml",
+      "selections": {
+        "selection": [
+          [
+            {
+              "field": "CommandLine",
+              "op": "contains",
+              "values": [
+                " --cpu-priority=",
+                "--donate-level=0",
+                " -o pool.",
+                " --nicehash",
+                " --algo=rx/0 ",
+                "stratum+tcp://",
+                "stratum+udp://",
+                "sh -c /sbin/modprobe msr allow_writes=on",
+                "LS1kb25hdGUtbGV2ZWw9",
+                "0tZG9uYXRlLWxldmVsP",
+                "tLWRvbmF0ZS1sZXZlbD",
+                "c3RyYXR1bSt0Y3A6Ly",
+                "N0cmF0dW0rdGNwOi8v",
+                "zdHJhdHVtK3RjcDovL",
+                "c3RyYXR1bSt1ZHA6Ly",
+                "N0cmF0dW0rdWRwOi8v",
+                "zdHJhdHVtK3VkcDovL"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "sel",
+        "name": "selection"
+      }
+    },
+    {
+      "id": "bed978f8-7f3a-432b-82c5-9286a9b3031a",
+      "title": "Shell Invocation via Env Command - Linux",
+      "author": "Li Ling, Andy Parkidomo, Robert Rakowski, Blake Hartstein (Bloomberg L.P.)",
+      "level": "high",
+      "status": "test",
+      "description": "Detects the use of the env command to invoke a shell. This may indicate an attempt to bypass restricted environments, escalate privileges, or execute arbitrary commands.",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/linux/process_creation/proc_creation_lnx_env_shell_invocation.yml",
+      "selections": {
+        "selection": [
+          [
+            {
+              "field": "Image",
+              "op": "endswith",
+              "values": [
+                "/env"
+              ],
+              "all": false
+            },
+            {
+              "field": "CommandLine",
+              "op": "contains",
+              "values": [
+                "/bin/bash",
+                "/bin/dash",
+                "/bin/fish",
+                "/bin/sh",
+                "/bin/zsh"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "sel",
+        "name": "selection"
+      }
+    },
+    {
+      "id": "9691f58d-92c1-4416-8bf3-2edd753ec9cf",
+      "title": "ESXi Admin Permission Assigned To Account Via ESXCLI",
+      "author": "Nasreddine Bencherchali (Nextron Systems)",
+      "level": "high",
+      "status": "test",
+      "description": "Detects execution of the \"esxcli\" command with the \"system\" and \"permission\" flags in order to assign admin permissions to an account.",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/linux/process_creation/proc_creation_lnx_esxcli_permission_change_admin.yml",
+      "selections": {
+        "selection": [
+          [
+            {
+              "field": "Image",
+              "op": "endswith",
+              "values": [
+                "/esxcli"
+              ],
+              "all": false
+            },
+            {
+              "field": "CommandLine",
+              "op": "contains",
+              "values": [
+                "system"
+              ],
+              "all": false
+            },
+            {
+              "field": "CommandLine",
+              "op": "contains",
+              "values": [
+                " permission ",
+                " set",
+                "Admin"
+              ],
+              "all": true
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "sel",
+        "name": "selection"
+      }
+    },
+    {
+      "id": "6adfbf8f-52be-4444-9bac-81b539624146",
+      "title": "Shell Execution via Find - Linux",
+      "author": "Li Ling, Andy Parkidomo, Robert Rakowski, Blake Hartstein (Bloomberg L.P.)",
+      "level": "high",
+      "status": "test",
+      "description": "Detects the use of the find command to execute a shell. Such behavior may be associated with privilege escalation, unauthorized command execution, or exploitation attempt.",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/linux/process_creation/proc_creation_lnx_find_shell_execution.yml",
+      "selections": {
+        "selection_img": [
+          [
+            {
+              "field": "Image",
+              "op": "endswith",
+              "values": [
+                "/find"
+              ],
+              "all": false
+            },
+            {
+              "field": "CommandLine",
+              "op": "contains",
+              "values": [
+                " . ",
+                "-exec"
+              ],
+              "all": true
+            }
+          ]
+        ],
+        "selection_cli": [
+          [
+            {
+              "field": "CommandLine",
+              "op": "contains",
+              "values": [
+                "/bin/bash",
+                "/bin/dash",
+                "/bin/fish",
+                "/bin/sh",
+                "/bin/zsh"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "of",
+        "quant": "all",
+        "pattern": "selection_*"
+      }
+    },
+    {
+      "id": "4b09c71e-4269-4111-9cdd-107d8867f0cc",
+      "title": "Shell Execution via Flock - Linux",
+      "author": "Li Ling, Andy Parkidomo, Robert Rakowski, Blake Hartstein (Bloomberg L.P.)",
+      "level": "high",
+      "status": "test",
+      "description": "Detects the use of the \"flock\" command to execute a shell. Such behavior may be associated with privilege escalation, unauthorized command execution, or to break out from restricted environments.",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/linux/process_creation/proc_creation_lnx_flock_shell_execution.yml",
+      "selections": {
+        "selection_img": [
+          [
+            {
+              "field": "Image",
+              "op": "endswith",
+              "values": [
+                "/flock"
+              ],
+              "all": false
+            },
+            {
+              "field": "CommandLine",
+              "op": "contains",
+              "values": [
+                " -u "
+              ],
+              "all": false
+            }
+          ]
+        ],
+        "selection_cli": [
+          [
+            {
+              "field": "CommandLine",
+              "op": "contains",
+              "values": [
+                "/bin/bash",
+                "/bin/dash",
+                "/bin/fish",
+                "/bin/sh",
+                "/bin/zsh"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "of",
+        "quant": "all",
+        "pattern": "selection_*"
+      }
+    },
+    {
+      "id": "9b5de532-a757-4d70-946c-1f3e44f48b4d",
+      "title": "Shell Execution GCC  - Linux",
+      "author": "Li Ling, Andy Parkidomo, Robert Rakowski, Blake Hartstein (Bloomberg L.P.)",
+      "level": "high",
+      "status": "test",
+      "description": "Detects the use of the \"gcc\" utility to execute a shell. Such behavior may be associated with privilege escalation, unauthorized command execution, or to break out from restricted environments.",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/linux/process_creation/proc_creation_lnx_gcc_shell_execution.yml",
+      "selections": {
+        "selection_img": [
+          [
+            {
+              "field": "Image",
+              "op": "endswith",
+              "values": [
+                "/c89",
+                "/c99",
+                "/gcc"
+              ],
+              "all": false
+            },
+            {
+              "field": "CommandLine",
+              "op": "contains",
+              "values": [
+                "-wrapper"
+              ],
+              "all": false
+            }
+          ]
+        ],
+        "selection_cli": [
+          [
+            {
+              "field": "CommandLine",
+              "op": "contains",
+              "values": [
+                "/bin/bash,-s",
+                "/bin/dash,-s",
+                "/bin/fish,-s",
+                "/bin/sh,-s",
+                "/bin/zsh,-s"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "of",
+        "quant": "all",
+        "pattern": "selection_*"
+      }
+    },
+    {
+      "id": "e34cfa0c-0a50-4210-9cb3-5632d08eb041",
+      "title": "Potential GobRAT File Discovery Via Grep",
+      "author": "Joseliyo Sanchez, @Joseliyo_Jstnk",
+      "level": "high",
+      "status": "test",
+      "description": "Detects the use of grep to discover specific files created by the GobRAT malware",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/linux/process_creation/proc_creation_lnx_malware_gobrat_grep_payload_discovery.yml",
+      "selections": {
+        "selection": [
+          [
+            {
+              "field": "Image",
+              "op": "endswith",
+              "values": [
+                "/grep"
+              ],
+              "all": false
+            },
+            {
+              "field": "CommandLine",
+              "op": "contains",
+              "values": [
+                "apached",
+                "frpc",
+                "sshd.sh",
+                "zone.arm"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "sel",
+        "name": "selection"
+      }
+    },
+    {
+      "id": "7f734ed0-4f47-46c0-837f-6ee62505abd9",
+      "title": "Potential Netcat Reverse Shell Execution",
+      "author": "@d4ns4n_, Nasreddine Bencherchali (Nextron Systems)",
+      "level": "high",
+      "status": "test",
+      "description": "Detects execution of netcat with the \"-e\" flag followed by common shells. This could be a sign of a potential reverse shell setup.",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/linux/process_creation/proc_creation_lnx_netcat_reverse_shell.yml",
+      "selections": {
+        "selection_nc": [
+          [
+            {
+              "field": "Image",
+              "op": "endswith",
+              "values": [
+                "/nc",
+                "/ncat"
+              ],
+              "all": false
+            }
+          ]
+        ],
+        "selection_flags": [
+          [
+            {
+              "field": "CommandLine",
+              "op": "contains",
+              "values": [
+                " -c ",
+                " -e "
+              ],
+              "all": false
+            }
+          ]
+        ],
+        "selection_shell": [
+          [
+            {
+              "field": "CommandLine",
+              "op": "contains",
+              "values": [
+                " ash",
+                " bash",
+                " bsh",
+                " csh",
+                " ksh",
+                " pdksh",
+                " sh",
+                " tcsh",
+                "/bin/ash",
+                "/bin/bash",
+                "/bin/bsh",
+                "/bin/csh",
+                "/bin/ksh",
+                "/bin/pdksh",
+                "/bin/sh",
+                "/bin/tcsh",
+                "/bin/zsh",
+                "$IFSash",
+                "$IFSbash",
+                "$IFSbsh",
+                "$IFScsh",
+                "$IFSksh",
+                "$IFSpdksh",
+                "$IFSsh",
+                "$IFStcsh",
+                "$IFSzsh"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "of",
+        "quant": "all",
+        "pattern": "selection_*"
+      }
+    },
+    {
+      "id": "093d68c7-762a-42f4-9f46-95e79142571a",
+      "title": "Shell Execution via Nice - Linux",
+      "author": "Li Ling, Andy Parkidomo, Robert Rakowski, Blake Hartstein (Bloomberg L.P.)",
+      "level": "high",
+      "status": "test",
+      "description": "Detects the use of the \"nice\" utility to execute a shell. Such behavior may be associated with privilege escalation, unauthorized command execution, or to break out from restricted environments.",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/linux/process_creation/proc_creation_lnx_nice_shell_execution.yml",
+      "selections": {
+        "selection": [
+          [
+            {
+              "field": "Image",
+              "op": "endswith",
+              "values": [
+                "/nice"
+              ],
+              "all": false
+            },
+            {
+              "field": "CommandLine",
+              "op": "endswith",
+              "values": [
+                "/bin/bash",
+                "/bin/dash",
+                "/bin/fish",
+                "/bin/sh",
+                "/bin/zsh"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "sel",
+        "name": "selection"
+      }
+    },
+    {
+      "id": "457df417-8b9d-4912-85f3-9dbda39c3645",
+      "title": "Suspicious Nohup Execution",
+      "author": "Joseliyo Sanchez, @Joseliyo_Jstnk",
+      "level": "high",
+      "status": "test",
+      "description": "Detects execution of binaries located in potentially suspicious locations via \"nohup\"",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/linux/process_creation/proc_creation_lnx_nohup_susp_execution.yml",
+      "selections": {
+        "selection": [
+          [
+            {
+              "field": "Image",
+              "op": "endswith",
+              "values": [
+                "/nohup"
+              ],
+              "all": false
+            },
+            {
+              "field": "CommandLine",
+              "op": "contains",
+              "values": [
+                "/tmp/"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "sel",
+        "name": "selection"
+      }
+    },
+    {
+      "id": "259df6bc-003f-4306-9f54-4ff1a08fa38e",
+      "title": "Potential Perl Reverse Shell Execution",
+      "author": "@d4ns4n_, Nasreddine Bencherchali (Nextron Systems)",
+      "level": "high",
+      "status": "test",
+      "description": "Detects execution of the perl binary with the \"-e\" flag and common strings related to potential reverse shell activity",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/linux/process_creation/proc_creation_lnx_perl_reverse_shell.yml",
+      "selections": {
+        "selection_img": [
+          [
+            {
+              "field": "Image",
+              "op": "endswith",
+              "values": [
+                "/perl"
+              ],
+              "all": false
+            },
+            {
+              "field": "CommandLine",
+              "op": "contains",
+              "values": [
+                " -e "
+              ],
+              "all": false
+            }
+          ]
+        ],
+        "selection_content": [
+          [
+            {
+              "field": "CommandLine",
+              "op": "contains",
+              "values": [
+                "fdopen(",
+                "::Socket::INET"
+              ],
+              "all": true
+            }
+          ],
+          [
+            {
+              "field": "CommandLine",
+              "op": "contains",
+              "values": [
+                "Socket",
+                "connect",
+                "open",
+                "exec"
+              ],
+              "all": true
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "of",
+        "quant": "all",
+        "pattern": "selection_*"
+      }
+    },
+    {
+      "id": "c6714a24-d7d5-4283-a36b-3ffd091d5f7e",
+      "title": "Potential PHP Reverse Shell",
+      "author": "@d4ns4n_",
+      "level": "high",
+      "status": "test",
+      "description": "Detects usage of the PHP CLI with the \"-r\" flag which allows it to run inline PHP code. The rule looks for calls to the \"fsockopen\" function which allows the creation of sockets. Attackers often leverage this in combination with functions such as \"exec\" or \"fopen\" to initiate a reverse shell connection.",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/linux/process_creation/proc_creation_lnx_php_reverse_shell.yml",
+      "selections": {
+        "selection": [
+          [
+            {
+              "field": "Image",
+              "op": "contains",
+              "values": [
+                "/php"
+              ],
+              "all": false
+            },
+            {
+              "field": "CommandLine",
+              "op": "contains",
+              "values": [
+                " -r ",
+                "fsockopen"
+              ],
+              "all": true
+            },
+            {
+              "field": "CommandLine",
+              "op": "contains",
+              "values": [
+                "ash",
+                "bash",
+                "bsh",
+                "csh",
+                "ksh",
+                "pdksh",
+                "sh",
+                "tcsh",
+                "zsh"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "sel",
+        "name": "selection"
+      }
+    },
+    {
+      "id": "32e62bc7-3de0-4bb1-90af-532978fe42c0",
+      "title": "Python Reverse Shell Execution Via PTY And Socket Modules",
+      "author": "@d4ns4n_, Nasreddine Bencherchali (Nextron Systems)",
+      "level": "high",
+      "status": "test",
+      "description": "Detects the execution of python with calls to the socket and pty module in order to connect and spawn a potential reverse shell.",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/linux/process_creation/proc_creation_lnx_python_reverse_shell.yml",
+      "selections": {
+        "selection": [
+          [
+            {
+              "field": "Image",
+              "op": "contains",
+              "values": [
+                "python"
+              ],
+              "all": false
+            },
+            {
+              "field": "CommandLine",
+              "op": "contains",
+              "values": [
+                " -c ",
+                "import",
+                "pty",
+                "socket",
+                "spawn",
+                ".connect"
+              ],
+              "all": true
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "sel",
+        "name": "selection"
+      }
+    },
+    {
+      "id": "2d2f44ff-4611-4778-a8fc-323a0e9850cc",
+      "title": "Inline Python Execution - Spawn Shell Via OS System Library",
+      "author": "Li Ling, Andy Parkidomo, Robert Rakowski, Blake Hartstein (Bloomberg L.P.)",
+      "level": "high",
+      "status": "test",
+      "description": "Detects execution of inline Python code via the \"-c\" in order to call the \"system\" function from the \"os\" library, and spawn a shell.",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/linux/process_creation/proc_creation_lnx_python_shell_os_system.yml",
+      "selections": {
+        "selection_img": [
+          [
+            {
+              "field": "Image",
+              "op": "endswith",
+              "values": [
+                "/python",
+                "/python2",
+                "/python3"
+              ],
+              "all": false
+            }
+          ],
+          [
+            {
+              "field": "Image",
+              "op": "contains",
+              "values": [
+                "/python2.",
+                "/python3."
+              ],
+              "all": false
+            }
+          ]
+        ],
+        "selection_cli": [
+          [
+            {
+              "field": "CommandLine",
+              "op": "contains",
+              "values": [
+                " -c ",
+                "os.system("
+              ],
+              "all": true
+            },
+            {
+              "field": "CommandLine",
+              "op": "contains",
+              "values": [
+                "/bin/bash",
+                "/bin/dash",
+                "/bin/fish",
+                "/bin/sh",
+                "/bin/zsh"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "of",
+        "quant": "all",
+        "pattern": "selection_*"
+      }
+    },
+    {
+      "id": "8737b7f6-8df3-4bb7-b1da-06019b99b687",
+      "title": "Shell Invocation Via Ssh - Linux",
+      "author": "Li Ling, Andy Parkidomo, Robert Rakowski, Blake Hartstein (Bloomberg L.P.)",
+      "level": "high",
+      "status": "test",
+      "description": "Detects the use of the \"ssh\" utility to execute a shell. Such behavior may be associated with privilege escalation, unauthorized command execution, or to break out from restricted environments.",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/linux/process_creation/proc_creation_lnx_ssh_shell_execution.yml",
+      "selections": {
+        "selection_img": [
+          [
+            {
+              "field": "Image",
+              "op": "endswith",
+              "values": [
+                "/ssh"
+              ],
+              "all": false
+            },
+            {
+              "field": "CommandLine",
+              "op": "contains",
+              "values": [
+                "ProxyCommand=;",
+                "permitlocalcommand=yes",
+                "localhost"
+              ],
+              "all": false
+            }
+          ]
+        ],
+        "selection_cli": [
+          [
+            {
+              "field": "CommandLine",
+              "op": "contains",
+              "values": [
+                "/bin/bash",
+                "/bin/dash",
+                "/bin/fish",
+                "/bin/sh",
+                "/bin/zsh",
+                "sh 0<&2 1>&2",
+                "sh 1>&2 0<&2"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "of",
+        "quant": "all",
+        "pattern": "selection_*"
+      }
+    },
+    {
+      "id": "1182f3b3-e716-4efa-99ab-d2685d04360f",
+      "title": "History File Deletion",
+      "author": "Florian Roth (Nextron Systems)",
+      "level": "high",
+      "status": "test",
+      "description": "Detects events in which a history file gets deleted, e.g. the ~/bash_history to remove traces of malicious activity",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/linux/process_creation/proc_creation_lnx_susp_history_delete.yml",
+      "selections": {
+        "selection": [
+          [
+            {
+              "field": "Image",
+              "op": "endswith",
+              "values": [
+                "/rm",
+                "/unlink",
+                "/shred"
+              ],
+              "all": false
+            }
+          ]
+        ],
+        "selection_history": [
+          [
+            {
+              "field": "CommandLine",
+              "op": "contains",
+              "values": [
+                "/.bash_history",
+                "/.zsh_history"
+              ],
+              "all": false
+            }
+          ],
+          [
+            {
+              "field": "CommandLine",
+              "op": "endswith",
+              "values": [
+                "_history",
+                ".history",
+                "zhistory"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "of",
+        "quant": "all",
+        "pattern": "selection*"
+      }
+    },
+    {
+      "id": "a015e032-146d-4717-8944-7a1884122111",
+      "title": "Linux HackTool Execution",
+      "author": "Nasreddine Bencherchali (Nextron Systems), Georg Lauenstein (sure[secure])",
+      "level": "high",
+      "status": "test",
+      "description": "Detects known hacktool execution based on image name.",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/linux/process_creation/proc_creation_lnx_susp_hktl_execution.yml",
+      "selections": {
+        "selection_c2_frameworks": [
+          [
+            {
+              "field": "Image",
+              "op": "endswith",
+              "values": [
+                "/crackmapexec",
+                "/havoc",
+                "/merlin-agent",
+                "/merlinServer-Linux-x64",
+                "/msfconsole",
+                "/msfvenom",
+                "/ps-empire server",
+                "/ps-empire",
+                "/sliver-client",
+                "/sliver-server",
+                "/Villain.py"
+              ],
+              "all": false
+            }
+          ]
+        ],
+        "selection_c2_framework_cobaltstrike": [
+          [
+            {
+              "field": "Image",
+              "op": "contains",
+              "values": [
+                "/cobaltstrike",
+                "/teamserver"
+              ],
+              "all": false
+            }
+          ]
+        ],
+        "selection_scanners": [
+          [
+            {
+              "field": "Image",
+              "op": "endswith",
+              "values": [
+                "/autorecon",
+                "/httpx",
+                "/legion",
+                "/naabu",
+                "/netdiscover",
+                "/nuclei",
+                "/recon-ng"
+              ],
+              "all": false
+            }
+          ]
+        ],
+        "selection_scanners_sniper": [
+          [
+            {
+              "field": "Image",
+              "op": "contains",
+              "values": [
+                "/sniper"
+              ],
+              "all": false
+            }
+          ]
+        ],
+        "selection_web_enum": [
+          [
+            {
+              "field": "Image",
+              "op": "endswith",
+              "values": [
+                "/dirb",
+                "/dirbuster",
+                "/eyewitness",
+                "/feroxbuster",
+                "/ffuf",
+                "/gobuster",
+                "/wfuzz",
+                "/whatweb"
+              ],
+              "all": false
+            }
+          ]
+        ],
+        "selection_web_vuln": [
+          [
+            {
+              "field": "Image",
+              "op": "endswith",
+              "values": [
+                "/joomscan",
+                "/nikto",
+                "/wpscan"
+              ],
+              "all": false
+            }
+          ]
+        ],
+        "selection_exploit_tools": [
+          [
+            {
+              "field": "Image",
+              "op": "endswith",
+              "values": [
+                "/aircrack-ng",
+                "/bloodhound-python",
+                "/bpfdos",
+                "/ebpfki",
+                "/evil-winrm",
+                "/hashcat",
+                "/hoaxshell.py",
+                "/hydra",
+                "/john",
+                "/ncrack",
+                "/nxc-ubuntu-latest",
+                "/pidhide",
+                "/pspy32",
+                "/pspy32s",
+                "/pspy64",
+                "/pspy64s",
+                "/setoolkit",
+                "/sqlmap",
+                "/writeblocker"
+              ],
+              "all": false
+            }
+          ]
+        ],
+        "selection_linpeas": [
+          [
+            {
+              "field": "Image",
+              "op": "contains",
+              "values": [
+                "/linpeas"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "of",
+        "quant": "one",
+        "pattern": "selection_*"
+      }
+    },
+    {
+      "id": "0cf7a157-8879-41a2-8f55-388dd23746b7",
+      "title": "Linux Recon Indicators",
+      "author": "Florian Roth (Nextron Systems)",
+      "level": "high",
+      "status": "test",
+      "description": "Detects events with patterns found in commands used for reconnaissance on linux systems",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/linux/process_creation/proc_creation_lnx_susp_recon_indicators.yml",
+      "selections": {
+        "selection": [
+          [
+            {
+              "field": "CommandLine",
+              "op": "contains",
+              "values": [
+                " -name .htpasswd",
+                " -perm -4000 "
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "sel",
+        "name": "selection"
+      }
+    },
+    {
+      "id": "0326c3c8-7803-4a0f-8c5c-368f747f7c3e",
+      "title": "Triple Cross eBPF Rootkit Execve Hijack",
+      "author": "Nasreddine Bencherchali (Nextron Systems)",
+      "level": "high",
+      "status": "test",
+      "description": "Detects execution of a the file \"execve_hijack\" which is used by the Triple Cross rootkit as a way to elevate privileges",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/linux/process_creation/proc_creation_lnx_triple_cross_rootkit_execve_hijack.yml",
+      "selections": {
+        "selection": [
+          [
+            {
+              "field": "Image",
+              "op": "endswith",
+              "values": [
+                "/sudo"
+              ],
+              "all": false
+            },
+            {
+              "field": "CommandLine",
+              "op": "contains",
+              "values": [
+                "execve_hijack"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "sel",
+        "name": "selection"
+      }
+    },
+    {
+      "id": "22236d75-d5a0-4287-bf06-c93b1770860f",
+      "title": "Triple Cross eBPF Rootkit Install Commands",
+      "author": "Nasreddine Bencherchali (Nextron Systems)",
+      "level": "high",
+      "status": "test",
+      "description": "Detects default install commands of the Triple Cross eBPF rootkit based on the \"deployer.sh\" script",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/linux/process_creation/proc_creation_lnx_triple_cross_rootkit_install.yml",
+      "selections": {
+        "selection": [
+          [
+            {
+              "field": "Image",
+              "op": "endswith",
+              "values": [
+                "/sudo"
+              ],
+              "all": false
+            },
+            {
+              "field": "CommandLine",
+              "op": "contains",
+              "values": [
+                " tc ",
+                " enp0s3 "
+              ],
+              "all": true
+            },
+            {
+              "field": "CommandLine",
+              "op": "contains",
+              "values": [
+                " qdisc ",
+                " filter "
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "sel",
+        "name": "selection"
+      }
+    },
+    {
+      "id": "7ab8f73a-fcff-428b-84aa-6a5ff7877dea",
+      "title": "Vim GTFOBin Abuse - Linux",
+      "author": "Nasreddine Bencherchali (Nextron Systems), Luc Génaux",
+      "level": "high",
+      "status": "test",
+      "description": "Detects the use of \"vim\" and it's siblings commands to execute a shell or proxy commands. Such behavior may be associated with privilege escalation, unauthorized command execution, or to break out from restricted environments.",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/linux/process_creation/proc_creation_lnx_vim_shell_execution.yml",
+      "selections": {
+        "selection_img": [
+          [
+            {
+              "field": "Image",
+              "op": "endswith",
+              "values": [
+                "/rvim",
+                "/vi",
+                "/vim",
+                "/vimdiff"
+              ],
+              "all": false
+            },
+            {
+              "field": "CommandLine",
+              "op": "contains",
+              "values": [
+                " --cmd ",
+                " -c"
+              ],
+              "all": false
+            }
+          ]
+        ],
+        "selection_cli": [
+          [
+            {
+              "field": "CommandLine",
+              "op": "contains",
+              "values": [
+                ":!/",
+                ":!$",
+                ":!..",
+                ":lua ",
+                ":py ",
+                ":shell",
+                "/bin/bash",
+                "/bin/dash",
+                "/bin/fish",
+                "/bin/sh",
+                "/bin/csh",
+                "/bin/ksh",
+                "/bin/zsh",
+                "/bin/tmux"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "of",
+        "quant": "all",
+        "pattern": "selection_*"
+      }
+    }
+  ]
+}

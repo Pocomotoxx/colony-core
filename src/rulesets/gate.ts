@@ -73,12 +73,12 @@ export async function checkSecretsWithRulesets(text: string): Promise<GateResult
 
 /** Record the findings of this gate in the project's state folder, if it has one. Never throws, never holds a value. */
 export async function logRulesetWarnings(projectDir: string, tool: string, results: GateResult[]): Promise<void> {
-  const hits = results.filter((r) => r.gate === 'secret-rulesets' && typeof r.details.count === 'number');
+  const hits = results.filter((r) => (r.gate === 'secret-rulesets' || r.gate === 'command-rulesets') && typeof r.details.count === 'number');
   if (hits.length === 0) return;
   try {
     const stateDir = path.join(projectDir, '.colony');
     if (!(await fs.stat(stateDir)).isDirectory()) return;
-    const lines = hits.map((r) => JSON.stringify({ at: Date.now(), tool, rules: r.details.rules, count: r.details.count, truncated: r.details.truncated === true }));
+    const lines = hits.map((r) => JSON.stringify({ at: Date.now(), tool, gate: r.gate, rules: r.details.rules, ...(Array.isArray(r.details.titles) ? { titles: r.details.titles } : {}), count: r.details.count, truncated: r.details.truncated === true }));
     await fs.appendFile(path.join(stateDir, WARNINGS_FILE), lines.join('\n') + '\n', 'utf-8');
   } catch {
     /* no state folder, or not writable: the warning was still shown */

@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { readdirSync, readFileSync, existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { compileCommandRule, type CommandRule, type CompiledCommandRule } from './sigma.js';
 import type { ConversionReport, PiiEntity, PiiRule, PiiRulesetFile, RuleAllowlist, RuleEntry, RulePattern, RulesetFile, SecretFinding } from './types.js';
 
 /**
@@ -20,7 +21,8 @@ export class RulesetError extends Error {}
 export interface SourceHash {
   file: string;
   sha256: string;
-  gitBlobSha1: string;
+  /** Absent for a file taken out of a release archive: the archive's SHA-256 is what ties it to the upstream. */
+  gitBlobSha1?: string;
   bytes: number;
 }
 
@@ -32,6 +34,8 @@ export interface Provenance {
   sourceUrl: string;
   license: string;
   licenseFile: { file: string; sha256: string };
+  /** The release archive the files were taken from, when they were not downloaded one by one. */
+  archive?: { name: string; sha256: string; bytes: number; url: string; digest: string };
   /** One upstream file (the gitleaks set) ... */
   source?: SourceHash;
   /** ... or several (the presidio set). */
@@ -74,7 +78,7 @@ export interface CompiledPiiRule {
 }
 
 export interface LoadedRuleset {
-  kind: 'secrets' | 'pii';
+  kind: 'secrets' | 'pii' | 'commands';
   name: string;
   version: string;
   dir: string;
@@ -84,6 +88,8 @@ export interface LoadedRuleset {
   globalAllowlist: CompiledAllowlist | null;
   /** The personal data rules (empty for a secrets set). */
   pii: CompiledPiiRule[];
+  /** The command rules (empty unless this is a commands set). */
+  commands: CompiledCommandRule[];
 }
 
 const compilePattern = (p: RulePattern): RegExp => new RegExp(p.source, `${p.flags.replace(/[dg]/g, '')}dg`);
@@ -143,7 +149,9 @@ export function loadRulesetSync(dir: string): LoadedRuleset {
   for (const s of sources) {
     const bytes = readBytes(path.join(dir, s.file), 'the upstream source file');
     if (sha256Hex(bytes) !== s.sha256) throw new RulesetError(`the upstream source file ${s.file} does not match its recorded SHA-256`);
-    if (gitBlobSha1(bytes) !== s.gitBlobSha1) throw new RulesetError(`the upstream source file ${s.file} does not match its recorded git blob hash`);
+    if (s.gitBlobSha1 === undefined) {
+      if (!provenance.archive) throw new RulesetError(`the upstream source file ${s.file} has no git blob hash and the record names no release archive`);
+    } else if (gitBlobSha1(bytes) !== s.gitBlobSha1) throw new RulesetError(`the upstream source file ${s.file} does not match its recorded git blob hash`);
   }
 
   const normalizedBytes = readBytes(path.join(dir, provenance.normalized.file), 'the converted rules');
@@ -168,7 +176,19 @@ export function loadRulesetSync(dir: string): LoadedRuleset {
         rules: [],
         globalAllowlist: null,
         pii: file.rules.map((r) => ({ id: r.id, entity: r.entity, regex: compilePattern(r.pattern), score: r.score ?? null })),
+        commands: [],
       };
+    }
+    if (parsed?.kind === 'commands') {
+      const file = parsed as { format?: number; name?: string; version?: string; rules?: CommandRule[] };
+      if (file.format !== 1 || !Array.isArray(file.rules)) throw new RulesetError('ruleset.json has an unsupported shape');
+      if (file.name !== provenance.name || file.version !== provenance.version) throw new RulesetError('ruleset.json does not belong to the provenance record (name or version differs)');
+      for (const r of file.rules) {
+        if (typeof r?.id !== 'string' || typeof r.title !== 'string' || typeof r.author !== 'string' || !r.author || typeof r.selections !== 'object' || typeof r.condition !== 'object') {
+          throw new RulesetError(`a rule of ruleset.json is malformed (${typeof r?.id === 'string' ? r.id : '?'})`);
+        }
+      }
+      return { kind: 'commands', name: provenance.name, version: provenance.version, dir, provenance, rules: [], globalAllowlist: null, pii: [], commands: file.rules.map(compileCommandRule) };
     }
     const file = checkSecretsShape(parsed as Partial<RulesetFile> | null, provenance.name, provenance.version);
     return {
@@ -187,6 +207,7 @@ export function loadRulesetSync(dir: string): LoadedRuleset {
       })),
       globalAllowlist: file.globalAllowlist ? compileAllowlist(file.globalAllowlist) : null,
       pii: [],
+      commands: [],
     };
   } catch (err) {
     if (err instanceof RulesetError) throw err;

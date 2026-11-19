@@ -4,6 +4,7 @@ import { scanText } from '../injection-scan.js';
 import { REDACT_KINDS, redactText, RedactKind } from '../redact.js';
 import { aggregateDecision, checkDestructive, checkDiffSize, checkSecrets, checkToolAllowed, GateResult } from '../gates.js';
 import { checkSecretsWithRulesets } from '../rulesets/gate.js';
+import { checkCommandsWithRulesets } from '../rulesets/command-gate.js';
 import { CliError, CommandContext, CommandResult, Handler } from './context.js';
 
 // Commands: check, scan, redact
@@ -27,6 +28,7 @@ async function handle_check(ctx: CommandContext): Promise<CommandResult> {
     add(checkDestructive(values.command));
     add(checkSecrets(values.command));
     await addRulesets(values.command);
+    for (const r of await checkCommandsWithRulesets(values.command, dir)) add(r);
   }
   if (values.text) {
     add(checkSecrets(values.text));

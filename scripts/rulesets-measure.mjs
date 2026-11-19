@@ -4,6 +4,7 @@
 //   node scripts/rulesets-measure.mjs [--max-list 60] <file-or-folder>...
 //   node scripts/rulesets-measure.mjs --log .colony/ruleset-warnings.jsonl     (what the guard's warnings have been so far)
 //   node scripts/rulesets-measure.mjs --pii [--max-list 60] <file-or-folder>...  (personal data: the presidio set against the own patterns)
+//   node scripts/rulesets-measure.mjs --commands [--max-list 60] <file-or-folder>...  (command rules: which of the commands in these files do they match)
 //
 // Folders are walked for text files (node_modules, .git, dist and rulesets are skipped, files over 1 MB are skipped).
 import { readdirSync, readFileSync, statSync } from 'node:fs';
@@ -19,11 +20,13 @@ const args = process.argv.slice(2);
 let maxList = 60;
 let logFile;
 let piiMode = false;
+let commandsMode = false;
 const targets = [];
 for (let i = 0; i < args.length; i++) {
   if (args[i] === '--max-list') maxList = Number(args[++i]);
   else if (args[i] === '--log') logFile = args[++i];
   else if (args[i] === '--pii') piiMode = true;
+  else if (args[i] === '--commands') commandsMode = true;
   else targets.push(args[i]);
 }
 
@@ -61,6 +64,53 @@ const { loaded, failed } = await loadRulesets();
 if (failed.length > 0) console.error('rule sets that FAILED their checks and are not used:', JSON.stringify(failed));
 
 const lineOf = (text, offset) => text.slice(0, offset).split('\n').length;
+
+if (commandsMode) {
+  // The commands that the files contain (the lines of fenced code blocks in Markdown, run: lines of workflows, the scripts of
+  // package.json) judged by the command rule sets. For a set of files that are known to hold ordinary commands, every match
+  // is a false positive: this is how the false positive rate is counted before a rule may block.
+  const { eventsOf } = await mod('rulesets/command-gate.js');
+  const { ruleMatches } = await mod('rulesets/sigma.js');
+  const sets = loaded.filter((s) => s.kind === 'commands');
+  const commands = [];
+  for (const file of files) {
+    const text = readFileSync(file, 'utf-8');
+    const rel = relative(root, file).replace(/\\/g, '/');
+    const ext = extname(file).toLowerCase();
+    const lines = text.split('\n');
+    if (ext === '.md') {
+      let inside = false;
+      lines.forEach((l, n) => {
+        if (/^\s*```/.test(l)) inside = !inside;
+        else if (inside && l.trim() && !l.trim().startsWith('#')) commands.push({ file: rel, line: n + 1, text: l.trim().replace(/^\$ /, '') });
+      });
+    } else if (ext === '.yml' || ext === '.yaml') {
+      lines.forEach((l, n) => {
+        const m = /^\s*(?:- )?run:\s*(.+)$/.exec(l);
+        if (m && m[1] !== '|') commands.push({ file: rel, line: n + 1, text: m[1].trim() });
+      });
+    } else if (file.endsWith('package.json')) {
+      for (const [name, value] of Object.entries(JSON.parse(text).scripts ?? {})) commands.push({ file: rel, line: 0, text: String(value), name });
+    }
+  }
+  const byRule = {};
+  const hits = [];
+  for (const c of commands) {
+    const events = eventsOf(c.text, root);
+    for (const set of sets) {
+      for (const rule of set.commands) {
+        if (events.some((e) => ruleMatches(rule, e))) {
+          byRule[rule.title] = (byRule[rule.title] ?? 0) + 1;
+          hits.push({ ...c, title: rule.title });
+        }
+      }
+    }
+  }
+  console.log(JSON.stringify({ files: files.length, commands: commands.length, ruleSets: sets.map((s) => `${s.name} ${s.version} (${s.commands.length} rules)`), commandsWithAMatch: new Set(hits.map((h) => h.file + ':' + h.line + ':' + h.text)).size, byRule }, null, 2));
+  console.log(`\nmatches (${hits.length}${hits.length > maxList ? `, first ${maxList}` : ''}):`);
+  for (const h of hits.slice(0, maxList)) console.log(`  ${h.file}:${h.line}  [${h.title}]  ${h.text.slice(0, 110)}`);
+  process.exit(0);
+}
 
 if (piiMode) {
   // Personal data: what the presidio set finds, and whether the colony's own redaction would also take that text.

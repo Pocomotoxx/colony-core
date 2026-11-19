@@ -170,13 +170,44 @@ Az átállásról mérés dönt, nem a készlet jó híre:
 
 **Sebesség:** mind a 221 regex lefut 20 000 karakteres, ismétlődő és kellemetlen bemeneteken 1,5 másodpercen belül (a teszt ezt őrzi); ez egy gyors próba, nem garancia.
 
+## 6/e. A Sigma-szelet (2026-11-19)
+
+**Átvett anyag.** A `SigmaHQ/sigma` `r2026-07-01` kiadásának `sigma_core.zip` csomagja (1 399 726 bájt). A letöltött csomag SHA-256-a **egyezik** azzal, amit a GitHub kiadás-API-ja az eszközre jelent (`sha256:45ccbd62…`), a címke commitja `552f3fee420e…`. A csomagból a **`rules/linux/process_creation`** 31 szabályfájlja került a repóba, **bájtra azonosan** (a `rulesets/sigma/source/` alatt). A ZIP-et nem tároljuk, a provenance rögzíti a csomag SHA-256-át, minden kivont fájl SHA-256-át és a címke commitját. A licenc **DRL 1.1**; a `NOTICE` fájl a colony saját közleménye (nem upstream fájl): megnevezi a licencet, a szabálykészlet címét és a szerzői hivatkozás kötelezettségét.
+
+**Amit építettünk** (mind helyi, hálózat nélküli kód):
+
+- `zip-lite.ts`: szigorú ZIP-olvasó (CRC-32 és méret minden bejegyzésre, titkosított, zip64 és ismeretlen tömörítés elutasítva, kilépő útvonal elutasítva, méretkorlát a ZIP-bomba ellen);
+- `yaml-lite.ts`: szigorú YAML-olvasó a Sigma-fájlok részhalmazához (blokk-leképezések és -listák, idézőjelek, blokk-skalárok; ami más, hiba);
+- `sigma.ts`: a Sigma nyelvnek az a része, amely egy futtatás előtti parancsra eldönthető (`contains`, `startswith`, `endswith`, `all`, egyenlőség; `and`, `or`, `not`, zárójel, `1 of` és `all of` minta vagy `them`);
+- `convert-sigma.ts`: szabályonként dönt, és ami nem ítélhető meg, azt **indokkal kihagyja**;
+- `command-gate.ts`: a parancssort egyszerű parancsokra bontja (ugyanazzal a bontóval, mint az írásvédelem), mindegyikből eseményt csinál (`Image`, `CommandLine`, `CurrentDirectory`), és azt is, amit egy burkoló (`sudo`, `env`, `nohup`, ...) elindít.
+
+**Átalakítás.** A 31 szabályból **25 jött át**. A kihagyott 6 olyan mezőt kér, amely egy futtatás előtti parancsnál nincs: a szülőfolyamatot (`ParentImage`, `ParentCommandLine`) vagy a felhasználót (`User`, `LogonId`). A YAML-olvasó mind a 31 fájlt elolvasta, és egyik sem használt nem támogatott módosítót vagy joker-karaktert.
+
+**Mérés.**
+
+- A repó saját parancsain (114 parancs a `README.md`, `ROADMAP.md`, `docs/`, `.github/` kódblokkjaiból, a workflow-k `run:` soraiból és a `package.json` szkriptjeiből): **0 találat**, tehát 0 hamis pozitív. Ez egy kis korpusz, főleg `pnpm`, `node` és `git` parancsokkal; azt mutatja, hogy a szabályok a szokásos fejlesztői munkát nem zavarják, azt nem, hogy máshol nem fognak.
+- Támadó-szerű parancsokon a szabály, amely leírja, megszólal: reverse shell `nc -e`-vel, a `.bash_history` törlése, a `/var/log/syslog` törlése, `env /bin/sh` (a `sudo` mögött is), `vim -c ":!/bin/sh"`, shell indítása `ssh`-n át. A szokásos parancsok (`git status`, `pnpm test`, `rm -rf build`, `nohup ./run.sh &`, `curl | jq`) nem.
+
+**Mit mond a licenc, és mit teszünk.** A szabály találatán alapuló üzenet megnevezi a szabály **szerzőjét** (a figyelmeztetés a szabály címét, szerzőjét, szintjét és állapotát, valamint a készlet címét és a licenc nevét tartalmazza). A szerző a `ruleset.json`-ban és az eredeti fájlokban is megvan.
+
+**Bekötés.** A hook `pretool` lépésében (shell-parancsok) és a `check --command` parancsban. **Csak jelzés**: a kapu neve `command-rulesets`, a döntést nem változtatja. Minden figyelmeztetés a `.colony/ruleset-warnings.jsonl` fájlba kerül (most a kapu nevével és a szabály címével is). A blokkolás feltétele ugyanaz, mint a titkoknál: két hét használat, a szabályonkénti hamis pozitívok átnézése, külön jóváhagyás.
+
+**Ismert korlátok és feltevések.**
+
+- **Mind a 31 szabály `status: test` állapotú**, `stable` egy sincs a Linux-folyamatindításiak között. A `core` csomag `testing` vagy `stable` szabályokat vesz fel, és a projekt azt írja, hogy kevés hamis pozitívot adnak. Ezt a saját mérésünk egy kis korpuszon nem cáfolta, de nem is bizonyítja.
+- **A parancs leképezése feltevés.** A szabályok egy folyamat naplóbejegyzésére készültek. A `Image` a program neve elé írt `/usr/bin/` (a szabályok `/sh` vagy `/env` végződést várnak), a `CommandLine` a parancs szavai szóközzel összefűzve, idézőjelek nélkül (ahogy a Linux naplózza a paramétereket). A burkolók (`sudo`, `env`, `nohup`, `time`, `exec`, `command`, `nice`, `ionice`, `stdbuf`, `timeout`, `doas`) által elindított parancsot is megvizsgáljuk.
+- **Csak az, ami egy futtatás előtti parancsról látszik.** Ami a szülőfolyamatot, a felhasználót vagy a futás eredményét kérné, kimarad. Egy parancsot, amelyet egy szkript fájl rejt, vagy egy változóból épül fel futáskor, az őr nem lát.
+- **Linux-szabályok.** A Windows és a PowerShell szabályai (a `sigma_core.zip` ~560 Windows-folyamatindítási szabályt tartalmaz) nincsenek átvéve: más a parancsnyelv és a leképezés, külön szelet lenne.
+- **A frissítés kézi:** `scripts/rulesets-convert-sigma.mjs` egy már letöltött, SHA-256-tal ellenőrzött csomagból dolgozik. A `rulesets-update.mjs` ZIP-módja (a csomag letöltése a kiadás-API-ból és a digest ellenőrzése) **még nincs megírva**, ezért a `sources.json` sem tartalmazza a készletet.
+
 ## 7. Szeletek
 
 | # | Szelet | Állapot |
 |---|---|---|
 | 1 | **Titokminták:** gitleaks v8.30.1 átvétele, betöltő, hash-ellenőrzés, átalakító, frissítő szkript, mérés, beillesztés | átvétel, átalakító, betöltő, kereső, mérés, a **jelzésként való bekötés** és a **frissítő szkript** kész; a blokkolás hátra van (a tervben rögzített feltétel után) |
 | 2 | **Személyes adatok:** a presidio 2.2.366 mintáinak átvétele a kitakaráshoz (IP-cím, IBAN, bankkártya, MAC-cím; a magyar adószám, TAJ, bankszámla és az e-mail, telefon marad saját) | átvétel, Python-minta-kinyerő, átalakító, betöltő, ellenőrzők, mérés **kész**; a kitakarásba kötés hátra van (külön jóváhagyás) |
-| 3 | **Veszélyes parancsok:** a **Sigma** (DRL 1.1) Linux folyamatindítási szabályai jelöltek, **csak jelzésként**; a részletek a 7/a szakaszban | kutatás kész, **döntés és letöltési jóváhagyás kell**; addig a saját `DESTRUCTIVE` tábla marad |
+| 3 | **Veszélyes parancsok:** a **Sigma** (DRL 1.1) `core` csomagjának Linux folyamatindítási szabályai, **csak jelzésként** (6/e) | az átvétel, a YAML- és ZIP-olvasó, a kiértékelő, a betöltő, a kapu és a mérés **kész**; a frissítő szkript ZIP-módja, a blokkolás és a Windows-szabályok hátra vannak. A saját `DESTRUCTIVE` tábla marad |
 | 4 | **Promptinjekció:** az **ATR** (MIT) az egyetlen aktív, nyílt jelölt, de a saját leírása szerint a `stable` szabályai alig vannak; mérőkorpuszként és csak jelzésként jön szóba (7/a) | kutatás kész; a saját szűrő marad, mérés a két Guard-készletünkön előbb |
 
 ## 7/a. A 3. és 4. szelet kutatása (2026-11-19)
