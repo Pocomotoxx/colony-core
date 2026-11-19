@@ -176,8 +176,40 @@ Az átállásról mérés dönt, nem a készlet jó híre:
 |---|---|---|
 | 1 | **Titokminták:** gitleaks v8.30.1 átvétele, betöltő, hash-ellenőrzés, átalakító, frissítő szkript, mérés, beillesztés | átvétel, átalakító, betöltő, kereső, mérés, a **jelzésként való bekötés** és a **frissítő szkript** kész; a blokkolás hátra van (a tervben rögzített feltétel után) |
 | 2 | **Személyes adatok:** a presidio 2.2.366 mintáinak átvétele a kitakaráshoz (IP-cím, IBAN, bankkártya, MAC-cím; a magyar adószám, TAJ, bankszámla és az e-mail, telefon marad saját) | átvétel, Python-minta-kinyerő, átalakító, betöltő, ellenőrzők, mérés **kész**; a kitakarásba kötés hátra van (külön jóváhagyás) |
-| 3 | **Veszélyes parancsok:** nincs kész, átvehető készlet. Sigma (Linux folyamatindítás) lehet a jelölt, ha a szabályok licence tiszta és a naplóészlelési forma illeszkedik egy futtatás előtti őrhöz | kutatás; addig a saját `DESTRUCTIVE` tábla marad |
-| 4 | **Promptinjekció:** nincs elfogadott, karbantartott szabálykészlet (a vigil elavult, az llm-guard archivált). A garak próbái **tesztkorpuszként** használhatók a szűrőnk méréséhez | kutatás; a saját szűrő marad, a korlátait a `SYSTEM-OVERVIEW.md` rögzíti |
+| 3 | **Veszélyes parancsok:** a **Sigma** (DRL 1.1) Linux folyamatindítási szabályai jelöltek, **csak jelzésként**; a részletek a 7/a szakaszban | kutatás kész, **döntés és letöltési jóváhagyás kell**; addig a saját `DESTRUCTIVE` tábla marad |
+| 4 | **Promptinjekció:** az **ATR** (MIT) az egyetlen aktív, nyílt jelölt, de a saját leírása szerint a `stable` szabályai alig vannak; mérőkorpuszként és csak jelzésként jön szóba (7/a) | kutatás kész; a saját szűrő marad, mérés a két Guard-készletünkön előbb |
+
+## 7/a. A 3. és 4. szelet kutatása (2026-11-19)
+
+Csak olvasás: nem töltöttem le semmit. A licencet és az aktivitást a GitHub adatai szerint néztem, a szabálykészletek tartalmát a repójukból olvastam. A projektek saját állításait (például az elterjedtségükre vonatkozókat) nem ellenőriztem.
+
+**3. szelet: Sigma (SigmaHQ/sigma).**
+
+- **Licenc:** a szabályok **Detection Rule License (DRL) 1.1** alatt vannak (a repó `LICENSE` fájlja ezt mondja; a licenc szövegét elolvastam). Szabad használni, módosítani, terjeszteni, két kötelezettséggel. **Megosztáskor** meg kell őrizni a szabály `author` mezőjét, a készlet hivatkozását és a licenc jelzését. **Használatkor** a szabály találatán alapuló **üzenetnek** is tartalmaznia kell a szabály szerzőjét. Tehát a figyelmeztetés szövegében a szabály címe és szerzője szerepel majd.
+- **Állapot:** aktív, legutóbbi kiadás `r2026-07-01` (2026-07-09). A kiadás csomagjai ZIP-ek, a GitHub a `digest` mezőben megadja az SHA-256-ot (a `sigma_core.zip` 1 399 726 bájt, `sha256:45ccbd62…`). A `core` csomag: `testing` vagy `stable` állapotú, `high` vagy `critical` szintű, támadói technikára illeszkedő szabályok; a projekt szerint „kevés hamis pozitívot" adnak (ezt nem ellenőriztem).
+- **Tartalom:** a `rules/linux/process_creation` mappában 123 szabály van (minden állapotban és szinten). Ezek **támadói viselkedést** írnak le: naplótörlés, base64-kódolt végrehajtás, reverse shell, cron-állandósítás, a biztonsági eszközök kikapcsolása. A mi `DESTRUCTIVE` táblánk mást fed (`rm -rf`, erőltetett push, adatbázis-törlés), ezért a Sigma **kiegészít, nem helyettesít**.
+- **Forma:** YAML, `detection` blokk mezőkkel (`Image`, `CommandLine`, `ParentImage`, ...), módosítókkal (`contains`, `startswith`, `endswith`, `all`, `re`) és feltétellel (`selection and not 1 of filter_main_*`).
+
+**Mit kellene építeni hozzá** (mind helyi, hálózat nélküli kód a letöltés után):
+
+1. egy szigorú YAML-olvasó a Sigma részhalmazához (mint a TOML-olvasó: ami nem ismert, hiba);
+2. egy Sigma-kiértékelő: a `Image` és `CommandLine` mezőkre, a fenti módosítókkal és a feltétel-nyelvtannal. Az a szabály, amely olyan mezőt kér, ami egy futtatás előtti parancsnál nincs (szülőfolyamat, felhasználó), **kimarad, indokkal**, ahogy a gitleaks fájlnévre szóló szabálya;
+3. a parancs leképezése: az őr a parancsot egyszerű parancsokra bontja (a `shell-paths.ts` ezt már csinálja), mindegyikből `CommandLine` lesz, az `Image` a futtatható neve (a `rm` `/usr/bin/rm` lesz, mert a szabályok `/rm` végződést várnak). **Ez egy feltevés**, a mérésnek kell igazolnia;
+4. a ZIP olvasása (a Node `zlib` modulja elég) és a frissítő szkript új módja: a letöltött csomag SHA-256-ját a GitHub `digest` mezőjéhez hasonlítja. Ez más bizonyíték, mint a git-blob hash: a csomag azt bizonyítja, hogy a kiadás eszközét kaptuk, nem a fa egy fájlját;
+5. a találat a szabály címével és **szerzőjével** jelenik meg (DRL), a licenc és a hivatkozás a készlet mappájában (`LICENSE`, `NOTICE`);
+6. a bekötés ugyanúgy **csak jelzés**, ugyanazzal a naplóval, és a blokkolás feltétele ugyanaz: két hét használat és a hamis pozitívok átnézése.
+
+**Mérés a bekötés előtt:** (a) a szabályok hamis pozitívjai **a repó saját parancsain** (a `scripts/`, a CI és a tesztek parancsai: ez a mi „jó" korpuszunk, a személyes shell-előzményed nem); (b) a támadói oldal az **Atomic Red Team** (MIT, aktív) Linux-tesztjeinek parancsai lehetnének mérőkorpuszként, külön jóváhagyással; (c) a `DESTRUCTIVE` táblánkat is mérhetjük velük, hogy lássuk, mit nem fed.
+
+**4. szelet: ATR (Agent-Threat-Rule/agent-threat-rules).** MIT, aktív (utolsó változás 2026-11-19, kiadás `v4.3.1` 2026-11-09), de **fiatal** (létrehozva 2026-03-09). 844 szabályfájl tíz kategóriában (prompt-injection 258, context-exfiltration 138, tool-poisoning 118, agent-manipulation 108, privilege-escalation 77, skill-compromise 52, model-abuse 41, excessive-autonomy 39, data-poisoning 9, model-security 4). A formája Sigma-szerű YAML, reguláris kifejezésekkel. **A saját `LIMITATIONS.md` szerint:**
+
+- a szabályok többsége `experimental` vagy `test` érettségű; egy PINT-formátumú, 850 mintás korpuszon a felidézés a „hunt" sávban (minden szabály) 65,4%, 100% pontosság mellett, az „enforce" sávban (csak `stable` szabályok, ez volna a blokkoláshoz használható) **0,4%**;
+- a hamis pozitív arányokat **visszavonták**, és nem szabad idézni őket, az újramérés függőben van;
+- a szabályok kevesebb mint felének van kijátszási tesztje.
+
+Ez őszinte beszámoló, de azt jelenti, hogy **blokkolásra nincs olyan ATR-szabály, amelyet átvehetnénk**. Jelzésként és mérőkorpuszként használható. A javaslat: előbb **megmérni a két saját Guard-készletünkön** (a 26 és 28 mintán), hogy az ATR prompt-injection szabályai mit találnak, és mit tévesztenek, csak utána dönteni az átvételről. Ehhez is kell YAML-olvasó és regex-kiértékelő, amely a 3. szelet munkájával közös.
+
+**Nem néztem meg:** a Falco szabályait (Apache-2.0, aktív; rendszerhívás-szintű feltételek, egy futtatás előtti szöveg-őrhöz nem illenek), és az ATR 844 szabályának egyenkénti tartalmát.
 
 ## 8. Amit nem tudunk, és amit nem állítunk
 
