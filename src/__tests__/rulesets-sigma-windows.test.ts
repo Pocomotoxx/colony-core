@@ -67,7 +67,7 @@ test('a Windows rule is converted for what a command has (Image, CommandLine, Cu
     'rules/ok.yml': SAMPLE("selection:\n    Image|endswith: '\\certutil.exe'\n    OriginalFileName: 'CertUtil.exe'\n    CommandLine|contains: '-urlcache'\ncondition: selection"),
     'rules/parent.yml': SAMPLE("selection:\n    ParentImage|endswith: '\\winword.exe'\n    CommandLine|contains: 'x'\ncondition: selection"),
     'rules/hashes.yml': SAMPLE("selection:\n    Hashes|contains: 'IMPHASH=abc'\ncondition: selection"),
-    'rules/wild.yml': SAMPLE("selection:\n    CommandLine|contains: 'a*b'\ncondition: selection"),
+    'rules/expand.yml': SAMPLE("selection:\n    CommandLine|expand: '%x%'\ncondition: selection"),
     'rules/b64.yml': SAMPLE("selection:\n    CommandLine|base64offset|contains: 'IEX'\ncondition: selection"),
     'rules/lin.yml': SAMPLE("selection:\n    Image|endswith: '/x'\ncondition: selection", 'linux'),
   };
@@ -77,7 +77,7 @@ test('a Windows rule is converted for what a command has (Image, CommandLine, Cu
   const why = Object.fromEntries(report.skipped.map((s) => [s.id, s.reason]));
   assert.match(why.parent, /needs ParentImage/);
   assert.match(why.hashes, /needs Hashes/);
-  assert.match(why.wild, /wildcard/);
+  assert.match(why.expand, /modifier "expand"/);
   assert.match(why.b64, /base64offset/);
   assert.match(why.lin, /not a Windows process creation/);
   // the Linux conversion is unchanged: no platform in its file, and OriginalFileName is not a field of a Linux command
@@ -103,9 +103,44 @@ test('a Windows command becomes events: a path stays, a bare name is a program o
   assert.ok(windowsEventsOf('x;'.repeat(5000), 'C:\\').length <= 200, 'bounded');
 });
 
+test('wildcards: * is any run, ? any one character, a backslash makes them plain; the operator anchors the pattern; plain backslashes follow the specification', () => {
+  const cl = (op: string, value: string, text: string): boolean => {
+    const { ruleset, report } = convertSigma({ 'rules/r.yml': SAMPLE(`selection:\n    ${op === 'equals' ? 'CommandLine' : 'CommandLine|' + op}: '${value}'\ncondition: selection`) }, meta);
+    assert.equal(report.converted, 1, JSON.stringify(report.skipped));
+    return ruleMatches(compileCommandRule(ruleset.rules[0]), { CommandLine: text });
+  };
+  assert.equal(cl('contains', 'a*b', 'xxaYYYbzz'), true);
+  assert.equal(cl('contains', 'a*b', 'bxa'), false, 'in order');
+  assert.equal(cl('contains', 'a?c', 'xabcx'), true);
+  assert.equal(cl('contains', 'a?c', 'xacx'), false, '? is one character, not none');
+  assert.equal(cl('startswith', 'a*c', 'abbbc zz'), true);
+  assert.equal(cl('startswith', 'a*c', 'zabc'), false);
+  assert.equal(cl('endswith', 'a*c', 'zz abbbc'), true);
+  assert.equal(cl('endswith', 'a*c', 'abc zz'), false);
+  assert.equal(cl('equals', 'a*c', 'abbbc'), true);
+  assert.equal(cl('equals', 'a*c', 'abbbc '), false);
+  assert.equal(cl('contains', '*', 'anything'), true, 'a lone star');
+  assert.equal(cl('contains', 'a*a', 'a'), false, 'the two a cannot be the same character');
+  assert.equal(cl('contains', 'A*B', 'xaxbx'), true, 'case does not matter');
+  assert.equal(cl('contains', '\\*lnk', 'x*lnk'), true, 'a plain star');
+  assert.equal(cl('contains', '\\*lnk', 'xa lnk'), false);
+  assert.equal(cl('contains', '/\\?', 'sdelete /?'), true, 'a plain question mark');
+  assert.equal(cl('contains', '/\\?', 'sdelete /x'), false);
+  assert.equal(cl('contains', 'c:\\\\*.txt', 'copy c:\\a\\b.txt'), true, 'two backslashes then a star: a backslash and a wildcard');
+  assert.equal(cl('contains', 'c:\\\\\\*', 'c:\\*'), true, 'three: a backslash and a plain star');
+  assert.equal(cl('contains', 'c:\\\\\\*', 'c:\\x'), false);
+  assert.equal(cl('contains', '\\\\\\\\server', 'copy \\\\server\\share'), true, 'four backslashes are two: a UNC path');
+  assert.equal(cl('contains', '\\\\\\\\server', 'copy \\server'), false);
+  assert.equal(cl('contains', 'a\\b', 'a\\b'), true, 'a single backslash stays');
+  // no backtracking: a pattern with many stars on a long text answers at once
+  const t0 = Date.now();
+  assert.equal(cl('contains', 'a*a*a*a*a*a*a*a*b', 'a'.repeat(7000)), false);
+  assert.ok(Date.now() - t0 < 2000);
+});
+
 // ---- the vendored set
 
-test('the vendored Windows set loads with its hashes verified: the same archive as the Linux set, 558 files, 336 rules, 222 skipped with a reason', async () => {
+test('the vendored Windows set loads with its hashes verified: the same archive as the Linux set, 558 files, 346 rules, 212 skipped with a reason', async () => {
   const set = await loadRuleset(vendoredWin);
   const linux = await loadRuleset(vendoredLinux);
   assert.equal(set.kind, 'commands');
@@ -117,8 +152,8 @@ test('the vendored Windows set loads with its hashes verified: the same archive 
   assert.equal(set.provenance.commit, linux.provenance.commit);
   assert.equal(set.provenance.license, 'DRL-1.1');
   assert.equal(set.provenance.sources?.length, 558);
-  assert.equal(set.commands.length, 336);
-  assert.equal(set.provenance.report.skipped.length, 222);
+  assert.equal(set.commands.length, 346);
+  assert.equal(set.provenance.report.skipped.length, 212);
   assert.ok(set.provenance.report.skipped.every((s) => s.reason.length > 10));
   assert.ok(set.commands.every((r) => r.author && r.title));
 });
