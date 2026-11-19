@@ -1,6 +1,6 @@
 # Kész szabálykészletekre épülő szabálymag: terv
 
-**Állapot: az 1. szelet építése folyik. Kész: a gitleaks v8.30.1 átvétele, a szigorú TOML-olvasó, a Go-regex átalakító, a hash-ellenőrző betöltő, a kereső és a mérőszkript. Még nincs bekötve: a `findSecretSpans` és a kitakarás a régi saját mintákat használja, a rendszer a mérés után vált.** Az irányt a fejlesztő kérte (2026-11-19): a Colony szabálymagja ne csak kézzel írt szabályokból álljon, hanem már létező, karbantartott, nyílt szabálykészletekre támaszkodjon, verzióval, forrással és hash-sel rögzítve. Saját szabályok később is lehetnek mellette.
+**Állapot: az 1. szelet építése folyik. Kész: a gitleaks v8.30.1 átvétele, a szigorú TOML-olvasó, a Go-regex átalakító, a hash-ellenőrző betöltő, a kereső és a mérőszkript. Bekötve **csak jelzésként** (2026-11-19): az őr (hook) és a `check` parancs a gitleaks találatait figyelmeztetésként adja, a blokkolást továbbra is a saját minták döntik. A `findSecretSpans` és a kitakarás még a régi saját mintákat használja.** Az irányt a fejlesztő kérte (2026-11-19): a Colony szabálymagja ne csak kézzel írt szabályokból álljon, hanem már létező, karbantartott, nyílt szabálykészletekre támaszkodjon, verzióval, forrással és hash-sel rögzítve. Saját szabályok később is lehetnek mellette.
 
 ## 1. Miért
 
@@ -76,6 +76,16 @@ Az átállásról mérés dönt, nem a készlet jó híre:
 3. **Sebesség:** a leghosszabb bemeneten és egy kontrollszövegen mérjük.
 4. **Kipróbálás blokkolás nélkül:** az első kiadásban az új készlet találatai először csak jelzést adnak (`warn`), a blokkolás a mérés után kapcsol be.
 
+## 6/b. A jelzésként való bekötés
+
+- **Hol:** a hook `pretool` lépése (shell-parancsok és fájlba írt szövegek) és a `check` parancs (`--command`, `--text`, `--file`). Új kapu: `secret-rulesets`.
+- **Mit tesz:** a döntést **nem** változtatja. A találat `warn`: a hook stderr-jére kerül (mint a nagy írás jelzése), a `check` kimenetében a `results` között látszik. A szabálynév és a hely látszik, az érték sosem.
+- **Egy titok, két szabály:** ha egy szolgáltatói és egy általános szabály ugyanazt a helyet jelzi, az egy lehetséges titok.
+- **Napló a számoláshoz:** minden figyelmeztetés a `.colony/ruleset-warnings.jsonl` fájlba kerül (idő, eszköz, szabályok, darabszám; nincs érték, és ha nincs `.colony` mappa, a hook nem hoz létre). Összesítés: `node scripts/rulesets-measure.mjs --log .colony/ruleset-warnings.jsonl`. Ebből derül ki, mely szabályok adnak hamis pozitívot, mielőtt bármi blokkolna rajtuk.
+- **Hibás készlet:** ha egy készlet nem tölti be a hash-ellenőrzést, **minden hívásnál** figyelmeztetés jön róla, és a saját minták tovább védenek.
+- **Korlát:** a hook hívásonként legfeljebb 200 000 karaktert vizsgál egy szövegből (a találat jelzi, ha csonkolt). A betöltés hívásonként kb. 25 ms. A hook stderr-jét a host nem feltétlenül mutatja meg a modellnek vagy neked: ezért van a napló.
+- **A blokkolás feltétele** (előre rögzítve, hogy a mérés után ne alakuljon az eredményhez): a napló legalább két hétnyi használatot fedjen, a szabályonkénti hamis pozitívokat átnézzük, és csak azok a szabályok kapcsolnak blokkolásra, amelyeknek a fejlesztő által átnézett mintán nincs hamis pozitívjuk. Az átállást külön jóváhagyás nyitja meg.
+
 ## 6/a. Az első mérés (2026-11-19)
 
 **Átalakítás:** a `gitleaks.toml` 222 szabályából **221 jött át**. Az egyetlen kihagyott a `pkcs12-file` (fájlnévre szóló szabály, mi szöveget vizsgálunk). Szabályok útvonal-kivételei (4 szabály, 4 kivétellista) elmaradnak, ami csak több találatot jelent. A regexek közül a mid-pattern `(?i)`, `(?-i:…)` és `(?s:…)` jelzős mintákat (22 szabály) kiírt kisbetű-nagybetű osztályokkal vittük át, mert a JavaScript Node 20-ban és 22-ben nem ismeri a hatókörös jelzőket.
@@ -104,7 +114,7 @@ Az átállásról mérés dönt, nem a készlet jó híre:
 
 | # | Szelet | Állapot |
 |---|---|---|
-| 1 | **Titokminták:** gitleaks v8.30.1 átvétele, betöltő, hash-ellenőrzés, átalakító, frissítő szkript, mérés, beillesztés | átvétel, átalakító, betöltő, kereső, mérés **kész**; a frissítő szkript (hálózat) és a beillesztés hátra van |
+| 1 | **Titokminták:** gitleaks v8.30.1 átvétele, betöltő, hash-ellenőrzés, átalakító, frissítő szkript, mérés, beillesztés | átvétel, átalakító, betöltő, kereső, mérés és a **jelzésként való bekötés kész**; a frissítő szkript (hálózat), a kitakarás átállása és a blokkolás hátra van |
 | 2 | **Személyes adatok:** a presidio felismerőinek átvétele a kitakaráshoz (a magyar adószám, TAJ és bankszámla marad saját) | ellenőrizendő: a regexek hordozhatósága, a licencfájl |
 | 3 | **Veszélyes parancsok:** nincs kész, átvehető készlet. Sigma (Linux folyamatindítás) lehet a jelölt, ha a szabályok licence tiszta és a naplóészlelési forma illeszkedik egy futtatás előtti őrhöz | kutatás; addig a saját `DESTRUCTIVE` tábla marad |
 | 4 | **Promptinjekció:** nincs elfogadott, karbantartott szabálykészlet (a vigil elavult, az llm-guard archivált). A garak próbái **tesztkorpuszként** használhatók a szűrőnk méréséhez | kutatás; a saját szűrő marad, a korlátait a `SYSTEM-OVERVIEW.md` rögzíti |
