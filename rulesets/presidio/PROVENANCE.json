@@ -3,7 +3,7 @@
   "name": "presidio",
   "version": "2.2.366",
   "commit": "211afc337241aee8bf495f282e83ef639a5d015f",
-  "sourceUrl": "https://github.com/microsoft/presidio/tree/2.2.366/presidio-analyzer/presidio_analyzer/predefined_recognizers/generic",
+  "sourceUrl": "https://github.com/data-privacy-stack/presidio/tree/2.2.366/presidio-analyzer/presidio_analyzer/predefined_recognizers/generic",
   "license": "MIT",
   "licenseFile": {
     "file": "LICENSE",

@@ -1,0 +1,28 @@
+{
+  "note": "Where each vendored rule set comes from. scripts/rulesets-update.mjs reads this file: it downloads only these paths of these repositories, at a tag you name, and nothing else. Edit it by hand and in a reviewed change: it decides what the update script may fetch.",
+  "sets": {
+    "gitleaks": {
+      "repo": "gitleaks/gitleaks",
+      "license": "MIT",
+      "licenseFile": "LICENSE",
+      "files": {
+        "config/gitleaks.toml": "source/gitleaks.toml"
+      },
+      "converter": "rulesets-convert.mjs",
+      "sourceUrl": "https://github.com/gitleaks/gitleaks/blob/{tag}/config/gitleaks.toml"
+    },
+    "presidio": {
+      "repo": "data-privacy-stack/presidio",
+      "license": "MIT",
+      "licenseFile": "LICENSE",
+      "files": {
+        "presidio-analyzer/presidio_analyzer/predefined_recognizers/generic/credit_card_recognizer.py": "source/credit_card_recognizer.py",
+        "presidio-analyzer/presidio_analyzer/predefined_recognizers/generic/iban_patterns.py": "source/iban_patterns.py",
+        "presidio-analyzer/presidio_analyzer/predefined_recognizers/generic/ip_recognizer.py": "source/ip_recognizer.py",
+        "presidio-analyzer/presidio_analyzer/predefined_recognizers/generic/mac_recognizer.py": "source/mac_recognizer.py"
+      },
+      "converter": "rulesets-convert-presidio.mjs",
+      "sourceUrl": "https://github.com/data-privacy-stack/presidio/tree/{tag}/presidio-analyzer/presidio_analyzer/predefined_recognizers/generic"
+    }
+  }
+}

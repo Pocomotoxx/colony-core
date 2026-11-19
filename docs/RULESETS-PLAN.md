@@ -59,7 +59,22 @@ rulesets/
 
 ## 4. Frissítés
 
-A `scripts/rulesets-update.mjs` (hálózatot használ, ezért külön szkript, kötelező `--yes`) a megadott címkéről letölt, ellenőrzi a hash-t, átalakít, és kiírja, mennyi szabály jött, tűnt el vagy változott. **Semmi nem frissül magától.** A változás egy külön PR, amit ember néz át, és a tesztek újra lefutnak.
+A `scripts/rulesets-update.mjs` (hálózatot használ, ezért külön szkript) egy készletet egy másik **kiadási címkére** frissít: `node scripts/rulesets-update.mjs --set gitleaks --tag v8.31.0 [--dry-run] [--yes]` (`pnpm rulesets:update`). **Semmi nem frissül magától, és nem commitol.** A változás a munkafában marad, külön PR-ben néz át egy ember.
+
+Honnan tölthet: a `rulesets/sources.json` készletenként megnevezi a repót, a pontos fájlokat, a licencet és az átalakítót. Ezen kívül semmit nem tölt le. Kézzel, átnézett változásként szerkesztendő.
+
+Amit végigcsinál, és az első hibánál megáll úgy, hogy a mostani készlethez nem nyúl:
+
+1. **Kötelező `--yes`.** Nélküle (és `--dry-run` mellett) csak a tervet írja ki: a kéréseket, a fájlokat. Hálózatot nem használ.
+2. **Licenc:** a repó licence (SPDX) még az legyen, amellyel a készletet átvettük. Ha más lett, megáll: ez döntés, nem frissítés.
+3. **Címke, nem ág:** a név a repó egy `tags` hivatkozása legyen, mert az ág elmozdulhat. A címke commitját a provenance rögzíti.
+4. **Bizonyítás:** minden fájl git-blob hash-e egyezzen azzal, amit a repó arra a címkére jelent, a méret is. Egy fájl legfeljebb 1 MB. Csak a `api.github.com` felé megy kérés, hitelesítő adat nélkül, átirányítás nélkül (az átirányítás hiba).
+5. **Csere és átalakítás:** a forrásfájlok és a licenc kicserélődnek, fut az átalakító, a végeredményen lefut a betöltő saját hash-ellenőrzése. Ha bármelyik elbukik (például az új kiadás olyat használ, amit az átalakító nem ismer), **az előző fájlok visszakerülnek**.
+6. **Jelentés:** hány szabály jött, tűnt el, változott (azonosítóval), a kihagyottak száma, és hogy a licenc **szövege** változott-e (ekkor hangos figyelmeztetés).
+
+**Valós próba (2026-11-19):** mindkét készleten lefuttattam ugyanarra a címkére, amelyen már vannak (gitleaks v8.30.1, presidio 2.2.366). A letöltött fájlok git-blob hash-e egyezett, a commit is, 0 hozzáadott, 0 eltűnt, 0 változott szabály. **Egy hibát ez fedett fel:** a `microsoft/presidio` végleges átirányítás (301) az `data-privacy-stack/presidio` repóra (ugyanaz a repó, azonosító 132129752, MIT, nem archivált). A szkript az átirányítást helyesen visszautasította, ezért a `sources.json` a kanonikus nevet tartalmazza. A presidio provenance-ában ezért a forrás-URL az új szervezetre mutat.
+
+**Visszalépés:** `git checkout -- rulesets/<név>`. **Nem igazolt:** egy valódi, új kiadásra még nem futott (a tesztek hamis GitHub-API ellen futnak), ezért az első valódi frissítésnél az átalakító új szintaxison elbukhat: ekkor a szkript visszaállít, és kimondja, mit nem ismer.
 
 ## 5. Beillesztés
 
@@ -159,7 +174,7 @@ Az átállásról mérés dönt, nem a készlet jó híre:
 
 | # | Szelet | Állapot |
 |---|---|---|
-| 1 | **Titokminták:** gitleaks v8.30.1 átvétele, betöltő, hash-ellenőrzés, átalakító, frissítő szkript, mérés, beillesztés | átvétel, átalakító, betöltő, kereső, mérés és a **jelzésként való bekötés kész**; a frissítő szkript (hálózat), a kitakarás átállása és a blokkolás hátra van |
+| 1 | **Titokminták:** gitleaks v8.30.1 átvétele, betöltő, hash-ellenőrzés, átalakító, frissítő szkript, mérés, beillesztés | átvétel, átalakító, betöltő, kereső, mérés, a **jelzésként való bekötés** és a **frissítő szkript** kész; a blokkolás hátra van (a tervben rögzített feltétel után) |
 | 2 | **Személyes adatok:** a presidio 2.2.366 mintáinak átvétele a kitakaráshoz (IP-cím, IBAN, bankkártya, MAC-cím; a magyar adószám, TAJ, bankszámla és az e-mail, telefon marad saját) | átvétel, Python-minta-kinyerő, átalakító, betöltő, ellenőrzők, mérés **kész**; a kitakarásba kötés hátra van (külön jóváhagyás) |
 | 3 | **Veszélyes parancsok:** nincs kész, átvehető készlet. Sigma (Linux folyamatindítás) lehet a jelölt, ha a szabályok licence tiszta és a naplóészlelési forma illeszkedik egy futtatás előtti őrhöz | kutatás; addig a saját `DESTRUCTIVE` tábla marad |
 | 4 | **Promptinjekció:** nincs elfogadott, karbantartott szabálykészlet (a vigil elavult, az llm-guard archivált). A garak próbái **tesztkorpuszként** használhatók a szűrőnk méréséhez | kutatás; a saját szűrő marad, a korlátait a `SYSTEM-OVERVIEW.md` rögzíti |
