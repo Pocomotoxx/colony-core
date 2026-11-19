@@ -14,7 +14,8 @@
     "test": "node scripts/run-tests.mjs",
     "lint": "eslint .",
     "start": "node scripts/start.mjs",
-    "rulesets:verify": "node scripts/rulesets-verify.mjs"
+    "rulesets:verify": "node scripts/rulesets-verify.mjs",
+    "rulesets:update": "node scripts/rulesets-update.mjs"
   },
   "keywords": [
     "agent-colony",
