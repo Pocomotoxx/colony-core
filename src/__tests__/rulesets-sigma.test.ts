@@ -138,9 +138,44 @@ test('the YAML subset of the Sigma files is read: maps, lists, a list of maps, q
 });
 
 test('what the reader does not support is an error, not a guess', () => {
-  for (const bad of ['a: [1, 2]', 'a: {b: 1}', 'a: &x 1', 'a: *x', 'a: !tag x', 'a: 1\na: 2', '\ta: 1', 'a: b: c', '---\na: 1', 'a: |2\n  x', 'a:\n  - |\n    x', 'a: "open', "a: 'open", 'a: 1\n   b: 2']) {
+  for (const bad of ['a: {b: 1}', 'a: [[1], 2]', 'a: [1, 2', 'a: &x 1', 'a: *x', 'a: !tag x', 'a: 1\na: 2', '\ta: 1', 'a: b: c', '---\na: 1', 'a: |2\n  x', 'a: "open', "a: 'open", 'a: 1\n   b: 2', 'a: "bad \\q escape"', 'a:\n  - |+\n    x']) {
     assert.throws(() => parseYaml(bad), YamlError, bad);
   }
+});
+
+test('multi-line scalars are folded as YAML folds them: plain, single-quoted, double-quoted with escapes; flow sequences and block scalar items', () => {
+  const doc = parseYaml(
+    [
+      'plain: first line',
+      '  second line',
+      '',
+      '  after a blank line',
+      "single: 'one",
+      "  two",
+      '',
+      "  it''s three'",
+      'double: "start\\',
+      '  continued, no space here\\ \\ two spaces kept\\n"',
+      'tag: [any, "quoted, with comma", \'it\'\'s\']',
+      'empty: []',
+      'items:',
+      '  - first',
+      '  - >-',
+      '    folded',
+      '    block item',
+      '  - |',
+      '    literal',
+      '    block item',
+      'unicode: "\\U0001F513 and \\u00e9 and \\x41"',
+    ].join('\n'),
+  ) as any;
+  assert.equal(doc.plain, 'first line second line\nafter a blank line');
+  assert.equal(doc.single, "one two\nit's three");
+  assert.equal(doc.double, 'startcontinued, no space here  two spaces kept\n');
+  assert.deepEqual(doc.tag, ['any', 'quoted, with comma', "it's"]);
+  assert.deepEqual(doc.empty, []);
+  assert.deepEqual(doc.items, ['first', 'folded block item', 'literal\nblock item\n']);
+  assert.equal(doc.unicode, '\u{1F513} and \u00e9 and A');
 });
 
 // ---- the Sigma subset
