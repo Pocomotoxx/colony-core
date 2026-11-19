@@ -13,7 +13,8 @@
     "build": "tsc",
     "test": "node scripts/run-tests.mjs",
     "lint": "eslint .",
-    "start": "node scripts/start.mjs"
+    "start": "node scripts/start.mjs",
+    "rulesets:verify": "node scripts/rulesets-verify.mjs"
   },
   "keywords": [
     "agent-colony",

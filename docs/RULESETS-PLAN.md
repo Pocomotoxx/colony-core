@@ -1,6 +1,6 @@
 # Kész szabálykészletekre épülő szabálymag: terv
 
-**Állapot: terv, kód még nincs.** Az irányt a fejlesztő kérte (2026-11-19): a Colony szabálymagja ne csak kézzel írt szabályokból álljon, hanem már létező, karbantartott, nyílt szabálykészletekre támaszkodjon, verzióval, forrással és hash-sel rögzítve. Saját szabályok később is lehetnek mellette.
+**Állapot: az 1. szelet építése folyik. Kész: a gitleaks v8.30.1 átvétele, a szigorú TOML-olvasó, a Go-regex átalakító, a hash-ellenőrző betöltő, a kereső és a mérőszkript. Még nincs bekötve: a `findSecretSpans` és a kitakarás a régi saját mintákat használja, a rendszer a mérés után vált.** Az irányt a fejlesztő kérte (2026-11-19): a Colony szabálymagja ne csak kézzel írt szabályokból álljon, hanem már létező, karbantartott, nyílt szabálykészletekre támaszkodjon, verzióval, forrással és hash-sel rögzítve. Saját szabályok később is lehetnek mellette.
 
 ## 1. Miért
 
@@ -76,11 +76,35 @@ Az átállásról mérés dönt, nem a készlet jó híre:
 3. **Sebesség:** a leghosszabb bemeneten és egy kontrollszövegen mérjük.
 4. **Kipróbálás blokkolás nélkül:** az első kiadásban az új készlet találatai először csak jelzést adnak (`warn`), a blokkolás a mérés után kapcsol be.
 
+## 6/a. Az első mérés (2026-11-19)
+
+**Átalakítás:** a `gitleaks.toml` 222 szabályából **221 jött át**. Az egyetlen kihagyott a `pkcs12-file` (fájlnévre szóló szabály, mi szöveget vizsgálunk). Szabályok útvonal-kivételei (4 szabály, 4 kivétellista) elmaradnak, ami csak több találatot jelent. A regexek közül a mid-pattern `(?i)`, `(?-i:…)` és `(?s:…)` jelzős mintákat (22 szabály) kiírt kisbetű-nagybetű osztályokkal vittük át, mert a JavaScript Node 20-ban és 22-ben nem ismeri a hatókörös jelzőket.
+
+**Kitalált példákon** (a tokenek egy rögzített generátorból jönnek, nem valódiak):
+
+| Eset | Saját minta | gitleaks |
+|---|---|---|
+| API-kulcs értékadás, véletlen érték | talál | talál (`generic-api-key`) |
+| API-kulcs értékadás, szó (`changeme-please`) | talál | **nem** |
+| jelszó értékadás | talál | talál (`hashicorp-tf-password`) |
+| token értékadás, véletlen érték | talál | talál |
+| token értékadás, szó (`test-token`) | talál | **nem** |
+| privát kulcs, csak a fejléc | talál | **nem** (a szabály törzset vár) |
+| privát kulcs, teljes blokk (törzsével) | talál | talál (`private-key`) |
+| `sk-` általános kulcs | talál | **nem** (csak a szolgáltatóra szabott formák) |
+| GitHub-token, npm-token (kis- és nagybetűs), AWS-kulcsazonosító | talál | talál |
+
+**A repó saját fájljain** (149 fájl: `src`, `docs`, `scripts`, a gyökér dokumentumai és a két Guard-készlet): a saját minták **7** találatot adtak, ebből 6 hamis pozitív (`token: 'test-token'`, egy teszt-jelszó), a gitleaks **2**-t (egy kitalált JWT egy tesztben, és egy `generic-api-key` találat, amelyet a saját minták is megtaláltak). Ezt egyetlen, kis, saját korpuszon mértük: az irányt mutatja, a gitleaks pontosságát nem bizonyítja.
+
+**Amit ebből nem szabad kiolvasni:** hogy a gitleaks mindent megtalál. A mérés a mi példáinkra és a mi fájljainkra vonatkozik. A szavas (alacsony entrópiájú) értékadásokat a gitleaks szándékosan nem jelzi; ha ilyen jelzést is akarunk, az saját szabály lesz a `rulesets/own/`-ban.
+
+**Sebesség:** mind a 221 regex lefut 20 000 karakteres, ismétlődő és kellemetlen bemeneteken 1,5 másodpercen belül (a teszt ezt őrzi); ez egy gyors próba, nem garancia.
+
 ## 7. Szeletek
 
 | # | Szelet | Állapot |
 |---|---|---|
-| 1 | **Titokminták:** gitleaks v8.30.1 átvétele, betöltő, hash-ellenőrzés, átalakító, frissítő szkript, mérés, beillesztés | letöltés jóváhagyásra vár |
+| 1 | **Titokminták:** gitleaks v8.30.1 átvétele, betöltő, hash-ellenőrzés, átalakító, frissítő szkript, mérés, beillesztés | átvétel, átalakító, betöltő, kereső, mérés **kész**; a frissítő szkript (hálózat) és a beillesztés hátra van |
 | 2 | **Személyes adatok:** a presidio felismerőinek átvétele a kitakaráshoz (a magyar adószám, TAJ és bankszámla marad saját) | ellenőrizendő: a regexek hordozhatósága, a licencfájl |
 | 3 | **Veszélyes parancsok:** nincs kész, átvehető készlet. Sigma (Linux folyamatindítás) lehet a jelölt, ha a szabályok licence tiszta és a naplóészlelési forma illeszkedik egy futtatás előtti őrhöz | kutatás; addig a saját `DESTRUCTIVE` tábla marad |
 | 4 | **Promptinjekció:** nincs elfogadott, karbantartott szabálykészlet (a vigil elavult, az llm-guard archivált). A garak próbái **tesztkorpuszként** használhatók a szűrőnk méréséhez | kutatás; a saját szűrő marad, a korlátait a `SYSTEM-OVERVIEW.md` rögzíti |
