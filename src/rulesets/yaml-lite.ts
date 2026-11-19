@@ -1,8 +1,9 @@
 /**
- * A strict reader for the small subset of YAML that the Sigma rule files use: block mappings, block sequences (also a
- * sequence of mappings), plain, single- and double-quoted scalars, block scalars (| and >), and comments. It is not a
- * YAML parser: flow collections, anchors and aliases, tags, multiple documents, tabs and everything else are errors, so
- * that a rule file that uses something new fails loudly instead of being half-read.
+ * A strict reader for the subset of YAML that the vendored rule files use: block mappings, block sequences (also a
+ * sequence of mappings), plain, single- and double-quoted scalars (also over several lines, folded as YAML folds them),
+ * block scalars (| and >, also as a sequence item), flow sequences of scalars on one line, and comments. It is not a
+ * YAML parser: flow mappings, nested flow collections, anchors and aliases, tags, multiple documents, tabs and
+ * everything else are errors, so that a rule file that uses something new fails loudly instead of being half-read.
  */
 
 export class YamlError extends Error {}
@@ -28,60 +29,171 @@ export function parseYaml(text: string): YamlValue {
     while (i < rows.length && isBlank(rows[i])) i++;
   };
 
-  /** The text of a scalar, without its trailing comment. */
-  function scalar(raw: string): YamlValue {
-    const t = raw.trim();
-    if (t[0] === "'") {
-      let out = '';
-      let k = 1;
-      for (;;) {
-        if (k >= t.length) return fail('an unterminated single-quoted string');
-        if (t[k] === "'") {
-          if (t[k + 1] === "'") {
-            out += "'";
-            k += 2;
-            continue;
+  // ---- quoted scalars (possibly over several lines)
+
+  /** The index of the closing quote in `text` (which starts with the opening quote), or -1. */
+  function findClose(text: string, q: string): number {
+    for (let k = 1; k < text.length; k++) {
+      const c = text[k];
+      if (q === '"' && c === '\\') k++;
+      else if (c === q) {
+        if (q === "'" && text[k + 1] === "'") k++;
+        else return k;
+      }
+    }
+    return -1;
+  }
+
+  const ESCAPES: Record<string, string> = { '0': '\0', a: '\x07', b: '\b', t: '\t', n: '\n', v: '\v', f: '\f', r: '\r', e: '\x1b', ' ': ' ', '"': '"', '/': '/', '\\': '\\', N: '\u0085', _: ' ', L: ' ', P: ' ' };
+
+  function decodeDouble(s: string): string {
+    let out = '';
+    for (let k = 0; k < s.length; k++) {
+      const c = s[k];
+      if (c !== '\\') {
+        out += c;
+        continue;
+      }
+      const e = s[++k];
+      if (e !== undefined && e in ESCAPES) out += ESCAPES[e];
+      else if (e === 'x' || e === 'u' || e === 'U') {
+        const len = e === 'x' ? 2 : e === 'u' ? 4 : 8;
+        const hex = s.slice(k + 1, k + 1 + len);
+        if (!new RegExp(`^[0-9a-fA-F]{${len}}$`).test(hex)) return fail(`a bad \\${e} escape`);
+        out += String.fromCodePoint(parseInt(hex, 16));
+        k += len;
+      } else return fail(`an unsupported escape \\${e ?? ''}`);
+    }
+    return out;
+  }
+
+  /** The text of a quoted scalar that starts with `first`; further rows are read while it is not closed. */
+  function quoted(first: string): string {
+    const q = first[0];
+    let text = first;
+    let end = findClose(text, q);
+    while (end < 0) {
+      if (i >= rows.length) return fail(`an unterminated ${q === "'" ? 'single' : 'double'}-quoted string`);
+      text += '\n' + rows[i++];
+      end = findClose(text, q);
+    }
+    if (!/^\s*(#.*)?$/.test(text.slice(end + 1))) fail('unexpected text after a quoted string');
+    // fold the lines as YAML does: a line break becomes a space, a blank line a line break, and in double quotes a
+    // backslash before the line break joins the lines without a space
+    const lines = text.slice(1, end).split('\n');
+    let acc = '';
+    let blanks = 0;
+    let prevEscaped = false;
+    lines.forEach((raw, k) => {
+      const last = k === lines.length - 1;
+      let s = k > 0 ? raw.replace(/^[ \t]+/, '') : raw;
+      let escaped = false;
+      if (!last) {
+        if (q === '"') {
+          const m = /(\\*)$/.exec(s)!;
+          if (m[1].length % 2 === 1) {
+            s = s.slice(0, -1);
+            escaped = true;
           }
-          k++;
-          break;
         }
-        out += t[k++];
+        if (!escaped) s = s.replace(/[ \t]+$/, '');
       }
-      if (!/^\s*(#.*)?$/.test(t.slice(k))) fail('unexpected text after a quoted string');
-      return out;
-    }
-    if (t[0] === '"') {
-      let out = '';
-      let k = 1;
-      for (;;) {
-        if (k >= t.length) return fail('an unterminated double-quoted string');
-        const c = t[k++];
-        if (c === '"') break;
-        if (c !== '\\') {
-          out += c;
-          continue;
-        }
-        const e = t[k++];
-        if (e === 'n') out += '\n';
-        else if (e === 't') out += '\t';
-        else if (e === '\\' || e === '"' || e === '/') out += e;
-        else if (e === 'u' && /^[0-9a-fA-F]{4}$/.test(t.slice(k, k + 4))) {
-          out += String.fromCharCode(parseInt(t.slice(k, k + 4), 16));
-          k += 4;
-        } else return fail(`an unsupported escape \\${e ?? ''}`);
+      if (k === 0) acc = s;
+      else if (s === '' && !last) blanks++;
+      else {
+        acc += prevEscaped ? s : blanks > 0 ? '\n'.repeat(blanks) + s : ' ' + s;
+        blanks = 0;
       }
-      if (!/^\s*(#.*)?$/.test(t.slice(k))) fail('unexpected text after a quoted string');
-      return out;
+      if (!(s === '' && !last && k > 0)) prevEscaped = escaped;
+    });
+    return q === "'" ? acc.replace(/''/g, "'") : decodeDouble(acc);
+  }
+
+  // ---- flow sequences of scalars, on one line
+
+  function flowSequence(t: string): YamlValue[] {
+    const m = /^\[(.*)\]\s*(#.*)?$/.exec(t);
+    if (!m) return fail('only a flow sequence of scalars on one line is supported');
+    const out: YamlValue[] = [];
+    let item = '';
+    let quote: string | null = null;
+    const push = (): void => {
+      const v = item.trim();
+      item = '';
+      if (v === '') return;
+      if (v[0] === '[' || v[0] === '{') fail('a nested flow collection is not supported');
+      out.push(v[0] === "'" || v[0] === '"' ? flowQuoted(v) : plainValue(v));
+    };
+    for (const c of m[1]) {
+      if (quote) {
+        item += c;
+        if (c === quote) quote = null;
+      } else if (c === "'" || c === '"') {
+        quote = c;
+        item += c;
+      } else if (c === ',') push();
+      else item += c;
     }
-    const plain = t.replace(/\s+#.*$/, '').trim();
+    if (quote) fail('an unterminated quote in a flow sequence');
+    push();
+    return out;
+  }
+  function flowQuoted(v: string): string {
+    const end = findClose(v, v[0]);
+    if (end !== v.length - 1) return fail('unexpected text after a quoted string');
+    return v[0] === "'" ? v.slice(1, -1).replace(/''/g, "'") : decodeDouble(v.slice(1, -1));
+  }
+
+  // ---- plain scalars
+
+  /** What a plain scalar may not look like (its first line). */
+  function checkPlain(plain: string): void {
+    if (/^[[{&*!|>%@`]/.test(plain)) fail('a flow collection, anchor, alias, tag or block indicator in a plain value is not supported');
+    if (/: |:$/.test(plain)) fail('a mapping on one line is not supported');
+  }
+
+  function plainValue(plain: string): YamlValue {
     if (plain === '' || plain === '~' || plain === 'null') return null;
-    if (/^[[{&*!|>%@`]/.test(plain)) return fail('a flow collection, anchor, alias, tag or block indicator in a plain value is not supported');
-    if (/: |:$/.test(plain)) return fail('a mapping on one line is not supported');
+    checkPlain(plain);
     if (plain === 'true') return true;
     if (plain === 'false') return false;
     if (/^[-+]?\d+$/.test(plain)) return Number(plain);
     if (/^[-+]?(?:\d+\.\d*|\.\d+)(?:[eE][-+]?\d+)?$/.test(plain)) return Number(plain);
     return plain;
+  }
+
+  /** A scalar that starts with `raw`; for a plain or quoted one, further rows are read while they belong to it. */
+  function scalarAt(raw: string, parentIndent: number): YamlValue {
+    const t = raw.trim();
+    if (t[0] === "'" || t[0] === '"') return quoted(t);
+    if (t[0] === '[') return flowSequence(t);
+    if (t[0] === '{') return fail('a flow mapping is not supported');
+    const firstHasComment = /\s+#/.test(t);
+    let text = t.replace(/\s+#.*$/, '').trim();
+    let multi = false;
+    checkPlain(text);
+    if (!firstHasComment) {
+      let blanks = 0;
+      while (i < rows.length) {
+        const r = rows[i];
+        if (r.trim() === '') {
+          blanks++;
+          i++;
+          continue;
+        }
+        if (indentOf(r) <= parentIndent || r.trim()[0] === '#') break;
+        const body = r.trim();
+        const comment = /\s+#/.test(body);
+        const piece = body.replace(/\s+#.*$/, '').trim();
+        if (/: |:$/.test(piece)) fail('a mapping value is not allowed inside a multi-line plain value');
+        text += (blanks > 0 ? '\n'.repeat(blanks) : ' ') + piece;
+        blanks = 0;
+        multi = true;
+        i++;
+        if (comment) break;
+      }
+    }
+    return multi ? text : plainValue(text);
   }
 
   function blockScalar(header: string, parentIndent: number): string {
@@ -146,7 +258,7 @@ export function parseYaml(text: string): YamlValue {
         }
         out[key] = null;
       } else if (rest[0] === '|' || rest[0] === '>') out[key] = blockScalar(rest, ind);
-      else out[key] = scalar(rest);
+      else out[key] = scalarAt(rest, ind);
     }
     return out;
   }
@@ -170,14 +282,15 @@ export function parseYaml(text: string): YamlValue {
         if (i < rows.length && indentOf(rows[i]) > ind) out.push(parseBlock(indentOf(rows[i])));
         else out.push(null);
       } else if (content[0] === '|' || content[0] === '>') {
-        fail('a block scalar as a sequence item is not supported');
+        i++;
+        out.push(blockScalar(content, ind));
       } else if (KEY.test(content) && content[0] !== "'" && content[0] !== '"') {
         // "- key: value": the rest of the mapping lines up with the first key
         rows[i] = ' '.repeat(contentIndent) + content;
         out.push(parseMap(contentIndent));
       } else {
         i++;
-        out.push(scalar(content));
+        out.push(scalarAt(content, ind));
       }
     }
     return out;
