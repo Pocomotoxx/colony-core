@@ -267,40 +267,75 @@ export interface ScanResult {
   findings: SecretFinding[];
   /** True when the text was longer than the scan limit and only its start was checked. */
   truncated: boolean;
+  /** True when the time budget ran out: the text was only partly checked. */
+  incomplete: boolean;
 }
+
+/**
+ * A rule's regex never sees more than this much text at once, and consecutive windows overlap by WINDOW_OVERLAP so that a
+ * secret that crosses a window boundary (a private key block is a few thousand characters) is whole in the next window.
+ * Some of the converted rules take tens of microseconds per character on long alphanumeric runs; windows keep one regex
+ * call short, and the time budget (below) keeps the whole scan short.
+ */
+const WINDOW_CHARS = 16_384;
+const WINDOW_OVERLAP = 4_096;
 
 /**
  * Where the rule sets find secrets in `text`: rule set, rule, offset and length of the secret. The value is never
  * copied out. A rule runs only when the text holds one of its keywords; the secret must reach the rule's entropy and
  * must not be allowed by an allowlist. Only the secrets sets are used.
+ *
+ * `budgetMs` (optional) is a wall-clock budget for the whole scan, checked between windows: when it is used up the scan
+ * stops and the result says `incomplete`. A guard that holds up a tool call must not be held up by the text it checks.
  */
-export function scanSecrets(text: string, sets: LoadedRuleset[], options: { maxChars?: number } = {}): ScanResult {
+export function scanSecrets(text: string, sets: LoadedRuleset[], options: { maxChars?: number; budgetMs?: number } = {}): ScanResult {
   const limit = options.maxChars ?? MAX_TEXT_CHARS;
   const truncated = text.length > limit;
   const body = truncated ? text.slice(0, limit) : text;
   const lowered = body.toLowerCase();
-  const findings: SecretFinding[] = [];
+  const started = Date.now();
+  let incomplete = false;
+  const seen = new Set<string>();
+  const found: Array<SecretFinding & { set: LoadedRuleset }> = [];
 
-  for (const set of sets) {
+  outer: for (const set of sets) {
     if (set.kind !== 'secrets') continue;
     for (const rule of set.rules) {
       if (rule.keywords.length > 0 && !rule.keywords.some((k) => lowered.includes(k))) continue;
       let count = 0;
-      for (const m of body.matchAll(rule.regex)) {
-        if (++count > MAX_MATCHES_PER_RULE) break;
-        const indices = (m as RegExpMatchArray & { indices?: Array<[number, number] | undefined> }).indices;
-        const whole: [number, number] = [m.index ?? 0, (m.index ?? 0) + m[0].length];
-        let span = whole;
-        const group = rule.secretGroup ?? (m.length > 1 ? 1 : null);
-        if (group !== null && indices?.[group]) span = indices[group] as [number, number];
-        const secret = body.slice(span[0], span[1]);
-        if (rule.entropy !== null && shannonEntropy(secret) < rule.entropy) continue;
-        const line = lineAround(body, whole[0], whole[1]);
-        const lists = [...rule.allowlists, ...(set.globalAllowlist ? [set.globalAllowlist] : [])];
-        if (lists.some((a) => allowed(a, m[0], secret, line))) continue;
-        findings.push({ ruleset: set.name, rule: rule.id, offset: span[0], length: span[1] - span[0] });
+      for (let ws = 0; ws < body.length; ws += WINDOW_CHARS - WINDOW_OVERLAP) {
+        if (options.budgetMs !== undefined && Date.now() - started > options.budgetMs) {
+          incomplete = true;
+          break outer;
+        }
+        const we = Math.min(body.length, ws + WINDOW_CHARS);
+        const window = ws === 0 && we === body.length ? body : body.slice(ws, we);
+        for (const m of window.matchAll(rule.regex)) {
+          if (++count > MAX_MATCHES_PER_RULE) break;
+          const indices = (m as RegExpMatchArray & { indices?: Array<[number, number] | undefined> }).indices;
+          const whole: [number, number] = [ws + (m.index ?? 0), ws + (m.index ?? 0) + m[0].length];
+          let span = whole;
+          const group = rule.secretGroup ?? (m.length > 1 ? 1 : null);
+          const g = group !== null ? indices?.[group] : undefined;
+          if (g) span = [ws + g[0], ws + g[1]];
+          const secret = body.slice(span[0], span[1]);
+          if (rule.entropy !== null && shannonEntropy(secret) < rule.entropy) continue;
+          const line = lineAround(body, whole[0], whole[1]);
+          const lists = [...rule.allowlists, ...(set.globalAllowlist ? [set.globalAllowlist] : [])];
+          if (lists.some((a) => allowed(a, m[0], secret, line))) continue;
+          const key = `${set.name}|${rule.id}|${span[0]}|${span[1] - span[0]}`;
+          if (seen.has(key)) continue; // the overlap of two windows
+          seen.add(key);
+          found.push({ ruleset: set.name, rule: rule.id, offset: span[0], length: span[1] - span[0], set });
+        }
+        if (we === body.length) break;
       }
     }
   }
-  return { findings: findings.sort((a, b) => a.offset - b.offset), truncated };
+
+  // a secret cut at a window boundary is found short in one window and whole in the next: keep the whole one
+  const findings: SecretFinding[] = found
+    .filter((f) => !found.some((o) => o !== f && o.set === f.set && o.rule === f.rule && o.offset <= f.offset && o.offset + o.length >= f.offset + f.length && o.length > f.length))
+    .map(({ ruleset, rule, offset, length }) => ({ ruleset, rule, offset, length }));
+  return { findings: findings.sort((a, b) => a.offset - b.offset), truncated, incomplete };
 }
