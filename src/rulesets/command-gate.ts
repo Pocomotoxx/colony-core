@@ -39,15 +39,65 @@ export function eventsOf(command: string, cwd: string): CommandEvent[] {
   return events.slice(0, MAX_EVENTS);
 }
 
-export async function checkCommandsWithRulesets(command: string, cwd: string): Promise<GateResult[]> {
+// ---- Windows
+
+const WIN_SYSTEM = 'C:\\Windows\\System32\\';
+const POWERSHELL_IMAGE = WIN_SYSTEM + 'WindowsPowerShell\\v1.0\\powershell.exe';
+const PWSH_IMAGE = 'C:\\Program Files\\PowerShell\\7\\pwsh.exe';
+const MAX_COMMANDLINE = 8000;
+
+/** The Image of a Windows command: a path stays as it is, a bare name is taken to be a program of System32 (a cmdlet has no image). */
+function windowsImageOf(program: string): string {
+  const p = program.replace(/\//g, '\\');
+  const lower = p.toLowerCase();
+  if (lower === 'powershell' || lower === 'powershell.exe') return POWERSHELL_IMAGE;
+  if (lower === 'pwsh' || lower === 'pwsh.exe') return PWSH_IMAGE;
+  if (p.includes('\\') || /^[A-Za-z]+-[A-Za-z]+$/.test(p)) return p;
+  return WIN_SYSTEM + (/\.[A-Za-z0-9]{1,4}$/.test(p) ? p : p + '.exe');
+}
+
+/**
+ * The events of a command for the Windows rule sets. The Image is the program (see above), the CommandLine is the text
+ * of the simple command as it was written (Windows logs the command line as one string), and OriginalFileName is the
+ * file name of the Image: the guard cannot read the name a program was built with, so a renamed program is not seen
+ * by the rules that look for exactly that. A command that hands a script to cmd or PowerShell (cmd /c, powershell
+ * -Command) is judged again for what it runs. When the host tool is PowerShell, the whole command is also one event of
+ * powershell.exe, because that is the process that reads it.
+ */
+export function windowsEventsOf(command: string, cwd: string, tool?: string, depth = 0): CommandEvent[] {
+  const events: CommandEvent[] = [];
+  const add = (image: string, line: string): void => {
+    events.push({ Image: image, CommandLine: line.slice(0, MAX_COMMANDLINE), CurrentDirectory: cwd, OriginalFileName: baseName(image) });
+  };
+  if (tool === 'PowerShell' && depth === 0 && command.trim()) add(POWERSHELL_IMAGE, 'powershell.exe -Command ' + command.trim());
+  for (const simple of splitSimple(command)) {
+    const ws = words(simple);
+    let k = 0;
+    while (k < ws.length && (ws[k] === '&' || ws[k] === '.')) k++;
+    if (k >= ws.length) continue;
+    const image = windowsImageOf(ws[k]);
+    add(image, simple.trim());
+    const prog = baseName(ws[k]).toLowerCase().replace(/\.exe$/, '');
+    if (depth === 0 && (prog === 'cmd' || prog === 'powershell' || prog === 'pwsh')) {
+      const at = ws.findIndex((w, i) => i > k && (prog === 'cmd' ? /^\/[ck]$/i.test(w) : /^-(c|command)$/i.test(w)));
+      if (at >= 0 && at + 1 < ws.length) events.push(...windowsEventsOf(ws.slice(at + 1).join(' '), cwd, undefined, depth + 1));
+    }
+    if (events.length >= MAX_EVENTS) break;
+  }
+  return events.slice(0, MAX_EVENTS);
+}
+
+export async function checkCommandsWithRulesets(command: string, cwd: string, tool?: string): Promise<GateResult[]> {
   const { loaded } = await activeRulesets();
   const sets = loaded.filter((s) => s.kind === 'commands');
   if (sets.length === 0) return [];
-  const events = eventsOf(command, cwd);
-  if (events.length === 0) return [];
+  const linux = eventsOf(command, cwd);
+  const windows = windowsEventsOf(command, cwd, tool);
+  if (linux.length === 0 && windows.length === 0) return [];
 
   const hits = new Map<string, { ruleset: string; version: string; id: string; title: string; author: string; level: string; status: string; link: string }>();
   for (const set of sets) {
+    const events = set.platform === 'windows' ? windows : linux;
     for (const rule of set.commands) {
       if (hits.has(rule.id)) continue;
       if (events.some((e) => ruleMatches(rule, e))) hits.set(rule.id, { ruleset: set.name, version: set.version, id: rule.id, title: rule.title, author: rule.author, level: rule.level, status: rule.status, link: rule.link });

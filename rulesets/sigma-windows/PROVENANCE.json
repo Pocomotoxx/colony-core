@@ -1,0 +1,3712 @@
+{
+  "format": 1,
+  "name": "sigma-windows",
+  "version": "r2026-07-01",
+  "commit": "552f3fee420ef232a8e5790c4fae591847e32347",
+  "sourceUrl": "https://github.com/SigmaHQ/sigma/releases/tag/r2026-07-01",
+  "license": "DRL-1.1",
+  "licenseFile": {
+    "file": "NOTICE",
+    "sha256": "3c664ded98454f082828eeca4d782893186c0563f9cd850caa26929fe2ef4dec"
+  },
+  "archive": {
+    "name": "sigma_core.zip",
+    "sha256": "45ccbd62cbf0d7ccca6f44eaa010f86bb24f082b5411c5e22c71907e7770ee46",
+    "bytes": 1399726,
+    "url": "https://github.com/SigmaHQ/sigma/releases/download/r2026-07-01/sigma_core.zip",
+    "digest": "sha256:45ccbd62cbf0d7ccca6f44eaa010f86bb24f082b5411c5e22c71907e7770ee46"
+  },
+  "sources": [
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_addinutil_suspicious_cmdline.yml",
+      "sha256": "12c76ba452ae792a111abde24c25ca83e4e25bc030e918e74e0fdb9c934be91d",
+      "bytes": 1659
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_adplus_memory_dump.yml",
+      "sha256": "b8666847beaaf628382df6d147ffa41ad6deac6b8f2225ccd8795a5a0eac6971",
+      "bytes": 1251
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_agentexecutor_susp_usage.yml",
+      "sha256": "964657f42295f37dd8c662cb1e341ab479f592dea3775cc90d6610ad5c563d18",
+      "bytes": 2277
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_aspnet_compiler_susp_child_process.yml",
+      "sha256": "bdc0ed035f5aa4029462b87daff9d1db4ae84fdcada5254b7408d56d7d20a7ae",
+      "bytes": 1431
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_aspnet_compiler_susp_paths.yml",
+      "sha256": "130b30e44af117be791ee00893a9878c3b3a59c9e07bfa113137de6ad0e0b2bd",
+      "bytes": 1576
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_at_interactive_execution.yml",
+      "sha256": "c6b01dd3860518dc8d521410a7a37fc6325574e3c7eb202c537cbc7593105a25",
+      "bytes": 1080
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_attrib_system_susp_paths.yml",
+      "sha256": "742b08a41f4660a680d1c200c25c1923885c6b700609b3a439cb178ea0da168b",
+      "bytes": 1808
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_auditpol_nt_resource_kit_usage.yml",
+      "sha256": "887f93bcf0c69ba6d02af492a0c3c5ccfd1e5855e71b92ee9308d4b740a00209",
+      "bytes": 1407
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_auditpol_susp_execution.yml",
+      "sha256": "7f8cb4a8250f361f33bec9eb5d20e83d04de438338eca2d6dc611236ba6a4152",
+      "bytes": 1435
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_bcdedit_boot_conf_tamper.yml",
+      "sha256": "427a4c4f4e21d1b06f0cd89e15139f38096bf903c9f471fcbd5e460314fb095e",
+      "bytes": 1420
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_bginfo_suspicious_child_process.yml",
+      "sha256": "9726c15d3ec2b113f08e301b222aa33f442cc51da9cff325eb937d5b687fe149",
+      "bytes": 1446
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_bitsadmin_download_direct_ip.yml",
+      "sha256": "cf011568f1710dd2269ef1c89c6404fb4cda75cb60575b31d607c3af38e04d1c",
+      "bytes": 1628
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_bitsadmin_download_file_sharing_domains.yml",
+      "sha256": "2c9e773df49e691397c04fd8f429bd580d6e4fb773de1a59173273483f40fb64",
+      "bytes": 3742
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_bitsadmin_download_susp_extensions.yml",
+      "sha256": "7a862f3df49d08914053529dc5cf37e22509e8ea3fc0f4fac821c3cfaf6ccf79",
+      "bytes": 2115
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_bitsadmin_download_susp_targetfolder.yml",
+      "sha256": "3a8da5214cd719fef00fcd3d081d57eac045a4fbe52dcb1cefe52406fa868387",
+      "bytes": 2307
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_browsers_chromium_headless_debugging.yml",
+      "sha256": "6bd0a8b10ef3420d2812d8cf779c6bc280900fbe509afe242f51594fb0dc6eff",
+      "bytes": 1263
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_browsers_chromium_headless_file_download.yml",
+      "sha256": "7f30d6941da81043db300c87d6cb5403aef1a94cd0065254c1a172104d2b3313",
+      "bytes": 2485
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_browsers_chromium_mockbin_abuse.yml",
+      "sha256": "9313da26c3147a7e8b4129dc635538f70a77c682b7575a7e78ba38c5f32b5a72",
+      "bytes": 1099
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_browsers_chromium_susp_load_extension.yml",
+      "sha256": "758b9cd124b80edafa45ea4c84d405bb3f42a5d5a50cff2371e7ab708f0f938a",
+      "bytes": 1438
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_browsers_tor_execution.yml",
+      "sha256": "644253272f6fbdce37cd64edecb83610b1ad236d9e249d5f6eb594d237fa82bf",
+      "bytes": 829
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_calc_uncommon_exec.yml",
+      "sha256": "6a1e4072ed3e4c14c299ebd50ed210ab83b994b9d285d8b76ab786827c05c10f",
+      "bytes": 937
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_certoc_download_direct_ip.yml",
+      "sha256": "cbe89a97c30152a6cc3013df3fb896506a7deda8766a761639d6f94c7062ffd1",
+      "bytes": 900
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_certoc_load_dll_susp_locations.yml",
+      "sha256": "6f1220dbeb50bda747ba80b924520cf5085fe8022b341344c27014065c44daa2",
+      "bytes": 1287
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_certutil_decode.yml",
+      "sha256": "8498b3ca91281489dbc9a4ea04479592d4f4535c9c841ac9b30551f49d2a0a01",
+      "bytes": 1545
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_certutil_download_direct_ip.yml",
+      "sha256": "e541e6f3383f9ab530f44b20dcee5046be96410ab9a48d78d3437ec85ea48fa0",
+      "bytes": 2836
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_certutil_download_file_sharing_domains.yml",
+      "sha256": "8a36aad4a29cf0a1cc3259b3f5a3431d9f3178ef2108d43bae0915ce7b2a290b",
+      "bytes": 3716
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_certutil_encode_susp_extensions.yml",
+      "sha256": "101a627391a63cd14ccb58ef7374dc59df7d87a8facab601e7a9a24726fe64c1",
+      "bytes": 1721
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_certutil_encode_susp_location.yml",
+      "sha256": "684dc31d915fb022506f7c2fdc2e5614ad64349591bdd925a497e402811ecfc9",
+      "bytes": 1752
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_certutil_ntlm_coercion.yml",
+      "sha256": "13fd1af3471ae068c1be0041a9903541f262c1ffdacc9a6b244ba11f05e77975",
+      "bytes": 870
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_citrix_trolleyexpress_procdump.yml",
+      "sha256": "736ddd3ccc7cc6ae1056837a36c5e59c9c282782cc081ff31431d87e7fb2ba31",
+      "bytes": 1376
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_cmd_assoc_tamper_exe_file_association.yml",
+      "sha256": "d98d35d6a6ac3561849b9c5aa7acb5ffad0ab5af9ad515479c86c6f3c9de2083",
+      "bytes": 1480
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_cmd_copy_dmp_from_share.yml",
+      "sha256": "115bcd9fc4863ddb66f9fe7afe4836a77ba0e94bbee9295cef639aeba162a189",
+      "bytes": 950
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_cmd_curl_download_exec_combo.yml",
+      "sha256": "9febe7da7a7bb4206637136fd19903ab283c65d17aed78637e8b9b1154c1df9b",
+      "bytes": 870
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_cmd_mklink_osk_cmd.yml",
+      "sha256": "52e64f4194078e3d7682b6ea39be5c2ff167eee33b7778e16a15b03bc0e232a7",
+      "bytes": 1193
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_cmd_mklink_shadow_copies_access_symlink.yml",
+      "sha256": "bc4f21ce14968b794cfb74460851cb99575fa8435dbfa1baf1ea81e77e06a06e",
+      "bytes": 804
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_cmd_net_use_and_exec_combo.yml",
+      "sha256": "f13bed6d00409c8104bfebe2934f48f9bcd9557a802e7c6bcfd1f3c2f5cfdb2d",
+      "bytes": 1158
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_cmd_no_space_execution.yml",
+      "sha256": "e670b384973fa0526946ac1bd44a3cbcbf4c7813e980623c0419bc8341f057c8",
+      "bytes": 2310
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_cmd_ntdllpipe_redirect.yml",
+      "sha256": "0451be34823f430ee4cb2716e56208e967761988b484583eebb0d160ebd2341d",
+      "bytes": 877
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_cmd_path_traversal.yml",
+      "sha256": "669fcb6d30e0b4262649ccb9225c6e5efd822472f5470894cbec33d30a07c591",
+      "bytes": 1335
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_cmd_ping_del_combined_execution.yml",
+      "sha256": "8827d95a38f78724aae8c9300ce912bed5bb912718b04a812d6cfedba992efa1",
+      "bytes": 1730
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_cmd_shadowcopy_access.yml",
+      "sha256": "b5ddfc56bfbb23e8bd0e130902413bb187a413b9d479d1d3eb39a73bee404d31",
+      "bytes": 1156
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_cmd_sticky_key_like_backdoor_execution.yml",
+      "sha256": "c93d12212bd750be2c2e932e0a75cbdc503ee98cb4a926ac0652eb0c976e3d8d",
+      "bytes": 1396
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_cmd_sticky_keys_replace.yml",
+      "sha256": "1206d0a273a0e88a1f468d1096d09e94b4e297e79defa35ba8dbd993de0d3e79",
+      "bytes": 1121
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_cmdkey_recon.yml",
+      "sha256": "10a8e786cde7411c5e3e15eec6f4996adb59840ada6dee6a7dfe0dba4faf5786",
+      "bytes": 1374
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_cmstp_execution_by_creation.yml",
+      "sha256": "bf996988a325bbf86725b2e8e01d859133abb7868fe81a584baef94c5ace8ace",
+      "bytes": 821
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_conhost_path_traversal.yml",
+      "sha256": "4f70fa71b2b03619a80bfd775557451b538fc1bbb2e2a29ac16c8b4251e98c99",
+      "bytes": 664
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_control_panel_item.yml",
+      "sha256": "1f82f3a61f2175cb5db931deff6fe461b91d9101c2373d6775612dcd0ef77fc6",
+      "bytes": 1257
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_createdump_lolbin_execution.yml",
+      "sha256": "07481416e2035d6558001f13f6fcd4b07e47975cc3934e8b2c48ef90a4543032",
+      "bytes": 1174
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_curl_download_direct_ip_susp_extensions.yml",
+      "sha256": "898556d6a633a144b8275625f183bdf15596cf574b53d06674f6cb0542abb923",
+      "bytes": 2400
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_curl_download_susp_file_sharing_domains.yml",
+      "sha256": "bb2008517e6e094a816c4ce1d3ffa8fa30436667c2195c3a1545cb60460976cd",
+      "bytes": 3774
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_curl_ntlm_hash_leak_attempt.yml",
+      "sha256": "c4e8ad87ccffbeeb5f36a4366cadb0dd6e08de35227813d9d58e7a4a2b56d0df",
+      "bytes": 1845
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_curl_susp_download.yml",
+      "sha256": "6488ac193d6c1369f4efc7de10113e6b272db296abe3bae0dc5bd5285cd0eed8",
+      "bytes": 2859
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_customshellhost_susp_exec.yml",
+      "sha256": "ecf3532694b5bc13d3be81aa1a925108d2d89a1a6e9566a647fa2693c2dd65e8",
+      "bytes": 950
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_csc_susp_parent.yml",
+      "sha256": "4077ec80a23342a852c1604f11236b6190187f1ce11b028231ec40de80333a0b",
+      "bytes": 4225
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_csi_use_of_csharp_console.yml",
+      "sha256": "d012aedb0d4066fc76cd1c118e3e380f73de9db197e0e74ea7e7e6819eaadb6b",
+      "bytes": 869
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_dctask64_arbitrary_command_and_dll_execution.yml",
+      "sha256": "fb6f606791ab2faf3e69356cd74de0fa0257ccaaf7e86b0da9c7a7e73be05ebe",
+      "bytes": 1357
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_desktopimgdownldr_susp_execution.yml",
+      "sha256": "e8856d32ad41a4c065ab0be1a4e430987d793d02f1d2c70ce42a70007b7b2cfd",
+      "bytes": 1097
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_dism_enable_powershell_web_access_feature.yml",
+      "sha256": "51de13392e2b0a9ad6328e5bfa0172d6bdefa2777d77eb53efb613d6b997f334",
+      "bytes": 1078
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_dll_sideload_vmware_xfer.yml",
+      "sha256": "5b7e74198a8af429952f99d2e5773dcce53d926c1ec25cae43685b81eebb3f02",
+      "bytes": 947
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_dllhost_no_cli_execution.yml",
+      "sha256": "0c44a117787449492bfe698d3567cefdcfc4cee42cd5fa81df5d26dff58d613d",
+      "bytes": 1087
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_dns_exfiltration_tools_execution.yml",
+      "sha256": "d3dea25464811728a353cd68d47093684772398007aa7c58cf0be17d6b3e84dd",
+      "bytes": 708
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_dns_susp_child_process.yml",
+      "sha256": "0d7c4496c2b09e2ea37abb6b8a362534952d87b8afde79c9097aa6676bcac991",
+      "bytes": 803
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_dnscmd_install_new_server_level_plugin_dll.yml",
+      "sha256": "57df00bae673b19926462e888f6ca09541cb68384ab8fff5ea2691a674a0de02",
+      "bytes": 1188
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_driverquery_recon.yml",
+      "sha256": "ee432d5858834baf3b7ad68868259d3f522ed0bf0b3daecd6855f7506d48efd3",
+      "bytes": 1431
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_dtrace_kernel_dump.yml",
+      "sha256": "eb5b30c19f08b8c7b518ab12672403b41df8ab3c88da06b435d75c4833caf961",
+      "bytes": 986
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_dump64_defender_av_bypass_rename.yml",
+      "sha256": "a42b5ffc23a8db731da5e77cf226c7983cb4b992aa460c700d78dbd059dbf450",
+      "bytes": 1194
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_dumpminitool_susp_execution.yml",
+      "sha256": "706f1d70e9bcff69432172bdb695a53029d885e92579ff4d7267e469840fa0b7",
+      "bytes": 1598
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_esentutl_sensitive_file_copy.yml",
+      "sha256": "a713616da638570e6e01497af0d0cb501b4429aca2ecdaa2baa63bf21f5a137d",
+      "bytes": 1880
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_eventvwr_susp_child_process.yml",
+      "sha256": "6038dcc5714a06bba519c49406edd7d78173ed7cf300cf07aeba59bc099d622f",
+      "bytes": 1128
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_explorer_folder_shortcut_via_shell_binary.yml",
+      "sha256": "946cfbe21c0d285db84e8536798b58aad86ce709d0baeac4c8c6547d65c795a9",
+      "bytes": 963
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_explorer_nouaccheck.yml",
+      "sha256": "0b23baaae78d9f4e331ac900c0db310354e05de5dc014b5eac171d34b791ff7f",
+      "bytes": 1040
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_findstr_gpp_passwords.yml",
+      "sha256": "918588cd1f98a01092dee6b4a0d5136cba6543a44fcf7c375e3ae1a64920c71c",
+      "bytes": 1281
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_findstr_lsass.yml",
+      "sha256": "9f046378b2567737d6e3bf02fe2cae5c7910ce00e30dd85c8e3e5fdab95b7471",
+      "bytes": 1263
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_findstr_sysmon_discovery_via_default_altitude.yml",
+      "sha256": "f57554d6754814b697859e4b8bb14989896b9c4e83962e55b032da6bd6edf0f9",
+      "bytes": 1083
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_finger_execution.yml",
+      "sha256": "0c50cac3cc6a96ad9b064d2d5e98e15f769174d457d88ba0f7b1841e27364745",
+      "bytes": 1570
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_fltmc_unload_driver_sysmon.yml",
+      "sha256": "7886d74d9883898b45473e0ab1f655b0510faab52656f50af0000550d66a9048",
+      "bytes": 903
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_forfiles_child_process_masquerading.yml",
+      "sha256": "ed5bdeed968237e53e1a7dbed423c3bcc5e6186d77a0147f2b4db8c5c48f222c",
+      "bytes": 1417
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_format_uncommon_filesystem_load.yml",
+      "sha256": "b93cbdddecf0d51df484c0f2c1b8736b75e2a525448c3ade2d141be3ebbd1fcc",
+      "bytes": 1007
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_fsutil_usage.yml",
+      "sha256": "81cd99db0548c5dc4de9cc98f5800809ef6437c16c76ee6e1c1711f6a6c8ff93",
+      "bytes": 1653
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_googleupdate_susp_child_process.yml",
+      "sha256": "32703e51c67b20e55e8937b8f8779672d58ec001224348f27ad7739fd2ab7b4f",
+      "bytes": 1204
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_gpg4win_susp_location.yml",
+      "sha256": "5ac45d8f3ab47ccce1a4c9cde4795433e270757e786036d58b038e94ad21b244",
+      "bytes": 1253
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_gup_download.yml",
+      "sha256": "0f909be6ab9d8a300300f7460003e9bc5139dc02248960befe20771d2fa5d760",
+      "bytes": 939
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_gup_suspicious_execution.yml",
+      "sha256": "58f7f1c972cf58836122827cf77a192d4ed67bd63bf66b140110cf6d426d21bd",
+      "bytes": 1209
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_hh_chm_remote_download_or_execution.yml",
+      "sha256": "776b14ebbb0d49971e0bb736bfec86b017f6d102e4b7c5f062387a3c529a4d71",
+      "bytes": 1027
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_hh_html_help_susp_child_process.yml",
+      "sha256": "4cb721eccb6e2a63e399b6a54b687ddc739985dbcc0d525fa6f9fb534dd8cd72",
+      "bytes": 1782
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_hh_susp_execution.yml",
+      "sha256": "f231c06adee451e0d209b7cbc603fbd8cabc0265f0323fbd9d2d34eafa37dcb6",
+      "bytes": 1769
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_hktl_adcspwn.yml",
+      "sha256": "0682ca91a0fb64e850703fca4cdddac009d2b3278177a604a467b474df157145",
+      "bytes": 754
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_hktl_bloodhound_sharphound.yml",
+      "sha256": "19bfcdb5b9ee758d0ff5726f3d2c141fe9574b99abb6e64d00c2e825a1763ccb",
+      "bytes": 1614
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_hktl_c3_rundll32_pattern.yml",
+      "sha256": "ac8341241bbe26f57479b3ecc491d6a17c6f9ad7c87c353f3f453dd3a1c63b65",
+      "bytes": 721
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_hktl_certify.yml",
+      "sha256": "003bcf98e93205889ba172b571f6a6a71314cc05d320e2d2b5142d388a1f3291",
+      "bytes": 1173
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_hktl_certipy.yml",
+      "sha256": "ba1ff0d2e5f412a81a653fd24a264894aa9821838ffad9620209a08471dca88a",
+      "bytes": 1718
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_hktl_cobaltstrike_bloopers_cmd.yml",
+      "sha256": "f20293eaff88484bcebd0e9c5437ba154c77fb378faaf36db569eed6063532ae",
+      "bytes": 1351
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_hktl_cobaltstrike_bloopers_modules.yml",
+      "sha256": "fe2cf059e3ac4bffaeb0ec17f4cfe8edcadb8b03dae79ea8fc249df9f4ca37b6",
+      "bytes": 1193
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_hktl_cobaltstrike_load_by_rundll32.yml",
+      "sha256": "11843d4082e5a994891f49f7dab315aadd084f536bf53f19313f3ef76ca6cbad",
+      "bytes": 977
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_hktl_cobaltstrike_process_patterns.yml",
+      "sha256": "6de1df3583feec2e612cd413230663a9e7734ecbdb90c96d09a91adbdeb1bc10",
+      "bytes": 1316
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_hktl_coercedpotato.yml",
+      "sha256": "9f8686c8b3d0dd472d64f9232902c9d31ce68135c18c26fae9be349bda645552",
+      "bytes": 964
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_hktl_covenant.yml",
+      "sha256": "a90c6c33d909a1e42b3cb9e6fa8fc1e6855ba33e26493f16917fe32d04a7be12",
+      "bytes": 1006
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_hktl_crackmapexec_execution_patterns.yml",
+      "sha256": "2fd0b402ad197e0525ee2d61628033b3eeddb0d2556369f75f284ebe59cfb829",
+      "bytes": 1553
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_hktl_crackmapexec_execution.yml",
+      "sha256": "cd0fb11145f5760d4098bc792433caf538d351e6296fea2af6761d37e938f33e",
+      "bytes": 2270
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_hktl_crackmapexec_patterns.yml",
+      "sha256": "fcdd8f20efd40a8c93334ed32b9e18f6d5b17278d0ccddfc56cac7e8e607073e",
+      "bytes": 1331
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_hktl_crackmapexec_powershell_obfuscation.yml",
+      "sha256": "2930e5798428d3c325c19393d148906e2edf87c868aac0ea2c2b1eeb4605164a",
+      "bytes": 1268
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_hktl_createminidump.yml",
+      "sha256": "90376199433943441ce826038404996ca779aa49ee55729a920bcc9bc121bc1a",
+      "bytes": 830
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_hktl_dinjector.yml",
+      "sha256": "4f962c01ba3324c83d7d4d4047a595a003c52f9f69ed0f26604c6e82cf5c5306",
+      "bytes": 742
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_hktl_dumpert.yml",
+      "sha256": "d2335a358a2acacd3f8ee194e8957195dba9c93106b53b13da9a02cb5ed089f8",
+      "bytes": 765
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_hktl_edrsilencer.yml",
+      "sha256": "a50b675a6c02852f8dd4fd0a64358322ce5b880cc6baccc9c757b26222ee214b",
+      "bytes": 789
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_hktl_empire_powershell_launch.yml",
+      "sha256": "c07f78a61ca91483c50399e74bab4793f5d5d49e872c413c62fe3e728cc17806",
+      "bytes": 1403
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_hktl_empire_powershell_uac_bypass.yml",
+      "sha256": "c1b0775e18f5db8e15314a4b5af978e03cb578403eb9e23b85252eee6a4794bd",
+      "bytes": 990
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_hktl_execution_via_imphashes.yml",
+      "sha256": "bce3a7bc291d0eb5fa7be11267997f9feca0ecfce8dca8f59ad10d24ec590ecc",
+      "bytes": 6667
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_hktl_execution_via_pe_metadata.yml",
+      "sha256": "16ae7b9fdbd1678185051ea46b8f92c7772c3a109bebd60d41ec6d56ad9a3ceb",
+      "bytes": 954
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_hktl_gmer.yml",
+      "sha256": "79049eb964eb1ae3cbd775278949d28970454ce1904e6344b1484c5884b026fc",
+      "bytes": 806
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_hktl_handlekatz.yml",
+      "sha256": "feee4522408cd82facb7f82fb270db806f197c89c1ca5a0c4fd77e215462998f",
+      "bytes": 1107
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_hktl_hashcat.yml",
+      "sha256": "0b90be323857eeef0897481ed5047028097c6f353383ca58f21ad4f4553ccd4d",
+      "bytes": 947
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_hktl_htran_or_natbypass.yml",
+      "sha256": "c96598021631f20bcd2f5b6ceb785c77571e905c82a49181606bc784a48051db",
+      "bytes": 792
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_hktl_hydra.yml",
+      "sha256": "c45843063a8dc6a10a028e337fd59800154a7d78a5c24ec4620c517c7f4b6b67",
+      "bytes": 773
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_hktl_impacket_lateral_movement.yml",
+      "sha256": "7cbff6f540a01c19a171e61cd3b15088eced4bd78018df83447cb97242017828",
+      "bytes": 3192
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_hktl_impacket_tools.yml",
+      "sha256": "516eebfdfbe1a707df54b5f32b9bbbddf5a8411fa38281050578b7277c2e4468",
+      "bytes": 2704
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_hktl_inveigh.yml",
+      "sha256": "e842fae7e1f621e75d54a04753e3758341f5c1e45ed6c4c99c13472cce85cdb9",
+      "bytes": 991
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_hktl_invoke_obfuscation_clip.yml",
+      "sha256": "b43bfec3a6a788bef77f78affdb34783e17002744019976d4e5d980a7b6684e2",
+      "bytes": 2044
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_hktl_invoke_obfuscation_obfuscated_iex_commandline.yml",
+      "sha256": "420f6e1e15375b88b54297e270b67e8a80173c07afdd5dc009fc21e272c164db",
+      "bytes": 1228
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_hktl_invoke_obfuscation_stdin.yml",
+      "sha256": "b906bbac20e5987144deae763c33e62d4f125ccf469b17714bca21c7f0e79025",
+      "bytes": 988
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_hktl_invoke_obfuscation_var.yml",
+      "sha256": "9442ed3a32b6c21374f1ab4e6c8a4d1bab90118de2bf281c4cc670ed2c513ea2",
+      "bytes": 1473
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_hktl_invoke_obfuscation_via_stdin.yml",
+      "sha256": "35b8347033e5e9168b1730a7fc77a99f08c0ec406d801686de2716bb8fee560f",
+      "bytes": 643
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_hktl_invoke_obfuscation_via_use_clip.yml",
+      "sha256": "493b15801c9c79da93433b9553a5c89795e62486e48e0d5b720715de13c49085",
+      "bytes": 2042
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_hktl_invoke_obfuscation_via_use_mhsta.yml",
+      "sha256": "20b0b6a7209c5fd7998ff797fe119812283dc12c3fe1d81482ba56deb983f0b0",
+      "bytes": 748
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_hktl_invoke_obfuscation_via_var.yml",
+      "sha256": "2a6949cf56af790826309606e032d04603c24fb53a8f2671dc39732ec23de50a",
+      "bytes": 1869
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_hktl_koadic.yml",
+      "sha256": "4fc39d270a6162dfb33167e44a31380784ed95962898714d95becb9dbed9645c",
+      "bytes": 982
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_hktl_krbrelay_remote.yml",
+      "sha256": "695cb3ea43c5dc99267ebc20f821b16a78719c88e8eb34d5bed08eba01a14b1f",
+      "bytes": 2622
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_hktl_krbrelay.yml",
+      "sha256": "be1b625ee811582df702d77bd85c83dc266df63d7f15204854bce2ea10c21f91",
+      "bytes": 1031
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_hktl_krbrelayup.yml",
+      "sha256": "b372fd00467c5660b8060a415bed56f0c764bfbcdff387463cff9c846359505e",
+      "bytes": 1192
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_hktl_localpotato.yml",
+      "sha256": "88371aa1f9c11350ca9f01b647f55e2d98eca53f81b3216327d34cc64bd97c6a",
+      "bytes": 999
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_hktl_meterpreter_getsystem.yml",
+      "sha256": "88fe73438af18fbe00d308b30f9fde8d9873b18f76ca5f259d599b2459d9ff71",
+      "bytes": 1793
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_hktl_mimikatz_command_line.yml",
+      "sha256": "0d99e0cc6a68f36cd98166850faaf28c12fb5334235f3bb4f8d854042c10db66",
+      "bytes": 1751
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_hktl_pchunter.yml",
+      "sha256": "c017c7f9b000c23c67c32d7c6a8d3ae7403983ad8e266b9d2b14cf79dd0a1a09",
+      "bytes": 1728
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_hktl_powersploit_empire_default_schtasks.yml",
+      "sha256": "23ba3e795c8d8f7806e51816f76f5c2c44e64f32bd6d07bbec896bfed9290c1d",
+      "bytes": 1344
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_hktl_powertool.yml",
+      "sha256": "ec9670b7d567c8809411cefbe3a7c100a95040ebc53dc7517191eaeecf7e6a59",
+      "bytes": 1097
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_hktl_purplesharp_indicators.yml",
+      "sha256": "53aa28d6f7c6631e8aca78b946f39b068edc9aea4ca4738c4d25657f53463275",
+      "bytes": 734
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_hktl_pypykatz.yml",
+      "sha256": "36f7b3a60daa510a75cc63c7dda2486004ead49d22b1707f1925a0efe1a25672",
+      "bytes": 1005
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_hktl_quarks_pwdump.yml",
+      "sha256": "9128e06bc7df4d234d48ed2c688e880c9c3a2f7a4dec1843c6cc860cf0dda865",
+      "bytes": 989
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_hktl_redmimicry_winnti_playbook.yml",
+      "sha256": "d5a3582528277927ec6ea8d5ec805e110f2274c59bb825b84fe71a1f340d9d02",
+      "bytes": 827
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_hktl_relay_attacks_tools.yml",
+      "sha256": "dbf10f3b3b6846b04c9d3d17479122b37996879eafbd036e95760e7e388dadbd",
+      "bytes": 2219
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_hktl_rubeus.yml",
+      "sha256": "47558b7a25f2292e1371f32c41d380f723a7e15efafa402b3103defbf9e16c29",
+      "bytes": 1480
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_hktl_safetykatz.yml",
+      "sha256": "de63afa9285f104a09296a1f01dbabae0ea8aaac4b3fa278e5ef2de75f22b179",
+      "bytes": 689
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_hktl_secutyxploded.yml",
+      "sha256": "616cfbda2691a7e23d534547f4c28468607aa8accd4378130646732808f1054b",
+      "bytes": 790
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_hktl_selectmyparent.yml",
+      "sha256": "b31513d09091a15c8c32a17ed5130879f6b37071d627b5f4adc971e997a22be8",
+      "bytes": 1753
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_hktl_sharp_chisel.yml",
+      "sha256": "2dff6022e56e33c75a94ff44a847b059620b1f97a0b077f87512daae002555f8",
+      "bytes": 899
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_hktl_sharp_dpapi_execution.yml",
+      "sha256": "fc5e3999328e3b856b2ff2a11f9d08b5ac5676bd3a179564949d42ab1a9a042c",
+      "bytes": 1476
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_hktl_sharp_impersonation.yml",
+      "sha256": "da284bc1c676078d0bc4b774fbfe5cd169fa739560017d67de87559f12a76166",
+      "bytes": 1325
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_hktl_sharpersist.yml",
+      "sha256": "67e974eda4c7a7440f384a5ea27f6c6aec782710b12369bcdd09a6825b351b11",
+      "bytes": 1247
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_hktl_sharpevtmute.yml",
+      "sha256": "5bd3d659be12dbb0b23e4f5178a59c46dfe1f52767b4965e007dfb36fedc6a5d",
+      "bytes": 812
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_hktl_sharpldapwhoami.yml",
+      "sha256": "bf0a9e66f402358eae2a0021cb57557c8154c8fc4d6ccb851813169cc7fbd692",
+      "bytes": 1052
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_hktl_sharpmove.yml",
+      "sha256": "cb447c0f6a7a56471af79a26ad864da49d78e21e6acffb80a332bb557867f697",
+      "bytes": 1340
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_hktl_sharpup.yml",
+      "sha256": "c75bf5e882dca393453b900af21842c002518eaba4889c664343105afeeaf4f1",
+      "bytes": 1042
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_hktl_sharpview.yml",
+      "sha256": "da107f480a776ef25bc006d2171a5ac6564881c46c924b9885e9ed5921358b98",
+      "bytes": 5606
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_hktl_sharpwsus_wsuspendu_execution.yml",
+      "sha256": "ac6432a60c71aed4dc2633f0694a5175f1dbdd41051bc53ea87b258e9583f0d8",
+      "bytes": 1564
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_hktl_silenttrinity_stager.yml",
+      "sha256": "dbc8710dbdf0ca760a9e911f4aa1bbd213bc70aabf73a481d6c4c618eb5c732a",
+      "bytes": 650
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_hktl_sliver_c2_execution_pattern.yml",
+      "sha256": "2db446085af28e4d1beaaebd9aa1a49b3ee8e04b8c22551fa5e5d60574bb0b47",
+      "bytes": 917
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_hktl_soaphound_execution.yml",
+      "sha256": "65d504e7bceda074481b5185d65e12bab1ee0fd24b496bcbcbe33f01520be1ea",
+      "bytes": 1029
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_hktl_stracciatella_execution.yml",
+      "sha256": "4e695fa2e70993978daf43138a47e5e01e880b5dc5c1fd4a54e3fa3383db67dc",
+      "bytes": 1021
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_hktl_sysmoneop.yml",
+      "sha256": "b242a67a74b0d224c4aa72a21a1e97df8bd11904c56dc02b5da0e98a1405cccd",
+      "bytes": 774
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_hktl_trufflesnout.yml",
+      "sha256": "98be6ca99caa64a252d047f3fc8f580f78e814b5d5a64283fd3f20bf16a81f37",
+      "bytes": 916
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_hktl_uacme.yml",
+      "sha256": "ee8c562f925a99754b3653dd04f629ba4d59de99d05f08fb1a463848378164fe",
+      "bytes": 1752
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_hktl_wce.yml",
+      "sha256": "9524ba6de84a8e5706f2ee8b347df6b934e71d8da9da15e61f7f2ec52dc4b805",
+      "bytes": 1462
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_hktl_winpeas.yml",
+      "sha256": "8cb0a27037e870b40f94066fd8cc994cada53fe80c89eafeee677fcb399d6c3d",
+      "bytes": 1913
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_hktl_winpwn.yml",
+      "sha256": "b6b608fd792275933eaefcd3782186f69b7e37c5487e1b07efd419afd835fdf0",
+      "bytes": 1407
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_hktl_wmiexec_default_powershell.yml",
+      "sha256": "99234b03e15f980323110d51b931b2dda6e8a13147d914b5d9db8c500391b4ce",
+      "bytes": 702
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_hktl_xordump.yml",
+      "sha256": "b160cddb835eb9300fd17cc1314974cc065c9bd5406a631436281c623bfaba66",
+      "bytes": 816
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_hwp_exploits.yml",
+      "sha256": "8362e5730a725fc743cf15b1dff9042dce435de762b20ad6334c67139eaf1d9e",
+      "bytes": 1102
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_ieexec_download.yml",
+      "sha256": "dffa13ab8a736a1d59bc16e9f9a884b4ea41d3b39ef710705204ab2240f64d14",
+      "bytes": 756
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_iexpress_susp_execution.yml",
+      "sha256": "5319410ec73a2f15e7702d6591ec5334a42775badd9679d7edb056ebacd4440a",
+      "bytes": 1742
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_iis_appcmd_http_logging.yml",
+      "sha256": "db0b1bba28a4207a9c8164753fa28d4d44d482c363208b60bf24964cc10869eb",
+      "bytes": 919
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_iis_appcmd_service_account_password_dumped.yml",
+      "sha256": "5abefddd79de2632166d22181b560b6038181696604d8ff84a7d3c78b8a9fe01",
+      "bytes": 1747
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_iis_connection_strings_decryption.yml",
+      "sha256": "3b8eebfa541aab0fd8f4875f8472b5d39a9ef1a7e7b7eef8b7e0cd32d2765518",
+      "bytes": 1010
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_iis_susp_module_registration.yml",
+      "sha256": "80d9ab61b3c1cb1c03ba741a77ac6e41600e95dc81405969ce4c683035ecf4d5",
+      "bytes": 1068
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_imagingdevices_unusual_parents.yml",
+      "sha256": "7fba8aa8016f30722bca138af81bbf687774542223c0afbdb5b822dbf3bec8f3",
+      "bytes": 1010
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_imewbdld_download.yml",
+      "sha256": "3fe7cc7cec558655dd44b96ab610d64d76702b4e96e16446d4729905a7b64fd6",
+      "bytes": 1067
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_java_keytool_susp_child_process.yml",
+      "sha256": "196f42db5d80c34c4abc05e18ebf35145460b8da471fa21d63b63144a1d1a097",
+      "bytes": 1500
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_java_manageengine_susp_child_process.yml",
+      "sha256": "1c1e5629d72dfd1c191d5370b869e02d0e80fc7c49b4bb65edef9bbcbd7fd418",
+      "bytes": 1966
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_java_susp_child_process.yml",
+      "sha256": "a67427054c323d2dfc3df9fa7f233a945ce9d19a1f38b30ebc3c459a254bea7f",
+      "bytes": 1613
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_kavremover_uncommon_execution.yml",
+      "sha256": "2f491759a2a3f5b1c02ecbece4a4f6cb04a091da42ee4e611cc8faecbc3942a1",
+      "bytes": 990
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_logman_disable_eventlog.yml",
+      "sha256": "44fd5e2f773bd6ea70090b8ef5c017433e8b70a73078573f085922a7346d7d6a",
+      "bytes": 1219
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_lolbin_devtoolslauncher.yml",
+      "sha256": "39366e87dfe170d334f81768d22fa8d96d4313813dc40bcd6f517c19103a9157",
+      "bytes": 768
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_lolbin_manage_bde.yml",
+      "sha256": "a664bfde3703792f4cbb4654cb7e4dc3cb3d5f21ee48e5d5e39be6a1af8cbe76",
+      "bytes": 1390
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_lolbin_mavinject_process_injection.yml",
+      "sha256": "ec000bd3c05ac0073221eea13615cd91986fee12261deb132add7bb18f5e01c8",
+      "bytes": 1585
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_lolbin_mpiexec.yml",
+      "sha256": "e1be2d0b00363623170c21fc90d1e82a73886ccfd22ec34535c6991ec09f797d",
+      "bytes": 919
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_lolbin_openwith.yml",
+      "sha256": "a0681d37191157d8e151030e8a10eff1f4f1dfa33c7749e148ad7e6aab59c944",
+      "bytes": 728
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_lolbin_pcwrun_follina.yml",
+      "sha256": "9387b8dc338ac0e94a534447a1f6ec82acea228d92c8ab4a455097cc3bb380fd",
+      "bytes": 693
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_lolbin_printbrm.yml",
+      "sha256": "efbea052bf037ecdaac18ef9da23bb125b9a2ba096bc108b0e19b2fcb7edb0b5",
+      "bytes": 750
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_lolbin_settingsynchost.yml",
+      "sha256": "3733ee17485c07d04f18ad2238d20d1d7bd2bceabda3948058f0d0b99f8d6810",
+      "bytes": 921
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_lolbin_susp_grpconv.yml",
+      "sha256": "ac388faa2bbd6a851693ae98811b2faf0d90319aaa9791adc921b8d0cb5803c7",
+      "bytes": 700
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_lolbin_tttracer_mod_load.yml",
+      "sha256": "4d2ecb961faf6234fd03217e8b15de1551cf3e6d5c4cf516bbf9c37e17eb2411",
+      "bytes": 975
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_lolbin_visual_basic_compiler.yml",
+      "sha256": "0ae98263ac0d53d7c3e361e1b8b7dcf7ca0d482da84a0066d3f213d735221013",
+      "bytes": 751
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_lsass_process_clone.yml",
+      "sha256": "74982f215f0649b319eec4f43d1d6c4e613dd9465e1ecea727124011c78347a0",
+      "bytes": 902
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_mmc_mmc20_lateral_movement.yml",
+      "sha256": "ea8da56322dd9721979a08fb399006a4a8b9343eb86ec8ee19a7e985dbd788fe",
+      "bytes": 945
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_mmc_susp_child_process.yml",
+      "sha256": "b2aa759a85c32558617e8aaaf699023ea3bff776f8efee4f18dc1b60f5a4b5f5",
+      "bytes": 920
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_mofcomp_execution.yml",
+      "sha256": "bd46719d891e2496bbc5f2b416ee7ba9659ac2026aa842a1b9d12e5c05a45046",
+      "bytes": 2059
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_mpcmdrun_dll_sideload_defender.yml",
+      "sha256": "6ef8f08041dba331d131e697ce08ab0531a66300136c4d4afa7fdc377740cf80",
+      "bytes": 1285
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_mpcmdrun_download_arbitrary_file.yml",
+      "sha256": "0678de9bf9094fbaa679603e9bd0f58be55a8caed768c7d72fff29ba7b34e083",
+      "bytes": 1012
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_mpcmdrun_remove_windows_defender_definition.yml",
+      "sha256": "5bd66d4e59e9c46acad57f7245e611f37d0d81d65f721ec81125a6f22f9f6c87",
+      "bytes": 974
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_msdt_answer_file_exec.yml",
+      "sha256": "c95cde04afe98fb2e204d1c949b5c6589b3605b6de5a8205bf96a9e155fcb43c",
+      "bytes": 971
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_msdt_arbitrary_command_execution.yml",
+      "sha256": "dd9c9b91d3ac405f5fe56415e1c52f784d7d29377d256cb652978f474dbbcc91",
+      "bytes": 1175
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_msdt_susp_parent.yml",
+      "sha256": "100478f21a9a17f85c2ae2e4a50bafee9b0688ecd3565560b7266b1d426d0d3f",
+      "bytes": 1174
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_mshta_http.yml",
+      "sha256": "d5af7276f3248ae81e0521b1cd97c9f363a05482744b1b3a223dd459ed9b7921",
+      "bytes": 986
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_mshta_javascript.yml",
+      "sha256": "ec912420cfc61a7251c61eb010a02d4e289b73168ec2d4f9b7d8ee1bc75294ce",
+      "bytes": 900
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_mshta_lethalhta_technique.yml",
+      "sha256": "ae3e9490298fddd92b090c7b1c5fdc7f4867a53f50168271606159eaa9b9fa04",
+      "bytes": 634
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_mshta_susp_child_processes.yml",
+      "sha256": "8a32fc6f6030da48f4e22446d7446ffb85b7801158ec204e4659a657ecc44380",
+      "bytes": 1378
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_mshta_susp_execution.yml",
+      "sha256": "67d76c24526db9dadbacb2086115a62b5f6364a39a0d8197de96d6fb738b9774",
+      "bytes": 2671
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_mshta_susp_pattern.yml",
+      "sha256": "cbae50ef58ad72a5f1c675f5cf64cab9453b81337a424282287cdf077b611ba7",
+      "bytes": 1664
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_msiexec_masquerading.yml",
+      "sha256": "ad392f27a214b730fad78cc75cebb1efcaba6fe5a073bdf99eaa8b28feb3ce93",
+      "bytes": 773
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_msra_process_injection.yml",
+      "sha256": "bf0374a75e52d4dd6b415f009afc3c914132349ec17c99403b0dddab01245c1c",
+      "bytes": 1258
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_mssql_susp_child_process.yml",
+      "sha256": "312c99d3a33647846c3a8bc63c0824649864aeb4c1f7b3d962de8add73bc46bd",
+      "bytes": 1512
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_mssql_veaam_susp_child_processes.yml",
+      "sha256": "de6839a8e56c0b5e8661989c64f8be411c814739db565f8a53930e6641571041",
+      "bytes": 1533
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_mstsc_rdp_hijack_shadowing.yml",
+      "sha256": "5ee428e9ecfb4a897249ad1a53d1b7cc23382cb71efa79cd57423e94613b416a",
+      "bytes": 742
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_mstsc_run_local_rdp_file_susp_location.yml",
+      "sha256": "681f4be280bed39e89566513c09c54d6ad4901acfaa9e91af903857ca356e945",
+      "bytes": 1599
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_mstsc_run_local_rpd_file_susp_parent.yml",
+      "sha256": "1b544d4f23342c16a29840fb69b59d6beff69afc7578212da3db9cb9380898f7",
+      "bytes": 1312
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_msxsl_remote_execution.yml",
+      "sha256": "5a3611eed383821871e48ff3830a21ad7cb144f3a2226db424de8d2dac88b12c",
+      "bytes": 866
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_net_use_mount_internet_share.yml",
+      "sha256": "0517c3df94cc6d8cc0fbcbd8a1a3745ab7e88e8d97ed9861457ce6b157a9e1f6",
+      "bytes": 877
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_net_user_add_never_expire.yml",
+      "sha256": "9070224d4323df03f66f8209c0ccbfc793ee95436041a079990dfb73533be489",
+      "bytes": 973
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_net_user_default_accounts_manipulation.yml",
+      "sha256": "a2d722d2b488bc3b8ddd6746f66687a3ee7d08fd7f41e99bccbcc4334b6cc363",
+      "bytes": 3068
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_netsh_fw_allow_program_in_susp_location.yml",
+      "sha256": "fbafbe5395a6ed7144b4e0b1171fab1837c3bfe7d0dd042c07ac7f472549ea5e",
+      "bytes": 2058
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_netsh_fw_allow_rdp.yml",
+      "sha256": "6be0f52f73270fb5a005ce7e4abe4154659a66625d86ccfa02a8652978a18288",
+      "bytes": 1155
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_netsh_port_forwarding_3389.yml",
+      "sha256": "82abf77a8f6724b51c95ef8bb43365d4394d8bb0c2750f026538273b270e7b19",
+      "bytes": 922
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_node_abuse.yml",
+      "sha256": "ececbcaa16d2cce77a642a813281c63d874702e3b6b5f5a3e08f5541806482a3",
+      "bytes": 1336
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_nslookup_domain_discovery.yml",
+      "sha256": "c055725b85cc3863e0238d3d2493cce8543e6f1cd62db1ce0afc53e909f959d2",
+      "bytes": 755
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_odbcconf_driver_install_susp.yml",
+      "sha256": "0cd79af0ced870c1fc8f82f44ac59668994b446c3e5bd56c3e2583a63c669791",
+      "bytes": 1221
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_odbcconf_exec_susp_locations.yml",
+      "sha256": "16d41440cd7294abf2da0565914bb4a0c0e66c7b7c69b5f6916de5fa380087e9",
+      "bytes": 2022
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_odbcconf_register_dll_regsvr_susp.yml",
+      "sha256": "7e264e2697a9307f371cd4e9079ca43c3210fe4808afc0cd1ec02bd9400fa662",
+      "bytes": 1253
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_odbcconf_response_file_susp.yml",
+      "sha256": "424eaab0054105f1fc3524076820e1dbbfa27adeda0db06300421489f7815301",
+      "bytes": 1532
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_office_arbitrary_cli_download.yml",
+      "sha256": "a39760c54ac4383232160b337eacc5882f9fc34345b2d4a10557fa176edbf8a7",
+      "bytes": 1308
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_office_excel_dcom_lateral_movement.yml",
+      "sha256": "2bef8500cbf1f44ecbcfd46c95b092165c3aa09e7c93002b85393d14e35ee56a",
+      "bytes": 1093
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_office_exec_from_trusted_locations.yml",
+      "sha256": "d51d62d8ce6fb3a71ac34eb66c2d4f91d7a9debfe6b29abf96251ca02cd11b21",
+      "bytes": 1998
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_office_onenote_embedded_script_execution.yml",
+      "sha256": "7de9483cb42ea286fd560d06982267ee87f99ee89f07b201fe2005df66959e57",
+      "bytes": 1042
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_office_onenote_susp_child_processes.yml",
+      "sha256": "ac740ae201bb030e4d404591b6163dbf22f5ea7adba1fabac2ffdbbe867bc53e",
+      "bytes": 4211
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_office_outlook_enable_unsafe_client_mail_rules.yml",
+      "sha256": "b76cfc00251715a21747f3f48a4764e9d3a0369a48aa7a997a94206fd0cbdc23",
+      "bytes": 1239
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_office_outlook_execution_from_temp.yml",
+      "sha256": "0a3f93739a8da449750e56943bd8bfdc590a18a658e4c7807534e9d4bdda3291",
+      "bytes": 582
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_office_outlook_susp_child_processes_remote.yml",
+      "sha256": "842d9d854cd0d337d6a1f9acc7b01f99b3c3c6faf5b8dca8bde8d92374ee4bbc",
+      "bytes": 1060
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_office_outlook_susp_child_processes.yml",
+      "sha256": "e29b56538de711aa8b082c6ffbe263dc39b2d839098eab4122c3d970e7c3890e",
+      "bytes": 2759
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_office_spawn_exe_from_users_directory.yml",
+      "sha256": "0ed895a7f7b19049f40f6e208730e072eaac658f6ee3578fa240395da8dcf86b",
+      "bytes": 1203
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_office_susp_child_processes.yml",
+      "sha256": "346e43a68093c87fc0350a1021fd8b22887e928bf6dd9c9caa72ffd37521fca9",
+      "bytes": 5183
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_ping_hex_ip.yml",
+      "sha256": "0837212b95716d60754f23caefa739a7e44c99e2bdaa4e2397ba00252d078267",
+      "bytes": 768
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_plink_port_forwarding.yml",
+      "sha256": "2870dc6a4e656e13a9fc7a64223266facdb8f08a40827aeeba9d14c0c84b2292",
+      "bytes": 882
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_plink_susp_tunneling.yml",
+      "sha256": "9a20c0263b721009d750791e382fc8d97beabc76f4d8e0b0b90c00f156db0536",
+      "bytes": 989
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_powershell_aadinternals_cmdlets_execution.yml",
+      "sha256": "93a402a54da50a1a2395cc769b38285ac1ad86207edeb024cfc8381a73021337",
+      "bytes": 2223
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_powershell_amsi_init_failed_bypass.yml",
+      "sha256": "454a6ee07a70cf8c74e333f89a2acaf62c8c9fbff6783e8429303778114457f1",
+      "bytes": 1007
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_powershell_base64_encoded_cmd_patterns.yml",
+      "sha256": "73510cf74d7c6445509f75194575e55ed6b8319260c1e0f631640f06ab5a9748",
+      "bytes": 1429
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_powershell_base64_encoded_cmd.yml",
+      "sha256": "d09f16965f8a5d45ddbfc0cf62a393753aefe90854ea10cbde017f65d138322f",
+      "bytes": 1455
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_powershell_base64_encoded_obfusc.yml",
+      "sha256": "1991071a79d4fe24d85e77c827079cc14c06f79336e5c5c2e2256baf783b7f49",
+      "bytes": 1881
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_powershell_base64_frombase64string.yml",
+      "sha256": "b1945e32d381f1293be6d91e44e4472c9a208f7da9338b3cebda2901176a31a9",
+      "bytes": 888
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_powershell_base64_hidden_flag.yml",
+      "sha256": "b4d024a513d7af863cdad4bdabe0855005de1a1a8cc5cdd41e134a71f0ee7f8d",
+      "bytes": 2937
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_powershell_base64_iex.yml",
+      "sha256": "7d2d5e96ae03d6a5798f5bc3fa80190849826288a2f32ced56cea7cb31ea62fe",
+      "bytes": 1299
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_powershell_base64_invoke.yml",
+      "sha256": "e6ad822eccdf3f7c3f0b6f6244251cbc2d8570ccb94ed02f1134c0fbc43b46be",
+      "bytes": 1551
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_powershell_base64_mppreference.yml",
+      "sha256": "e7ce2f3545919f5f03bd0e0481e578b5b1f61a19a98cf08ce6333d4357bd9e3a",
+      "bytes": 1877
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_powershell_base64_reflection_assembly_load_obfusc.yml",
+      "sha256": "97df99302b8e26966b8279faebd996bd3937188d81ddda19e4ed68929ebf3fab",
+      "bytes": 2037
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_powershell_base64_reflection_assembly_load.yml",
+      "sha256": "e21ad44fa75e14737ee876428435d8fe5f2be5eeba12219ecef79baa54ea1756",
+      "bytes": 2177
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_powershell_base64_wmi_classes.yml",
+      "sha256": "8cbaac4bf02c07046bee961f7190b5f70d2fba38f260121f56adb5104b2aa987",
+      "bytes": 2878
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_powershell_cmdline_reversed_strings.yml",
+      "sha256": "818ee3163046778cad6f1cbab391361d9c4bdefbfd514db08896b614e2f01794",
+      "bytes": 2000
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_powershell_cmdline_special_characters.yml",
+      "sha256": "f0d498c97c676400730442fd44eb2f3cbc5a8241dc88453f916e0e7c0da6f9e3",
+      "bytes": 1548
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_powershell_decrypt_pattern.yml",
+      "sha256": "c30abd5e6be8a6d4ee7802dce892718bc6ffc7cd7b058aee38ab9f376ef9e97b",
+      "bytes": 1463
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_powershell_defender_disable_feature.yml",
+      "sha256": "80b8041fa2117d205c851721f03e1f744b1dba94ff9e3d7b11dbdb850530076f",
+      "bytes": 4474
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_powershell_disable_defender_av_security_monitoring.yml",
+      "sha256": "02441fc165285c1cad57396befd36e0f7e5ea17e824c94f3fbfc48d96dc788ee",
+      "bytes": 1952
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_powershell_disable_ie_features.yml",
+      "sha256": "c53122e979d0fb360ecc94c9baca86fe3460be22fba9812361e91dd432c7d4fb",
+      "bytes": 975
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_powershell_download_cradle_obfuscated.yml",
+      "sha256": "4094b2697ae355e344a80c9a3259fbf82a5e7b9b077eaf77e2f0367a8190384e",
+      "bytes": 1088
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_powershell_download_iex.yml",
+      "sha256": "cc1e5ca6a2125a3271c151a7cab695f4f906a320ac1acc80324323d390d6be8c",
+      "bytes": 1310
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_powershell_download_susp_file_sharing_domains.yml",
+      "sha256": "5e8dd5a4684f1eed6ffadc9ded0bbcf080b40978a35daeab36621b2301af678f",
+      "bytes": 3428
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_powershell_dsinternals_cmdlets.yml",
+      "sha256": "ac67710fc3f7bef327a9c78a3d34b7952836e3ae74d585478013d9c7011ea42e",
+      "bytes": 3727
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_powershell_email_exfil.yml",
+      "sha256": "d08c782600acbc64fdf9e6908bd710ab0db628234fba457e43112e36942bfa3a",
+      "bytes": 1069
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_powershell_frombase64string.yml",
+      "sha256": "66a4fcf31220cd42a87b6d713a2e23ee0ebc7b05e3ea0ffbf5b1de766a92e16b",
+      "bytes": 736
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_powershell_getprocess_lsass.yml",
+      "sha256": "c8ca81f126d160832f93ae3e18745b9d365e311bc26596cd5f12b7c88d1c29b3",
+      "bytes": 814
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_powershell_hide_services_via_set_service.yml",
+      "sha256": "20d2609b4339990714325784c9647aa637abb8d5c330ab8e1fee0686d29f8591",
+      "bytes": 1630
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_powershell_iex_patterns.yml",
+      "sha256": "7e144560eb1c8c65a7e728842d128a12eb2ff6375a5a0c481b1703247ee0c852",
+      "bytes": 1453
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_powershell_import_cert_susp_locations.yml",
+      "sha256": "39f604125a72aa5ed5a30c6b2f9d05c05e9255b2800d076a66800d23931b81d6",
+      "bytes": 1143
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_powershell_invoke_webrequest_download.yml",
+      "sha256": "0c9f9c712230b6c9ca0bc166b01d9475c6669f51ed0fd1717fadf2884f0f99bd",
+      "bytes": 1612
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_powershell_mailboxexport_share.yml",
+      "sha256": "a2b9aee75e0ae2bef5f0a4074b10faa0e7da5cfef43762769f620dd930136451",
+      "bytes": 1001
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_powershell_malicious_cmdlets.yml",
+      "sha256": "a156add6ef2c7581c8304fc4ca2123f762e3fff02de1aa25dad885e4f924f0a1",
+      "bytes": 9452
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_powershell_obfuscation_via_utf8.yml",
+      "sha256": "5f9a6d73a8adfc32a857c50adc4fcb76d49aa38192bffb0ab1042a57aa2b69bc",
+      "bytes": 676
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_powershell_public_folder.yml",
+      "sha256": "2d09260a64eba1cca6711e41cc8a7a8bab44a317496f2912b84f273fe55704cd",
+      "bytes": 1094
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_powershell_remotefxvgpudisablement_abuse.yml",
+      "sha256": "4604910d8b60e2dd1184d1f92f972730dc665191d5e6c2d89dd500be3d79191e",
+      "bytes": 1312
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_powershell_remove_mppreference.yml",
+      "sha256": "faf0747d2510c75e863bd1266e8e377b5b4943a736e18b6c5e4f329ed36666a4",
+      "bytes": 1074
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_powershell_reverse_shell_connection.yml",
+      "sha256": "1346f2094b01eb7de8daf67e1600a7e4ce165e8f5254027d969ef8dcb8946a27",
+      "bytes": 1396
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_powershell_run_script_from_ads.yml",
+      "sha256": "7bb4c2c47447e357ef4469fb20a629b91422a2cdf817925c8f4dae1fad82f8de",
+      "bytes": 841
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_powershell_run_script_from_input_stream.yml",
+      "sha256": "536012ee601907aeef707484b2761802d29b6c75a07074b4b39bb0ef67b679bf",
+      "bytes": 822
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_powershell_sam_access.yml",
+      "sha256": "d0355ac86bb630717474cb6d462e7ac305c70c05e72189a1591f3cdbc6ff4668",
+      "bytes": 904
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_powershell_service_dacl_modification_set_service.yml",
+      "sha256": "8ee59c99fe169a4661c2a07f1a268c174234b090640f3e0a8c6021fd848c1c01",
+      "bytes": 1339
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_powershell_set_acl_susp_location.yml",
+      "sha256": "12943d67b3a41f420d37fe51ab7389bb987945493cca67c1b5ecedc79dc18288",
+      "bytes": 1653
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_powershell_set_acl.yml",
+      "sha256": "720c18430e2c8e20031afcf396f5a785ec4d981c3c10325cbe381f843e608db8",
+      "bytes": 1278
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_powershell_shadowcopy_deletion.yml",
+      "sha256": "85426145241b250156fe483562f7b13e32f14ece9aef92e84545d1a163480c64",
+      "bytes": 1440
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_powershell_snapins_hafnium.yml",
+      "sha256": "569cb7447de1447c2825f97973cf1429086408554f8216c2a14cbde5fb8554df",
+      "bytes": 1603
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_powershell_susp_download_patterns.yml",
+      "sha256": "4b8a1d1c7bca807dea94df192f709138b17ca4e8d8b0c02eb2c0eafa9da3b446",
+      "bytes": 1404
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_powershell_susp_parameter_variation.yml",
+      "sha256": "da2ab44f637116ed326fc3f64f0ac76afa94509ab936425439e078f765893e07",
+      "bytes": 3858
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_powershell_susp_parent_process.yml",
+      "sha256": "65c6e32685197796a5b3225a331afd375bd022cb5d772699482aed96bca792b5",
+      "bytes": 1917
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_powershell_token_obfuscation.yml",
+      "sha256": "b80a4c0e27b2c5c6eb93d62312e8a7cba04ad045f3b57db82c28d06b7dd9208b",
+      "bytes": 1284
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_powershell_webclient_casing.yml",
+      "sha256": "05771c89660565522d100bd659e42adb15bc5a63a48ab4aa1d1629789cc1e8d3",
+      "bytes": 5955
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_print_dump_sensitive_files.yml",
+      "sha256": "2fb0fc7147d4b403f306896889981445cdb52dff6bd2b09e4a3b55fe1a95f44e",
+      "bytes": 1397
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_provlaunch_susp_child_process.yml",
+      "sha256": "ebbee50d8baaf88dab05719b3014287afb25a322fe07fce29c80a763e71f6e1d",
+      "bytes": 1558
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_pua_3proxy_execution.yml",
+      "sha256": "2f9742c3c49ff9f2e50e0c9dd82ec8dc64b8e5a8ae89d8371b4d8ed73160e20b",
+      "bytes": 803
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_pua_adfind_enumeration.yml",
+      "sha256": "01573ac02273236d843dceaa203d08fa3c0e00579623df8a33e6f43a52f090ae",
+      "bytes": 1601
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_pua_adfind_susp_usage.yml",
+      "sha256": "52d4dcc47c3a9ef607281ac874d6068aced8c5e1a7650a2fa76bc6875e13372c",
+      "bytes": 2612
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_pua_advancedrun_priv_user.yml",
+      "sha256": "1f2f8c63f76002ec75374e385085920650cb4bb091ddd722bf3152899d8a8846",
+      "bytes": 1519
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_pua_chisel.yml",
+      "sha256": "ed3ead46ee0731b89a9fe6d95d2a5d4ba9e8050d460fb3bb1e09b97b69cb2f6d",
+      "bytes": 1224
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_pua_cleanwipe.yml",
+      "sha256": "6b388ae8755c42a22936632813aa1a8d8c9741cdc8b96360143a0eb1637bc34b",
+      "bytes": 1034
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_pua_crassus.yml",
+      "sha256": "9889b0add3a578b0279775c3ad5a8d2c98aec961f2d1b7c0bba1bcb0389dd6be",
+      "bytes": 661
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_pua_csexec.yml",
+      "sha256": "1f008989e574197712cce0b43493d1dd5391d84809a2cdc5943bc703d0df6b0e",
+      "bytes": 831
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_pua_defendercheck.yml",
+      "sha256": "b6e5b970a105059b2a56e6d992433b7777044a8fa143ea642bf7b0e6b74b65dc",
+      "bytes": 763
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_pua_ditsnap.yml",
+      "sha256": "d90b8ecba29240ad787414f4b254e66d7d2d2e9dea1e4a82009107e9defb02db",
+      "bytes": 751
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_pua_frp.yml",
+      "sha256": "277856da69d0f782b21a79553a5a0a201ab4bd7658d602ee8509cfaa6ac74127",
+      "bytes": 1054
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_pua_iox.yml",
+      "sha256": "daade2e5fc71b4eeae7fe8f46509056e1033a7675b1224b978c281522e82bfcf",
+      "bytes": 1022
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_pua_netcat.yml",
+      "sha256": "ed510e9dba1b4f4bf17d6e71282783006c71f5401611e4c8c7d894f696bb4f31",
+      "bytes": 1352
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_pua_ngrok.yml",
+      "sha256": "c98dfa2de5ae3711e4936377a45de9f3a1da2b6166c602b12555c8e1cdc7bc24",
+      "bytes": 1984
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_pua_nimgrab.yml",
+      "sha256": "315b5209d2577325a2e083aea199d25fc0472161b8e26ab94abb745dfad4cf6b",
+      "bytes": 940
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_pua_nircmd_as_system.yml",
+      "sha256": "b5c3a775a842beefba88a49586ab88a55d42484d8c58233f82d7baa7dbdb319d",
+      "bytes": 806
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_pua_nps.yml",
+      "sha256": "ce63d92df57000b866009ddeba46acb9f9dc64846e2e2416ad47920ae0b888b5",
+      "bytes": 1051
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_pua_nsudo.yml",
+      "sha256": "ae071dbca2d4a74a492a0d4da38ba2e884c03f339980afa554ca1517f975efb1",
+      "bytes": 1493
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_pua_pingcastle_script_parent.yml",
+      "sha256": "a35a1992bd235c704abd4b85758047d068fa26d5478fbc6b6fa87f2b139273fd",
+      "bytes": 3510
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_pua_rclone_execution.yml",
+      "sha256": "23109549e2a00d4e0ac3c0389d5fdc998ae3d7aa65832c38c8e4ad811919c418",
+      "bytes": 1905
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_pua_runxcmd.yml",
+      "sha256": "a60d2eb78d0a8a5143034012d12863c3fb905ab28180bc66cc04ddb6afe8dc56",
+      "bytes": 848
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_pua_seatbelt.yml",
+      "sha256": "8bba00219aff3ee68d08213514204f9cd540dcb1a9e3191151b68a76af5b5fbb",
+      "bytes": 1931
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_pua_wsudo_susp_execution.yml",
+      "sha256": "3d2b9d79823e1ef2a60bd92f1eac2545208980f5d2945624c9c43d7d4d0c8b3d",
+      "bytes": 1048
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_python_pty_spawn.yml",
+      "sha256": "9b20e6abf32a46370a1cdd32f45019b8b4fd9facf98e1efb01e825c116a10af4",
+      "bytes": 927
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_rar_compression_with_password.yml",
+      "sha256": "fbbabcb389390efd1728e94af601372010e885c3ffc9f8caaa0d0bfc883b952d",
+      "bytes": 1119
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_rar_susp_greedy_compression.yml",
+      "sha256": "6cb00a089f525cbbc99fbbfcef572838536e2a97e0d62ede0d08a9f25a0f3e7f",
+      "bytes": 1488
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_rdrleakdiag_process_dumping.yml",
+      "sha256": "713ec98ec8f981e81c127354f21f7701034c696bfbd3fa7e8e9f417baad67178",
+      "bytes": 1462
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_reg_add_safeboot.yml",
+      "sha256": "6f8140837e97f23d602424ce55aaabbbafbf5cfe5964f3580b258f128af5ad0c",
+      "bytes": 1165
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_reg_bitlocker.yml",
+      "sha256": "58de8780d05bf4bd5f9e1082115a851231c44956a256138c43c2cc063bdfea82",
+      "bytes": 993
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_reg_delete_safeboot.yml",
+      "sha256": "1d09d9cd03cd4fa369f105dd59624f86860a7987bfb98e3d55c6b6d7909858a7",
+      "bytes": 1056
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_reg_delete_services.yml",
+      "sha256": "3870f69519e3ef090c9012934c538979d0b569de52ec34a2ff0951eef136e148",
+      "bytes": 995
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_reg_disable_sec_services.yml",
+      "sha256": "10a94d91eb69d6d7dd0f550676324eccddcb231fb84e5e2b7255148caf511e2f",
+      "bytes": 1388
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_reg_dumping_sensitive_hives.yml",
+      "sha256": "4a02952fc56acdd448e416ac0e8d0ff57a9c4193a21b860e256a0c150fea3cd7",
+      "bytes": 2187
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_reg_lsa_disable_restricted_admin.yml",
+      "sha256": "3017230ce41ad0a34b43597f24dfff81d53803c83a96dd9c95401707e4cdb798",
+      "bytes": 1377
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_reg_nolmhash.yml",
+      "sha256": "fd3e32662e164671f983f8ca0ce9e3b03f72c54da9a904d62bd79113a32e69d1",
+      "bytes": 1244
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_reg_rdp_keys_tamper.yml",
+      "sha256": "f85d5f46de1f20db284d485f6d5dfe7101b45746051643b5a8364ce55d43cc8a",
+      "bytes": 3826
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_reg_susp_paths.yml",
+      "sha256": "57894b6a450ed5936141bd8b880099dd3e2e105d21f9d10a6c473021ebff5dbe",
+      "bytes": 1487
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_reg_volsnap_disable.yml",
+      "sha256": "4470dd1cfdec8335230cd62ffef6c555576b89d48860d905f22f2497f68ad69f",
+      "bytes": 638
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_reg_windows_defender_tamper.yml",
+      "sha256": "83118f134300400efd8948c383554bc89f99bd1719e0ac65d695808cd807e665",
+      "bytes": 2952
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_regedit_export_critical_keys.yml",
+      "sha256": "8581608489df59f28b74c0840640ea86c1bafe95bcba9077686c538cb27b0685",
+      "bytes": 1174
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_regedit_import_keys_ads.yml",
+      "sha256": "349cd835a7cc91a2ba041fefb13c11e5cbb189bc2c3eb9354d0a90844a2ffaaf",
+      "bytes": 1088
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_regedit_trustedinstaller.yml",
+      "sha256": "90922ca0e75bb783c18083365a787b2a64dee207d74893d08d4f49fdadde5418",
+      "bytes": 695
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_regini_ads.yml",
+      "sha256": "31fdeef0628c5b22f67ca011c5fca8f262eeb593ea1e0a51b5bbbb4451305873",
+      "bytes": 1034
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_registry_ie_security_zone_protocol_defaults_downgrade.yml",
+      "sha256": "a9ab2ca7ec340d85ad4d63a4263e41841a2be7231f42122a1106a5796209bf90",
+      "bytes": 1328
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_registry_install_reg_debugger_backdoor.yml",
+      "sha256": "6c1240a58c84a22f399f2568a448d37489598c14c888aac6e3770c39f0d64b91",
+      "bytes": 1160
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_registry_logon_script.yml",
+      "sha256": "79ff899ee8977cea7d9cf91a108ae552a8643cd9f4a47b49097af2ebeebf611d",
+      "bytes": 870
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_registry_new_network_provider.yml",
+      "sha256": "082ea1a46b55940f5411977dbba50a944befd7b81ddaad886cdf77d1fcf2f2b1",
+      "bytes": 1497
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_registry_office_disable_python_security_warnings.yml",
+      "sha256": "765b077d660836c58bd8d1141224242b1882258b5c647f0ed4f734ae94485e3c",
+      "bytes": 1076
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_registry_privilege_escalation_via_service_key.yml",
+      "sha256": "a41cf2e87c38863275bd827b6ac32debc1ce5bfff609e34d3e06c059f793df0b",
+      "bytes": 1095
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_registry_provlaunch_provisioning_command.yml",
+      "sha256": "09985e411b442092f6c92a36aeaae67c7f6693a23cd8ca08b88161b2541564ab",
+      "bytes": 1016
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_registry_set_unsecure_powershell_policy.yml",
+      "sha256": "9c78af538c6e444ce201c5bf235713e8bb804305c65abec8b66ad5b07655d6b5",
+      "bytes": 1276
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_regsvr32_http_ip_pattern.yml",
+      "sha256": "5ed0c24908eb092479cb93eecc3dc212e5c1b5a573d74b18a8322d86e8eae771",
+      "bytes": 1961
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_regsvr32_remote_share.yml",
+      "sha256": "545a62df8c65c9fca2650fac4aab9737d1e538fa3b5c92863e3dd9a559234177",
+      "bytes": 771
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_regsvr32_susp_child_process.yml",
+      "sha256": "53bc06be29973d961a958f66b6640a8c8bfe04c4eb8e2bf385b14ee8a3b14380",
+      "bytes": 1488
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_regsvr32_susp_exec_path_2.yml",
+      "sha256": "4d60571b86ff37853c026965c7e07f05d3bf426dd84a2a5ccca1a2907ebd07e5",
+      "bytes": 2375
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_regsvr32_susp_extensions.yml",
+      "sha256": "785c363779a2379ec33fefe2ee631e87460f61e0e579a813e9dfa81915bdbb4e",
+      "bytes": 1608
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_remote_access_tools_anydesk_silent_install.yml",
+      "sha256": "52a2359ef3132f90c763807ef0e263e98bded89c597c8733bd858bd9e7ee0e60",
+      "bytes": 793
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_remote_access_tools_anydesk_susp_exec.yml",
+      "sha256": "109c82eb9cc6c657bea76e3cb02b696bd94cc3068fd6fba5bdd39e8246686f0a",
+      "bytes": 1754
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_remote_access_tools_screenconnect_webshell.yml",
+      "sha256": "3d9c714d5fc4af2e7900a680645ea06eb127bdca003644e986219fc3c6ee29d1",
+      "bytes": 804
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_renamed_adfind.yml",
+      "sha256": "de5ed6c633d7343fe767264ee78b0882ba87721feb9f851c7aac40b178a68a5f",
+      "bytes": 2537
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_renamed_autoit.yml",
+      "sha256": "981879db98a0e981683f326bcd54e432ba128b86a46561d2434bec5c38303245",
+      "bytes": 1696
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_renamed_binary_highly_relevant.yml",
+      "sha256": "79f15a845dc57a418420c0d828c9dec30ffa1a673bcaf446cc98d4bef6f2038c",
+      "bytes": 3420
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_renamed_browsercore.yml",
+      "sha256": "c1db5b01fc067d3f74f2ba83516fbc9a89428b5c37ce43a99b5f65aa82829a84",
+      "bytes": 738
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_renamed_cloudflared.yml",
+      "sha256": "e39caa79ecf19fc8bfbe31979fd93ab8ff541038fdf45768cd2d21b447400663",
+      "bytes": 4971
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_renamed_createdump.yml",
+      "sha256": "3e651de59a933a0c87d08b5e35ac5740148f5aa88a59ec08eaa971aa853a89ab",
+      "bytes": 1311
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_renamed_dctask64.yml",
+      "sha256": "68ac85d0eb535b82980b0c82945e46f95e875a0191068f1a3fbc146e4d2aca56",
+      "bytes": 1284
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_renamed_gpg4win.yml",
+      "sha256": "ff626c529eeefca72de679f1bb79a120593ccc60dfab59bfaa4771d344b949da",
+      "bytes": 674
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_renamed_jusched.yml",
+      "sha256": "66f516575f00a48ab7e4282fc92f243d70338b8672624660f4295318ea0c8d9f",
+      "bytes": 827
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_renamed_mavinject.yml",
+      "sha256": "dcf1fb7702e0eec3a0c57090cd45c8c0747f5ce17b5c0be313efdc6948b8a332",
+      "bytes": 1567
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_renamed_megasync.yml",
+      "sha256": "d2a3544d1625cbd33812c6bcef2f523cd8600d078fe0c9e72027aae41565e3ea",
+      "bytes": 766
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_renamed_msdt.yml",
+      "sha256": "01902fefe0c1651f033e04f0da0a52cdd6fc1b3fe780f7e345c6d71d97943e26",
+      "bytes": 713
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_renamed_netsupport_rat.yml",
+      "sha256": "2306a22881f32fd218086ea78ef9a568b7446a7d1326fb14f171e9d09a6738b7",
+      "bytes": 801
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_renamed_nircmd.yml",
+      "sha256": "a38606f06612030cd96836e9b5626a60002168f22f08879bddf636a6874cf73f",
+      "bytes": 894
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_renamed_office_processes.yml",
+      "sha256": "e0d13615ffcba73e255afd40c6e1ab1954feef473d9db237ed2a135301903497",
+      "bytes": 1496
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_renamed_paexec.yml",
+      "sha256": "e81cf6dff123b7c4336042ec4c3f5ece3ca34a7783cddf9e8642c5eb06ebfa4a",
+      "bytes": 1552
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_renamed_pingcastle.yml",
+      "sha256": "57d06ad9a12236ff6c84109ae48f6ab09a7272e48812af963fb21444015ebcf4",
+      "bytes": 1925
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_renamed_plink.yml",
+      "sha256": "a20a612f0ddfa3c0d33e069bf835fdd1652e7f836c307f17ecf0e38d20c0bf58",
+      "bytes": 862
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_renamed_rundll32_dllregisterserver.yml",
+      "sha256": "efd94e5cd312d8fac28e827707f5e09060829bfd62975bdef481a5f307105cce",
+      "bytes": 915
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_renamed_sysinternals_debugview.yml",
+      "sha256": "fb156b60287a7f4e2f0da6f345e870535d89b6115b63d39732358e3e1d221543",
+      "bytes": 679
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_renamed_sysinternals_procdump.yml",
+      "sha256": "411b6572fbc6d794175a478f74d010fa6b2f29cd4446fd90d2ef403ab790501b",
+      "bytes": 1430
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_renamed_sysinternals_psexec_service.yml",
+      "sha256": "5b713ded7af02c4c27260fe6463dd4099359c0d21c6733d57c94a4a736c718b5",
+      "bytes": 743
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_renamed_sysinternals_sdelete.yml",
+      "sha256": "a20167dafac508cbd004f5535494b84af89879db4be8a469d6f0d8addb4f7bf3",
+      "bytes": 913
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_renamed_vmnat.yml",
+      "sha256": "1cbd26c7915cec35fbb3b27bf8e137ef3799919661775255b30d6e0921377a45",
+      "bytes": 715
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_renamed_whoami.yml",
+      "sha256": "6202f588c35467a152e4fe1917be432a02d6e66b2d5b1ce637eb4f4489f80e61",
+      "bytes": 800
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_rundll32_ads_stored_dll_execution.yml",
+      "sha256": "79c31422095b2d77939530abcbf60c3c0b64cd6dfc6eef1a16f3150f79f8fa8a",
+      "bytes": 990
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_rundll32_advpack_obfuscated_ordinal_call.yml",
+      "sha256": "65b596ab46541154c6d7dc65c9fcfc92df1c81b4f5596a3650b08be6c9296a87",
+      "bytes": 1033
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_rundll32_inline_vbs.yml",
+      "sha256": "2dc4317cf0ef9d3cad43cec6a32c0edb1bd02783b26219d91abeee919dcf0e0f",
+      "bytes": 822
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_rundll32_keymgr.yml",
+      "sha256": "b7518924dc0eedb257c1917aa947c4930239b6297b87463739b76aff710296ec",
+      "bytes": 780
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_rundll32_mshtml_runhtmlapplication.yml",
+      "sha256": "74975cc019eb9fabc09121fa2fb6c2667fc4ee1d2135ca234d7764a1a2674251",
+      "bytes": 1289
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_rundll32_no_params.yml",
+      "sha256": "6fd4e847b4558ff146d0114f613d699a09a8fd252e59b2efdbc4c5c445dee24b",
+      "bytes": 877
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_rundll32_ntlmrelay.yml",
+      "sha256": "208c3363b657a25be6ff5ae6645478ea1da3f05f82fec5ac3dfb22382ed3e966",
+      "bytes": 1157
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_rundll32_process_dump_via_comsvcs.yml",
+      "sha256": "9859aead00dd5cb94933434be60a0727f436fcc6886bf00fde69440f5a3e483f",
+      "bytes": 2272
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_rundll32_registered_com_objects.yml",
+      "sha256": "79b2c49c08ebced8e88ebc1b6267c0f348f1120579edce54ec5b067e95073228",
+      "bytes": 938
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_rundll32_shell32_susp_execution.yml",
+      "sha256": "93e5a1c863ce51e31f010d12794cc387ccad996357dd48b82effab2210c47797",
+      "bytes": 1000
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_rundll32_spawn_explorer.yml",
+      "sha256": "8d8583eb98b1881599ed60405d48a8878c16b5b362192164ef81b350929e0284",
+      "bytes": 782
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_rundll32_susp_control_dll_load.yml",
+      "sha256": "4c59ad3826afb019e6fc10c13a62110dc83480f70a947592103cdd13273d18f1",
+      "bytes": 871
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_rundll32_susp_execution_with_image_extension.yml",
+      "sha256": "0151fec558c75e1ed85d017e46d71f679c8b6247d4aba4eff747d799987e8ed4",
+      "bytes": 1076
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_rundll32_susp_shellexec_execution.yml",
+      "sha256": "2d24a72e7f44187e4b84061485ebb428b7a6182778f6ceeb08708d2028dcb4d4",
+      "bytes": 1336
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_rundll32_susp_shellexec_ordinal_execution.yml",
+      "sha256": "96a89da383c1e94bf739742d620750073caf1e870bb60c3a0780983b6c747ce0",
+      "bytes": 2444
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_rundll32_susp_shimcache_flush.yml",
+      "sha256": "2248b4d2397f49e2efce6167be23761b218370db7755f1b4919cae30328d29e9",
+      "bytes": 998
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_rundll32_sys.yml",
+      "sha256": "c04a0e54cce5f0c435841ab7ef1e349d3a3aa6e76189ad3bef58bf2c3018572b",
+      "bytes": 796
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_rundll32_unc_path.yml",
+      "sha256": "59e4f482a4849cab66c7e116083a12e5c0c4dc08bdb3652f6bfee058d21b1400",
+      "bytes": 838
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_rundll32_webdav_client_susp_execution.yml",
+      "sha256": "ec0f71854a8f1de9ac18e1fb7b13db9d7c406f29d4e65034f7b7195922fb9ec7",
+      "bytes": 2249
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_rundll32_without_parameters.yml",
+      "sha256": "04e109f6784ecf1cb9245c2d44375603b06fd49da339e0d5e13d88503d422b41",
+      "bytes": 792
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_sc_change_sevice_image_path_by_non_admin.yml",
+      "sha256": "992c0617149317e1a846230b3ac48d2d1f8a4f9b559ea2ef7be0e0bb8d4a9348",
+      "bytes": 1129
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_sc_sdset_allow_service_changes.yml",
+      "sha256": "07d34b849f9aea27fd0799d184c750842f25f23f252f5a828f6398cb6efe1bce",
+      "bytes": 1596
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_sc_sdset_deny_service_access.yml",
+      "sha256": "d9693f7e9bccfbfc8ad45dd4d8d438346d2242d0c58ef1dcea0e873ad42e49fa",
+      "bytes": 1548
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_sc_sdset_hide_sevices.yml",
+      "sha256": "748f440ffb11ec6e08ce795cd1135cd252444bbed24c682b6ffc956b1b8e5d09",
+      "bytes": 1600
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_sc_service_path_modification.yml",
+      "sha256": "bc5e360369900dfea758f5e7ee55d8a9ab839c152e3214b0e93954708ef2d4b9",
+      "bytes": 1678
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_schtasks_appdata_local_system.yml",
+      "sha256": "8d6f6fbcb908a156dd7cc67d4f47ec32b428861900ef59c58d4c404d4dbcd699",
+      "bytes": 1375
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_schtasks_change.yml",
+      "sha256": "0388c33b7cc1bf996ca359c972cb26aaef48724dd24a3d803f4cf59552514917",
+      "bytes": 2251
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_schtasks_creation_temp_folder.yml",
+      "sha256": "b89b0f16c8641b3c2f2ad4ad5d6571da14da3e5ebdf653663af38f1ee4ba932e",
+      "bytes": 861
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_schtasks_delete_all.yml",
+      "sha256": "d86d4788a1273dccc4fa498a532badfd88608e7ec1b1544fd221c05ee728e4af",
+      "bytes": 806
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_schtasks_delete.yml",
+      "sha256": "a9ebbf10ef925f0549a56d2ba58ef54376a7e4deb72397b214fb6a233ea4a722",
+      "bytes": 1434
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_schtasks_disable.yml",
+      "sha256": "573d648f6be795572841abd091d620913e4f449f262fe3a1da348a86283c19aa",
+      "bytes": 2010
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_schtasks_folder_combos.yml",
+      "sha256": "603e20ba5fe2881e3f3f12f52cf4e91ac03042093c9789bdf2b4b5fcfd1c8778",
+      "bytes": 1200
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_schtasks_one_time_only_midnight_task.yml",
+      "sha256": "c99629f527a3253db64e6f2e508ae17da0a924f602960ad2bf2279d3301c665c",
+      "bytes": 1134
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_schtasks_powershell_persistence.yml",
+      "sha256": "3be1832f83464fb355313ff9918027caaef29baf8ed79e8bf2711b2b40249f50",
+      "bytes": 1362
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_schtasks_reg_loader_encoded.yml",
+      "sha256": "5ca6c1b9d45aa4075a15f5236649107256a9098ce0a154539bbb036e62fab770",
+      "bytes": 1672
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_schtasks_schedule_type.yml",
+      "sha256": "6355c03228916d530139e47e19432330ad8db1df03fabf37871f240cf37da228",
+      "bytes": 1469
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_schtasks_susp_pattern.yml",
+      "sha256": "8f2dea3f06ca14d8556f7efb32d0c20d1aea9b1a51e31ff36142db24ed4baa01",
+      "bytes": 2332
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_schtasks_system.yml",
+      "sha256": "9ccf6b7fff861271ad031551df05fbe7ba27e97d481487d7a7c0e870396de6e7",
+      "bytes": 2235
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_scrcons_susp_child_process.yml",
+      "sha256": "f1fcc8aa9611f1d065bda98b1cbd899a5a9fd0cc0c9d02f0899d712e2e4d69a3",
+      "bytes": 1098
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_sdiagnhost_susp_child.yml",
+      "sha256": "a2aa75dc3117414fb5a678796fec20b4db59f848a073f4515d2c965cbc7463c8",
+      "bytes": 1760
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_servu_susp_child_process.yml",
+      "sha256": "8edee94416b267656e8a9575b219129aeb073d1756a283f1b39a91125e7547d1",
+      "bytes": 1323
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_setres_uncommon_child_process.yml",
+      "sha256": "22f1ac2cdb630e90615c549b9daf9bd105b14df58b2bfaa5c25d417f48289305",
+      "bytes": 1352
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_splwow64_cli_anomaly.yml",
+      "sha256": "4280fe37cfbe4469bf7f29fa7a4414be1ae615943f00bc9291737eadb155b137",
+      "bytes": 631
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_spoolsv_susp_child_processes.yml",
+      "sha256": "f805a493d83db325ad54ef895bff6e75ef9d6e4bed7c17fb7e897cb91190cd74",
+      "bytes": 2768
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_sqlcmd_veeam_dump.yml",
+      "sha256": "802bbd3b52aae1aea1814e276706b5c59a0ebf8a2cc09e14ff826e32bc42119e",
+      "bytes": 811
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_sqlite_chromium_profile_data.yml",
+      "sha256": "c2184f63ba4abf65aed4dc42f1f01ade648f0917defde1afb605b81399d48c81",
+      "bytes": 1442
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_sqlite_firefox_gecko_profile_data.yml",
+      "sha256": "422002eb260a5007aac377fa7078d2109825e8a90fad6646690afee7f972c0fe",
+      "bytes": 1107
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_ssh_rdp_tunneling.yml",
+      "sha256": "9077aa05059b07298698f061f4e0fa32e98cc34051d4de05b4dc1944841dcb4f",
+      "bytes": 735
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_stordiag_susp_child_process.yml",
+      "sha256": "f4bee3a8d1c420165d25d78274f814c32d555cd3935acb14ff97e59d761c2dc7",
+      "bytes": 1024
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_susp_abusing_debug_privilege.yml",
+      "sha256": "394b839361c6b1cb69b1ac1bb3e03488f975c177d2890d25ad250e4f0b0bad88",
+      "bytes": 1395
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_susp_add_user_privileged_group.yml",
+      "sha256": "3e45f31f4814c8405816c848cbf9b98d3b8186300f3dea6870e3aa83ccccd219",
+      "bytes": 1275
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_susp_add_user_remote_desktop_group.yml",
+      "sha256": "b775149c19ee7df8e80b03f6e36d1a4b25dcc1fcf84143e245a983f0620a63b9",
+      "bytes": 1422
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_susp_archiver_iso_phishing.yml",
+      "sha256": "ff6e430b340a9c56810363acc28e7f7761e9a784c630c8a1eadcf4bd48dc85fb",
+      "bytes": 1113
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_susp_bad_opsec_sacrificial_processes.yml",
+      "sha256": "1d4559cda59ded2d2895b084b2f9e26fc04e5f7dc6f45c0dcd1ba5f54fbbac52",
+      "bytes": 2860
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_susp_child_process_as_system_.yml",
+      "sha256": "84bd6b7f0ba6bcfd994263de4f6fa1ea495766de788d1d779b167caa97521041",
+      "bytes": 1601
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_susp_cli_obfuscation_unicode_img.yml",
+      "sha256": "9645afda651aa60f64219059d81e2e29e166ea4a4975b28218926c8968c5da58",
+      "bytes": 2287
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_susp_copy_system_dir_lolbin.yml",
+      "sha256": "b62ad46588260c693b05fe4ae38386e3aeeb8f31406ae203db8576ef784b0624",
+      "bytes": 2270
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_susp_crypto_mining_monero.yml",
+      "sha256": "ab0e5bde99c33ca00ac32a3352a28caf821cd66a5a9e4e6972d82388b20636ab",
+      "bytes": 1365
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_susp_data_exfiltration_via_cli.yml",
+      "sha256": "6c4a702aae5999d77de4136e4aa8ea30cd312e4af65fb768f9b62042ddc23be0",
+      "bytes": 2261
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_susp_disable_raccine.yml",
+      "sha256": "8d63590684b88b28760fb10b5e61ba6bd16d4d2b9f0b96c1414d5764915118d7",
+      "bytes": 958
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_susp_double_extension_parent.yml",
+      "sha256": "3ce2c32e8250777b2d095e4f12eeeb4068cd516f16b71c183b55345f06b74c6b",
+      "bytes": 1875
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_susp_double_extension.yml",
+      "sha256": "4b3d531bd692a9f085fd2bada8d714a7a510c262dd5610b6f917f7b209da8115",
+      "bytes": 2751
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_susp_download_office_domain.yml",
+      "sha256": "b78f4b2aadea0e2ca64d72296b17751940edfed3b0b4e562743b8dc05ba63c34",
+      "bytes": 1377
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_susp_dumpstack_log_evasion.yml",
+      "sha256": "e9bce3c9287077458a8ae73ea2b4c32490a12ef4428385edbaa8b36904af63e7",
+      "bytes": 646
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_susp_emoji_usage_in_cli_1.yml",
+      "sha256": "db1e05218fa6f0fc6498c65889696596bc6fe312b9fecb8e64697e2e96dd0b54",
+      "bytes": 27052
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_susp_emoji_usage_in_cli_2.yml",
+      "sha256": "1c3fbffc4a30899d8d65b8f89f03318f2787e910922799cae9c93018fbeee2d1",
+      "bytes": 29964
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_susp_emoji_usage_in_cli_3.yml",
+      "sha256": "13ac872cd6c4a23ae817bcbd6fced9c00a5023898f09306b1518b0238231a972",
+      "bytes": 22118
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_susp_emoji_usage_in_cli_4.yml",
+      "sha256": "44fcdfbda40a70449227dc2ed19a44e96ab901ece8550818af799ff16332d5f0",
+      "bytes": 23266
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_susp_etw_modification_cmdline.yml",
+      "sha256": "77865ed4de71fe18e9a04fd05f9460d456055d36a6e23cd2b6183fb2819fb5ec",
+      "bytes": 1854
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_susp_etw_trace_evasion.yml",
+      "sha256": "f883d161d3a510e54a3baa3e54ecc22fe4cb515a6569cb1b59df03688215df5b",
+      "bytes": 1790
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_susp_eventlog_clear.yml",
+      "sha256": "8e7219c92a73b60128a7192521879f97407d37c12a1c567a6975247340cb5624",
+      "bytes": 3933
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_susp_execution_from_public_folder_as_parent.yml",
+      "sha256": "cbb3f8d69aae01fb7d80c8fae40bfc4ceeff20329e4ed0a01e6a231da8469eed",
+      "bytes": 1445
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_susp_execution_path.yml",
+      "sha256": "933f508e474f11ef18c9d3e680b46ab2719761f823ab027a19b000acd2ce782d",
+      "bytes": 1907
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_susp_gather_network_info_execution.yml",
+      "sha256": "ade9f4f3bdbb8777fbb7724e1fd826c4675787e00d16ee8ea236df73905d830d",
+      "bytes": 1141
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_susp_image_missing.yml",
+      "sha256": "b4792d8396d87ab8e596b9c20381bb9f0490fdb695e8cffd6cd865bdeae86e53",
+      "bytes": 1379
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_susp_inline_base64_mz_header.yml",
+      "sha256": "96fffa93d50aab3dd748354556d335aa6c33c1c85101130ec7a8a96da43d1f26",
+      "bytes": 705
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_susp_inline_win_api_access.yml",
+      "sha256": "5452717da6a6e3856b38e0146fca6e4398c27e16d19e1cdd54e59b3bb0f085fa",
+      "bytes": 2696
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_susp_lsass_dmp_cli_keywords.yml",
+      "sha256": "c2e2e6b1875339e71fe45c72754dbe299b34bb32ec14e74647b43555f460fd83",
+      "bytes": 1808
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_susp_non_priv_reg_or_ps.yml",
+      "sha256": "c5b8d3088af7a131b84785cdc44dafdaab490e7850eb23c7ff8ad2324ddfc21f",
+      "bytes": 1270
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_susp_ntds.yml",
+      "sha256": "ee87b516424a392320b758fdb48f4d0083d65c6a297bd1804bd99abeda27e682",
+      "bytes": 2670
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_susp_nteventlogfile_usage.yml",
+      "sha256": "efe1eb69ff834f3690360f620e67eb630a41c3476ab9b90ab45529ff6434ea6b",
+      "bytes": 1154
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_susp_parents.yml",
+      "sha256": "c6dc6e62306ec63209c3eede09eba396425edcf9a0ac4ff52c15784e6fe7b7dd",
+      "bytes": 1372
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_susp_powershell_execution_via_dll.yml",
+      "sha256": "9488799add24f4310f5bf4b72c4479216ad343a0fec79fa0e61ed71545da04f2",
+      "bytes": 1374
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_susp_priv_escalation_via_named_pipe.yml",
+      "sha256": "25e5d4b149814d1b7fe79d25fd9837edda1b8708b0df3e6c708a62607801fcd9",
+      "bytes": 1087
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_susp_progname.yml",
+      "sha256": "d1247640c9747eaf752f8a7dfe72c6147a1987d6fa3dc0598f018158032adef2",
+      "bytes": 2041
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_susp_recycle_bin_fake_execution.yml",
+      "sha256": "e34a919f22f5f5e927351c17db2d74f2ea7779f5edb8a8aed23284071f903ce9",
+      "bytes": 859
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_susp_redirect_local_admin_share.yml",
+      "sha256": "abd316c7a8c9cecedade6a9bc970c056b3b00e9d8daa5d94909f5d85a253e42a",
+      "bytes": 919
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_susp_right_to_left_override.yml",
+      "sha256": "7b2e055b10046f6199d2714fd1bb694826a23fd226397cee1a1095e50ee79b46",
+      "bytes": 1602
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_susp_script_exec_from_env_folder.yml",
+      "sha256": "4bc9d5c0b23c4e04f80c9238ea1fc20340d795a7d750dbc5154e85ab5749af16",
+      "bytes": 3352
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_susp_sensitive_file_access_shadowcopy.yml",
+      "sha256": "5d80fbff5916017984daf1182e4f3315c3aaa38a27cd10b9b0ac0fab83314dec",
+      "bytes": 1274
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_susp_service_creation.yml",
+      "sha256": "f467775a33c5b1a4342955f50329d099cbee55cf864b9cc7a08c97893cfd8b64",
+      "bytes": 1840
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_susp_service_dir.yml",
+      "sha256": "05a5c378f5a33a3e3b4ab69a279482a6e7dd9b37401d8474477ed0dab1d5e52e",
+      "bytes": 1013
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_susp_service_tamper.yml",
+      "sha256": "361d53bcc5cf038d24bfb86badb4247ceb5c3b8a94cba73b77c12862c866ea99",
+      "bytes": 9565
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_susp_shadow_copies_deletion.yml",
+      "sha256": "7eaeb361923239bbce4c3786d69fbde1dd97330894634215f3050f05a6effd3a",
+      "bytes": 2782
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_susp_shell_spawn_susp_program.yml",
+      "sha256": "56d23c2e232e20d8e6b3db9c6ef17f284b16c8d3a40f42a67339159768b76f58",
+      "bytes": 2264
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_susp_system_exe_anomaly.yml",
+      "sha256": "de6dfc4216671d289db3f69483bf3b58dd46806497c3a7a1bb482bbabf43de7a",
+      "bytes": 4150
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_susp_system_user_anomaly.yml",
+      "sha256": "37777daed9f0b531af26282c2c1e5e543df40e7d48a0a857dba12d1de714e2f3",
+      "bytes": 4162
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_susp_task_folder_evasion.yml",
+      "sha256": "b330c1458c4813c9d0c8ddb90d48c65730feaaa66d5abeb5ade60c4f9eae52b0",
+      "bytes": 1133
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_susp_whoami_as_param.yml",
+      "sha256": "f1a2ec7ccf346470771611b7e2fd9fc142c4b2082ae3f4e36a4e968ddf5c03ea",
+      "bytes": 631
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_susp_workfolders.yml",
+      "sha256": "8cd7a4696d513cb4855f687519911aab58bfdf6f5d9b482d3a2d85d0ff09aa9e",
+      "bytes": 746
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_svchost_execution_with_no_cli_flags.yml",
+      "sha256": "ef11ccdb615222468d53b68b9f8b27ce3638e4704ac95c099747967565d04fa9",
+      "bytes": 1167
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_svchost_masqueraded_execution.yml",
+      "sha256": "36d612d23e704493b68cf8c62423d152f7f2c89ddc7a39012ec327bd6063c8bd",
+      "bytes": 1363
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_svchost_termserv_proc_spawn.yml",
+      "sha256": "fac5682dadb1eb7a3f620c21313824d35564cba0a35bea068b008c5868240b3c",
+      "bytes": 1124
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_sysinternals_adexplorer_susp_execution.yml",
+      "sha256": "a5888879ba79cf114573bac496643fea1171602a0986b5cb57ad9e71f6c59de9",
+      "bytes": 2100
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_sysinternals_livekd_kernel_memory_dump.yml",
+      "sha256": "eee4dcec9dc6b129a1e33bf48475da5a4beeeff47028132fdfe8b4b736fe09f3",
+      "bytes": 907
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_sysinternals_procdump_evasion.yml",
+      "sha256": "f2674f4d33d78ce5f6da477d67a0be784b389074490ee82b85e50305176b0c41",
+      "bytes": 1303
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_sysinternals_procdump_lsass.yml",
+      "sha256": "f75c2b4c77d1eda036e2b287816b7048b70544199fc0ef2a0418619586bc6d10",
+      "bytes": 1622
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_sysinternals_psexec_paexec_escalate_system.yml",
+      "sha256": "e7a596ddd361c9fb5c60b824f7b4344ea16d49c21f2577bc5bd28e5e6c474b23",
+      "bytes": 2025
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_sysinternals_psexec_remote_execution.yml",
+      "sha256": "5b08d0cd1ef84cf619d7254b6b131dfd4d4d6ae4322c8e65acb9ff8fa6bdaf08",
+      "bytes": 1145
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_sysinternals_psexesvc_as_system.yml",
+      "sha256": "7c811dfd26cae6e8b157595332442dcf95b5c815bf28544b34ef8231cb3e1ec2",
+      "bytes": 1171
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_sysinternals_pssuspend_susp_execution.yml",
+      "sha256": "55ce52833e3651c95bd62758a8cd9322f9b28d345aee4c636fda2b9ad914087f",
+      "bytes": 1109
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_sysinternals_sdelete.yml",
+      "sha256": "11a7b8d84c5162e256feddffa51383ff62d48020857977fff5bb91a3f2781ae9",
+      "bytes": 752
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_sysinternals_susp_psexec_paexec_flags.yml",
+      "sha256": "f87f2076a89da5b73ac1ebeb8b1d3d7832f0c06783de3114769470d3d8cca7f8",
+      "bytes": 2024
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_sysinternals_sysmon_uninstall.yml",
+      "sha256": "5fa937419ad7b3be9ae0ac05c929eecb5574fb34bc628d1fb6d20f243b3ba06b",
+      "bytes": 952
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_systemsettingsadminflows_turn_on_dev_features.yml",
+      "sha256": "551e24ca21060ed33497550fc6cae78cca84870f3c9f514efb7c762bad283da8",
+      "bytes": 1064
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_taskkill_sep.yml",
+      "sha256": "f63f3ec74052dd4823a9974380be47d8f5ca68cfffc77732a87508c35eb466a4",
+      "bytes": 1329
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_taskmgr_localsystem.yml",
+      "sha256": "812790881847f6983e299c1aab4d512672a255f4e9ebc50a2ea7cd3ab8e8d892",
+      "bytes": 625
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_tscon_localsystem.yml",
+      "sha256": "59ad497dde0d1d6fa2f651cab0b2114a556bd4fbc6b9f696f32ab1642f311d45",
+      "bytes": 925
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_tscon_rdp_redirect.yml",
+      "sha256": "233cf729118e7af79352a6c8fe4e0467f19553ae41ed765498e0820f197747f4",
+      "bytes": 861
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_uac_bypass_changepk_slui.yml",
+      "sha256": "9831f2a312ac73313757b0ff6d18821f40ecd341bb004092bf8ccfd81332a9ec",
+      "bytes": 942
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_uac_bypass_cleanmgr.yml",
+      "sha256": "b0c5e4393e3aafdbb4d49fe105b9a0bafb0e77cfaae2c138b76097e5432fc04d",
+      "bytes": 865
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_uac_bypass_cmstp_com_object_access.yml",
+      "sha256": "4dbb1a6e0e5615218630fc10b1df7b2fc8fb875479fbf69dafc0dbf9ca4014d5",
+      "bytes": 1740
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_uac_bypass_cmstp.yml",
+      "sha256": "6c28b33446b35b40892f9a2612ba1d938b5030300075df79037ffbf5e0e8aba8",
+      "bytes": 1224
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_uac_bypass_computerdefaults.yml",
+      "sha256": "7f084272de5acfe27850b86cfe0fa1577b792bb0c2566773586b08a0eb37f0f2",
+      "bytes": 875
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_uac_bypass_consent_comctl32.yml",
+      "sha256": "8f7bc9ed3508f5989f57f8ad05fe2bf54589d169f561ef86932af9b31a72a004",
+      "bytes": 782
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_uac_bypass_dismhost.yml",
+      "sha256": "83c63d1030c98f93aae2dc358b9940d65e9bc2fdb7f6e2eae98fa65af519de05",
+      "bytes": 796
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_uac_bypass_eventvwr_recentviews.yml",
+      "sha256": "96d4ae5036995f89344a06a58e07e56d8a3448c9a709abbcb7b2e3b32a8615f0",
+      "bytes": 1046
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_uac_bypass_fodhelper.yml",
+      "sha256": "c07647abb2f6ecf3cb5a4f24f4d56c203c2ab0410cde2e010fea87e1db7f85ed",
+      "bytes": 917
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_uac_bypass_icmluautil.yml",
+      "sha256": "3a32c7ca32a2bbdb62824c29a47bd4809ee32a1f39b881810d765cd6b9c1a6d3",
+      "bytes": 932
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_uac_bypass_idiagnostic_profile.yml",
+      "sha256": "d3ba138daac31d87966545cb3977bf8db4f04124333b14ce6a43038eff4b7d7b",
+      "bytes": 843
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_uac_bypass_ieinstal.yml",
+      "sha256": "98e7b45d76f79160f37d02edeccc75eb15aa039b1d22d12c0f5c4176a626059c",
+      "bytes": 800
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_uac_bypass_msconfig_gui.yml",
+      "sha256": "5ab50f0e91fd9d817333e2001016cd240c96658d8bf63168bbbccb7fe35d4d48",
+      "bytes": 819
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_uac_bypass_ntfs_reparse_point.yml",
+      "sha256": "93e6d2afb47b03665744f181e0c350984531a3cd2b072abe86af6c9a86fb9fd0",
+      "bytes": 1271
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_uac_bypass_pkgmgr_dism.yml",
+      "sha256": "1b4d0e81a63b79532ff7dea002ac02bf4eb76c9947c616e4f6fbfff5436558c8",
+      "bytes": 757
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_uac_bypass_trustedpath.yml",
+      "sha256": "4d432a87e46c12f517b9d9ad25daa07f1db15a73b2891342a4818c58c1997327",
+      "bytes": 936
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_uac_bypass_winsat.yml",
+      "sha256": "2f3a963b493c550466d50729455e2466bd45f48d4f46dd5a0132f5b8b4708ea2",
+      "bytes": 846
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_uac_bypass_wmp.yml",
+      "sha256": "40b5054c477257f94118ca0b8b2f049daa9e0b3648eff053bc6f12bbfb60fd15",
+      "bytes": 996
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_uac_bypass_wsreset_integrity_level.yml",
+      "sha256": "fb086fb8b03fbc55644c195f37e15992a306910a04d34d26926473e853112467",
+      "bytes": 862
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_uac_bypass_wsreset.yml",
+      "sha256": "e49a693211360549b3322a5ccdcc4c991e34b0e9cafcb6f1501ae167c750db86",
+      "bytes": 1150
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_ultravnc_susp_execution.yml",
+      "sha256": "e753d166dbfb4fb203fb9c0e77954bb82f388629ed11f710547655d80e1d00fe",
+      "bytes": 1127
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_uninstall_crowdstrike_falcon.yml",
+      "sha256": "72c239ce3aebeb6a00974467c5b9abf96da83b2b33ba44a9a71da1363d7ac48d",
+      "bytes": 897
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_userinit_uncommon_child_processes.yml",
+      "sha256": "b45a42afea068960b373e3c37dd1b690bd8eea58ce66c63746a790b209b5ed66",
+      "bytes": 2627
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_vmware_toolbox_cmd_persistence_susp.yml",
+      "sha256": "056e8c73368b1574746426f1b90e7a307f48ed95c414f938fd25f7a0add8c809",
+      "bytes": 1281
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_vmware_vmtoolsd_susp_child_process.yml",
+      "sha256": "7f9748d35baa0c893434017980e27813582f9e629723972e92bfd61fd5ab0061",
+      "bytes": 1977
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_vscode_tunnel_renamed_execution.yml",
+      "sha256": "701aac4d2b1694e39d2d1fdbdc335e89694a6b2f5980ec4bdeb3109130b8312e",
+      "bytes": 1728
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_w32tm.yml",
+      "sha256": "748d765395aef0ecf5236aa776cc5826896edda957cb5cfefd1db0eb16a8d22f",
+      "bytes": 956
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_wab_execution_from_non_default_location.yml",
+      "sha256": "595da2a281918cfd6ef9b57fcd5c7c510034b1163c5fa0a1248c9feb2947e79e",
+      "bytes": 1100
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_wab_unusual_parents.yml",
+      "sha256": "e7851a30198b69e6f86c9964569a6ee475660e774db4efc6034ccce1334ac3e3",
+      "bytes": 1384
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_wbadmin_delete_all_backups.yml",
+      "sha256": "f620d030d052acf999e6509bd15826241fee4d6870df5748a82c4bf2bf1ff072",
+      "bytes": 1919
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_wbadmin_dump_sensitive_files.yml",
+      "sha256": "38d1461eb2bcfdd6824f140c51e2ad881c1889b73ef8dfa28ca63bfee646aa69",
+      "bytes": 1534
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_wbadmin_restore_sensitive_files.yml",
+      "sha256": "8a48de5af417debaa994ce13618bc71c89eee5ab2bc08308e0a5db204c1d34f3",
+      "bytes": 1536
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_webshell_chopper.yml",
+      "sha256": "bd83b28a410589b85ce907907a56adb48b973b2f6372a27c24c1be58464afc19",
+      "bytes": 1086
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_webshell_hacking.yml",
+      "sha256": "7e798383219b76b934c3cd5b78117896600c70eb46e2f00d01f79e3f1059e39c",
+      "bytes": 3219
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_webshell_recon_commands_and_processes.yml",
+      "sha256": "2db3e9674944cc3fe111ab792052016075465190d72c55eabf0e5670b9cae1a4",
+      "bytes": 3839
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_webshell_susp_process_spawned_from_webserver.yml",
+      "sha256": "b18e816611ec352cf26ce29e7834bef494a3b8b7e1227f304b25987a7126ed53",
+      "bytes": 3131
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_webshell_tool_recon.yml",
+      "sha256": "ebb6955781783f6394bc7887940068b68f8f028996ee97ba426137152afa50c1",
+      "bytes": 1658
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_werfault_lsass_shtinkering.yml",
+      "sha256": "437f66f2de963fcdf7f500c287a3cc5e771c3b9c86f917f0b616ac3e904cab7d",
+      "bytes": 1923
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_wermgr_susp_child_process.yml",
+      "sha256": "772a9f60d48c0afe96483be82ca6e833da06f158f751fad42b5973d4410eb4e6",
+      "bytes": 1678
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_wermgr_susp_exec_location.yml",
+      "sha256": "dc11cc86ef935d287b5c65f52a4654fb69dd54b93be5f4576e981c8a8aecb785",
+      "bytes": 1018
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_wget_download_direct_ip.yml",
+      "sha256": "ddad478bfb75a58a86cb7b0099bb967fb606bf9f2092171ec0f5aef99f6cd3d3",
+      "bytes": 1704
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_wget_download_susp_file_sharing_domains.yml",
+      "sha256": "e61a74242e2cdf6065baeb66a2a3de2c57c4f245bcf9a341beb9507a520d760b",
+      "bytes": 3747
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_wget_download_susp_locations.yml",
+      "sha256": "8949dd9d5643186f0af541cf5106e150fbd3ea992c9736b20bf58cf5a5622ef9",
+      "bytes": 1540
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_whoami_execution_from_high_priv_process.yml",
+      "sha256": "52f8f0ec332a357e6897081b7b36cfa4ce9db1145dedc057fd9853cff345ec88",
+      "bytes": 1041
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_whoami_priv_discovery.yml",
+      "sha256": "fcf5fd0129a71657d21f6a5d685e33b5f1053506171b3b02f85aa0fbd68fa2f9",
+      "bytes": 909
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_winget_add_insecure_custom_source.yml",
+      "sha256": "a7d8fe708ee046aae40c92eeec4e0625122b5fdabb6c54a6d3d5e5a68a1f8df9",
+      "bytes": 1213
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_winrm_susp_child_process.yml",
+      "sha256": "040d27e1c154cd67e43b8eef2a1d604f56e36cd84cf84b762ca1374e016bcbff",
+      "bytes": 947
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_wmi_backdoor_exchange_transport_agent.yml",
+      "sha256": "cb1e1afc2dc6670a60ae34e10060d1b40552b2c4529e4f16b9d42d54cce54000",
+      "bytes": 1065
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_wmic_eventconsumer_creation.yml",
+      "sha256": "7ec9e93adcedd77b59b275e0d9615efc8bc0bdcb1b37e5920baa847b4fc1a03c",
+      "bytes": 1372
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_wmic_namespace_defender.yml",
+      "sha256": "c9a86aec4376680f12e5593945773462279b8db848c6dd9dfa7c09b3d274b444",
+      "bytes": 1407
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_wmic_squiblytwo_bypass.yml",
+      "sha256": "7df38f73821d5a863b50441d4b4e4361c97c1fa175862f7f3a8df01b9a7912ff",
+      "bytes": 2320
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_wmic_susp_execution_via_office_process.yml",
+      "sha256": "b154793dc16b5c76ca61ef93d5bb471dfa4cd04cb7f3d49139092e0d48c91f4f",
+      "bytes": 2077
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_wmic_susp_process_creation.yml",
+      "sha256": "88d4ab0c508378b528bc49aa93222fad6e197e89933c2f43721847cb9208f60d",
+      "bytes": 1941
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_wmic_uninstall_security_products.yml",
+      "sha256": "1af18de13acec8ca16fe328ca0e9f342ba60f1aa2d238b46d79953ff95f40c9d",
+      "bytes": 3040
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_wmiprvse_susp_child_processes.yml",
+      "sha256": "09dd26e7b73fea2c6510c356585b40abed67719faf1f8b401f01a5eecf3c430c",
+      "bytes": 2332
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_wpbbin_potential_persistence.yml",
+      "sha256": "8a817e993f50538def08feb66c1b78cb9b3092680d40f7cc7053ae8b613421da",
+      "bytes": 885
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_wscript_cscript_uncommon_extension_exec.yml",
+      "sha256": "e53a18a04b94bd598060bf5e6e53c8f19c210bb1c44bbc8dad1bbe09f96446d8",
+      "bytes": 1275
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_wuauclt_dll_loading.yml",
+      "sha256": "d50f5048c54d3b1aa040a89233e6adb6c6a7ca849850ea6564329f1ce1eec1c8",
+      "bytes": 1809
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_wuauclt_no_cli_flags_execution.yml",
+      "sha256": "c0b388ad4c104d12647e53c9801e5de6bfeb144b3863342b063db09a4659e9dd",
+      "bytes": 800
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_wusa_cab_files_extraction_from_susp_paths.yml",
+      "sha256": "d87a5ae47e7671172f06d0a53baf5d02c326c97ec33f4b06cd8725be355c4055",
+      "bytes": 1244
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_wusa_susp_parent_execution.yml",
+      "sha256": "3cfb592858a08c2e6f5a755b87c84c25947a733414b34cc702ec88f85b20e892",
+      "bytes": 1838
+    },
+    {
+      "file": "source/rules/windows/process_creation/proc_creation_win_xwizard_execution_non_default_location.yml",
+      "sha256": "76b1f26a5033aa03d9c1130ce14b20d4582b11464d8938fbcafc402531d23fd0",
+      "bytes": 1157
+    }
+  ],
+  "normalized": {
+    "file": "ruleset.json",
+    "sha256": "31a4ebe3d6d55a3510f4ca91f9335abeb51afad0231a6c70fb000b29ff52035e"
+  },
+  "converter": "colony rulesets converter 1 (sigma windows process_creation)",
+  "retrievedAt": "2026-11-19",
+  "report": {
+    "total": 558,
+    "converted": 336,
+    "skipped": [
+      {
+        "id": "proc_creation_win_agentexecutor_susp_usage",
+        "reason": "needs ParentImage, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_aspnet_compiler_susp_child_process",
+        "reason": "needs ParentImage, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_bginfo_suspicious_child_process",
+        "reason": "needs ParentImage, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_browsers_chromium_susp_load_extension",
+        "reason": "needs ParentImage, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_browsers_tor_execution",
+        "reason": "needs Description, Product, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_citrix_trolleyexpress_procdump",
+        "reason": "OriginalFileName has a value that is not a string"
+      },
+      {
+        "id": "proc_creation_win_cmd_path_traversal",
+        "reason": "needs ParentImage, ParentCommandLine, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_cmd_shadowcopy_access",
+        "reason": "CommandLine|contains|all uses a wildcard, which is not supported"
+      },
+      {
+        "id": "proc_creation_win_cmd_sticky_key_like_backdoor_execution",
+        "reason": "needs ParentImage, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_cmstp_execution_by_creation",
+        "reason": "needs ParentImage, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_conhost_path_traversal",
+        "reason": "needs ParentCommandLine, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_csc_susp_parent",
+        "reason": "needs ParentImage, ParentCommandLine, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_csi_use_of_csharp_console",
+        "reason": "needs ParentImage, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_curl_susp_download",
+        "reason": "needs Product, ParentImage, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_customshellhost_susp_exec",
+        "reason": "needs ParentImage, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_dctask64_arbitrary_command_and_dll_execution",
+        "reason": "needs Hashes, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_dllhost_no_cli_execution",
+        "reason": "CommandLine has a value that is not a string"
+      },
+      {
+        "id": "proc_creation_win_dns_susp_child_process",
+        "reason": "needs ParentImage, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_driverquery_recon",
+        "reason": "needs ParentImage, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_eventvwr_susp_child_process",
+        "reason": "needs ParentImage, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_explorer_folder_shortcut_via_shell_binary",
+        "reason": "needs ParentImage, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_explorer_nouaccheck",
+        "reason": "needs ParentCommandLine, ParentImage, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_forfiles_child_process_masquerading",
+        "reason": "needs ParentCommandLine, ParentImage, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_googleupdate_susp_child_process",
+        "reason": "Image has a value that is not a string"
+      },
+      {
+        "id": "proc_creation_win_gpg4win_susp_location",
+        "reason": "needs Product, Description, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_gup_download",
+        "reason": "needs ParentImage, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_hh_html_help_susp_child_process",
+        "reason": "needs ParentImage, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_hktl_bloodhound_sharphound",
+        "reason": "needs Product, Description, Company, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_hktl_certify",
+        "reason": "needs Description, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_hktl_certipy",
+        "reason": "needs Description, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_hktl_cobaltstrike_process_patterns",
+        "reason": "needs ParentImage, ParentCommandLine, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_hktl_coercedpotato",
+        "reason": "needs Hashes, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_hktl_crackmapexec_execution_patterns",
+        "reason": "CommandLine|contains uses a wildcard, which is not supported"
+      },
+      {
+        "id": "proc_creation_win_hktl_crackmapexec_patterns",
+        "reason": "needs User, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_hktl_crackmapexec_powershell_obfuscation",
+        "reason": "CommandLine|contains uses a wildcard, which is not supported"
+      },
+      {
+        "id": "proc_creation_win_hktl_createminidump",
+        "reason": "needs Hashes, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_hktl_dumpert",
+        "reason": "needs Hashes, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_hktl_edrsilencer",
+        "reason": "needs Description, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_hktl_execution_via_imphashes",
+        "reason": "needs Hashes, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_hktl_execution_via_pe_metadata",
+        "reason": "needs Company, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_hktl_gmer",
+        "reason": "needs Hashes, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_hktl_handlekatz",
+        "reason": "needs Hashes, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_hktl_impacket_lateral_movement",
+        "reason": "needs ParentImage, ParentCommandLine, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_hktl_inveigh",
+        "reason": "needs Description, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_hktl_localpotato",
+        "reason": "needs Hashes, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_hktl_meterpreter_getsystem",
+        "reason": "needs ParentImage, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_hktl_pchunter",
+        "reason": "needs Description, Hashes, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_hktl_powersploit_empire_default_schtasks",
+        "reason": "needs ParentImage, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_hktl_relay_attacks_tools",
+        "reason": "CommandLine|contains uses a wildcard, which is not supported"
+      },
+      {
+        "id": "proc_creation_win_hktl_rubeus",
+        "reason": "needs Description, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_hktl_safetykatz",
+        "reason": "needs Description, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_hktl_secutyxploded",
+        "reason": "needs Company, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_hktl_selectmyparent",
+        "reason": "needs Description, Hashes, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_hktl_sharp_chisel",
+        "reason": "needs Product, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_hktl_sharpersist",
+        "reason": "needs Product, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_hktl_sharpevtmute",
+        "reason": "needs Description, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_hktl_sharpldapwhoami",
+        "reason": "needs Product, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_hktl_sharpup",
+        "reason": "needs Description, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_hktl_silenttrinity_stager",
+        "reason": "needs Description, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_hktl_stracciatella_execution",
+        "reason": "needs Description, Hashes, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_hktl_sysmoneop",
+        "reason": "needs Hashes, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_hktl_uacme",
+        "reason": "needs Product, Company, Description, Hashes, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_hktl_wce",
+        "reason": "needs Hashes, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_hktl_winpeas",
+        "reason": "needs ParentCommandLine, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_hwp_exploits",
+        "reason": "needs ParentImage, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_iis_appcmd_service_account_password_dumped",
+        "reason": "CommandLine|contains uses a wildcard, which is not supported"
+      },
+      {
+        "id": "proc_creation_win_iis_susp_module_registration",
+        "reason": "needs ParentImage, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_imagingdevices_unusual_parents",
+        "reason": "needs ParentImage, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_java_keytool_susp_child_process",
+        "reason": "needs ParentImage, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_java_manageengine_susp_child_process",
+        "reason": "needs ParentImage, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_java_susp_child_process",
+        "reason": "needs ParentImage, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_kavremover_uncommon_execution",
+        "reason": "needs ParentImage, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_lolbin_manage_bde",
+        "reason": "needs ParentImage, ParentCommandLine, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_lolbin_mavinject_process_injection",
+        "reason": "needs ParentImage, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_lolbin_mpiexec",
+        "reason": "needs Hashes, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_lolbin_settingsynchost",
+        "reason": "needs ParentCommandLine, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_lolbin_tttracer_mod_load",
+        "reason": "needs ParentImage, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_lolbin_visual_basic_compiler",
+        "reason": "needs ParentImage, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_lsass_process_clone",
+        "reason": "needs ParentImage, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_mmc_mmc20_lateral_movement",
+        "reason": "needs ParentImage, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_mmc_susp_child_process",
+        "reason": "needs ParentImage, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_mofcomp_execution",
+        "reason": "needs ParentImage, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_mpcmdrun_download_arbitrary_file",
+        "reason": "needs Description, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_msdt_answer_file_exec",
+        "reason": "needs ParentImage, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_msdt_susp_parent",
+        "reason": "needs ParentImage, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_mshta_lethalhta_technique",
+        "reason": "needs ParentImage, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_mshta_susp_child_processes",
+        "reason": "needs ParentImage, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_mshta_susp_pattern",
+        "reason": "needs ParentImage, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_msra_process_injection",
+        "reason": "needs ParentImage, ParentCommandLine, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_mssql_susp_child_process",
+        "reason": "needs ParentImage, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_mssql_veaam_susp_child_processes",
+        "reason": "needs ParentImage, ParentCommandLine, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_mstsc_run_local_rpd_file_susp_parent",
+        "reason": "needs ParentImage, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_odbcconf_response_file_susp",
+        "reason": "needs ParentImage, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_office_excel_dcom_lateral_movement",
+        "reason": "needs ParentImage, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_office_exec_from_trusted_locations",
+        "reason": "needs ParentImage, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_office_onenote_embedded_script_execution",
+        "reason": "needs ParentImage, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_office_onenote_susp_child_processes",
+        "reason": "needs ParentImage, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_office_outlook_susp_child_processes",
+        "reason": "needs ParentImage, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_office_outlook_susp_child_processes_remote",
+        "reason": "needs ParentImage, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_office_spawn_exe_from_users_directory",
+        "reason": "needs ParentImage, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_office_susp_child_processes",
+        "reason": "needs ParentImage, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_plink_port_forwarding",
+        "reason": "needs Description, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_powershell_base64_encoded_cmd_patterns",
+        "reason": "needs ParentImage, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_powershell_base64_frombase64string",
+        "reason": "the modifier \"base64offset\" in CommandLine|base64offset|contains is not supported"
+      },
+      {
+        "id": "proc_creation_win_powershell_base64_iex",
+        "reason": "the modifier \"base64offset\" in CommandLine|base64offset|contains is not supported"
+      },
+      {
+        "id": "proc_creation_win_powershell_base64_mppreference",
+        "reason": "the modifier \"base64offset\" in CommandLine|base64offset|contains is not supported"
+      },
+      {
+        "id": "proc_creation_win_powershell_cmdline_special_characters",
+        "reason": "needs ParentImage, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_powershell_decrypt_pattern",
+        "reason": "CommandLine|contains|all uses a wildcard, which is not supported"
+      },
+      {
+        "id": "proc_creation_win_powershell_defender_disable_feature",
+        "reason": "the modifier \"base64offset\" in CommandLine|base64offset|contains is not supported"
+      },
+      {
+        "id": "proc_creation_win_powershell_run_script_from_ads",
+        "reason": "needs ParentImage, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_powershell_snapins_hafnium",
+        "reason": "needs ParentImage, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_powershell_susp_parent_process",
+        "reason": "needs ParentImage, Description, Product, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_provlaunch_susp_child_process",
+        "reason": "needs ParentImage, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_pua_3proxy_execution",
+        "reason": "needs Description, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_pua_crassus",
+        "reason": "needs Description, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_pua_csexec",
+        "reason": "needs Description, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_pua_defendercheck",
+        "reason": "needs Description, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_pua_frp",
+        "reason": "needs Hashes, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_pua_iox",
+        "reason": "needs Hashes, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_pua_nimgrab",
+        "reason": "needs Hashes, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_pua_nps",
+        "reason": "needs Hashes, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_pua_pingcastle_script_parent",
+        "reason": "needs ParentCommandLine, Product, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_pua_rclone_execution",
+        "reason": "needs Description, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_pua_seatbelt",
+        "reason": "needs Description, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_pua_wsudo_susp_execution",
+        "reason": "needs Description, ParentImage, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_rar_susp_greedy_compression",
+        "reason": "CommandLine|contains uses a wildcard, which is not supported"
+      },
+      {
+        "id": "proc_creation_win_regedit_trustedinstaller",
+        "reason": "needs ParentImage, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_registry_privilege_escalation_via_service_key",
+        "reason": "needs IntegrityLevel, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_regsvr32_susp_child_process",
+        "reason": "needs ParentImage, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_regsvr32_susp_exec_path_2",
+        "reason": "CommandLine has a value that is not a string"
+      },
+      {
+        "id": "proc_creation_win_remote_access_tools_anydesk_susp_exec",
+        "reason": "needs Description, Product, Company, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_remote_access_tools_screenconnect_webshell",
+        "reason": "needs ParentImage, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_renamed_adfind",
+        "reason": "needs Hashes, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_renamed_autoit",
+        "reason": "needs Hashes, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_renamed_binary_highly_relevant",
+        "reason": "needs Description, Product, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_renamed_cloudflared",
+        "reason": "needs Hashes, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_renamed_dctask64",
+        "reason": "needs Hashes, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_renamed_jusched",
+        "reason": "needs Description, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_renamed_netsupport_rat",
+        "reason": "needs Product, Hashes, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_renamed_office_processes",
+        "reason": "needs Description, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_renamed_paexec",
+        "reason": "needs Description, Product, Hashes, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_renamed_sysinternals_debugview",
+        "reason": "needs Product, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_rundll32_no_params",
+        "reason": "needs ParentImage, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_rundll32_spawn_explorer",
+        "reason": "needs ParentImage, ParentCommandLine, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_rundll32_susp_control_dll_load",
+        "reason": "needs ParentImage, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_rundll32_susp_shellexec_ordinal_execution",
+        "reason": "needs ParentCommandLine, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_rundll32_webdav_client_susp_execution",
+        "reason": "needs ParentImage, ParentCommandLine, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_sc_change_sevice_image_path_by_non_admin",
+        "reason": "needs IntegrityLevel, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_sc_sdset_allow_service_changes",
+        "reason": "needs ParentImage, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_schtasks_appdata_local_system",
+        "reason": "needs ParentImage, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_schtasks_delete_all",
+        "reason": "CommandLine|contains|all uses a wildcard, which is not supported"
+      },
+      {
+        "id": "proc_creation_win_schtasks_powershell_persistence",
+        "reason": "needs ParentImage, ParentCommandLine, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_scrcons_susp_child_process",
+        "reason": "needs ParentImage, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_sdiagnhost_susp_child",
+        "reason": "needs ParentImage, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_servu_susp_child_process",
+        "reason": "needs ParentImage, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_setres_uncommon_child_process",
+        "reason": "needs ParentImage, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_spoolsv_susp_child_processes",
+        "reason": "needs ParentImage, IntegrityLevel, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_sqlite_chromium_profile_data",
+        "reason": "needs Product, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_sqlite_firefox_gecko_profile_data",
+        "reason": "needs Product, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_stordiag_susp_child_process",
+        "reason": "needs ParentImage, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_susp_abusing_debug_privilege",
+        "reason": "needs ParentImage, User, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_susp_archiver_iso_phishing",
+        "reason": "needs ParentImage, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_susp_bad_opsec_sacrificial_processes",
+        "reason": "needs ParentImage, ParentCommandLine, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_susp_child_process_as_system_",
+        "reason": "needs ParentUser, User, IntegrityLevel, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_susp_double_extension_parent",
+        "reason": "needs ParentImage, ParentCommandLine, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_susp_emoji_usage_in_cli_3",
+        "reason": "CommandLine|contains uses a wildcard, which is not supported"
+      },
+      {
+        "id": "proc_creation_win_susp_eventlog_clear",
+        "reason": "needs ParentImage, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_susp_execution_from_public_folder_as_parent",
+        "reason": "needs ParentImage, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_susp_image_missing",
+        "reason": "Image has a value that is not a string"
+      },
+      {
+        "id": "proc_creation_win_susp_inline_win_api_access",
+        "reason": "needs ParentImage, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_susp_non_priv_reg_or_ps",
+        "reason": "needs IntegrityLevel, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_susp_ntds",
+        "reason": "needs ParentImage, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_susp_parents",
+        "reason": "Image has a value that is not a string"
+      },
+      {
+        "id": "proc_creation_win_susp_script_exec_from_env_folder",
+        "reason": "needs ParentImage, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_susp_sensitive_file_access_shadowcopy",
+        "reason": "CommandLine|contains uses a wildcard, which is not supported"
+      },
+      {
+        "id": "proc_creation_win_susp_service_dir",
+        "reason": "needs ParentImage, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_susp_shell_spawn_susp_program",
+        "reason": "needs ParentImage, ParentCommandLine, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_susp_system_user_anomaly",
+        "reason": "CommandLine|contains uses a wildcard, which is not supported"
+      },
+      {
+        "id": "proc_creation_win_susp_workfolders",
+        "reason": "needs ParentImage, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_svchost_execution_with_no_cli_flags",
+        "reason": "CommandLine has a value that is not a string"
+      },
+      {
+        "id": "proc_creation_win_svchost_termserv_proc_spawn",
+        "reason": "Image has a value that is not a string"
+      },
+      {
+        "id": "proc_creation_win_sysinternals_adexplorer_susp_execution",
+        "reason": "needs Description, Product, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_sysinternals_psexesvc_as_system",
+        "reason": "needs ParentImage, User, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_sysinternals_sdelete",
+        "reason": "CommandLine|contains uses a wildcard, which is not supported"
+      },
+      {
+        "id": "proc_creation_win_sysinternals_sysmon_uninstall",
+        "reason": "needs Description, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_taskmgr_localsystem",
+        "reason": "needs User, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_tscon_localsystem",
+        "reason": "needs User, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_uac_bypass_changepk_slui",
+        "reason": "needs ParentImage, IntegrityLevel, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_uac_bypass_cleanmgr",
+        "reason": "needs ParentCommandLine, IntegrityLevel, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_uac_bypass_cmstp_com_object_access",
+        "reason": "needs ParentImage, ParentCommandLine, IntegrityLevel, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_uac_bypass_computerdefaults",
+        "reason": "needs IntegrityLevel, ParentImage, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_uac_bypass_consent_comctl32",
+        "reason": "needs ParentImage, IntegrityLevel, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_uac_bypass_dismhost",
+        "reason": "needs ParentImage, IntegrityLevel, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_uac_bypass_fodhelper",
+        "reason": "needs ParentImage, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_uac_bypass_icmluautil",
+        "reason": "needs ParentImage, ParentCommandLine, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_uac_bypass_idiagnostic_profile",
+        "reason": "needs ParentImage, ParentCommandLine, IntegrityLevel, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_uac_bypass_ieinstal",
+        "reason": "needs IntegrityLevel, ParentImage, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_uac_bypass_msconfig_gui",
+        "reason": "needs IntegrityLevel, ParentImage, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_uac_bypass_ntfs_reparse_point",
+        "reason": "needs IntegrityLevel, ParentCommandLine, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_uac_bypass_pkgmgr_dism",
+        "reason": "needs ParentImage, IntegrityLevel, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_uac_bypass_winsat",
+        "reason": "needs IntegrityLevel, ParentImage, ParentCommandLine, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_uac_bypass_wmp",
+        "reason": "needs ParentCommandLine, IntegrityLevel, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_uac_bypass_wsreset",
+        "reason": "needs ParentImage, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_uac_bypass_wsreset_integrity_level",
+        "reason": "needs IntegrityLevel, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_userinit_uncommon_child_processes",
+        "reason": "Image has a value that is not a string"
+      },
+      {
+        "id": "proc_creation_win_vmware_vmtoolsd_susp_child_process",
+        "reason": "CommandLine has a value that is not a string"
+      },
+      {
+        "id": "proc_creation_win_vscode_tunnel_renamed_execution",
+        "reason": "OriginalFileName has a value that is not a string"
+      },
+      {
+        "id": "proc_creation_win_wab_unusual_parents",
+        "reason": "needs ParentImage, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_webshell_chopper",
+        "reason": "needs ParentImage, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_webshell_hacking",
+        "reason": "needs ParentImage, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_webshell_recon_commands_and_processes",
+        "reason": "needs ParentImage, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_webshell_susp_process_spawned_from_webserver",
+        "reason": "needs ParentImage, ParentCommandLine, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_webshell_tool_recon",
+        "reason": "needs ParentImage, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_werfault_lsass_shtinkering",
+        "reason": "needs ParentUser, User, ParentImage, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_wermgr_susp_child_process",
+        "reason": "needs ParentImage, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_whoami_execution_from_high_priv_process",
+        "reason": "needs User, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_winrm_susp_child_process",
+        "reason": "needs ParentImage, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_wmi_backdoor_exchange_transport_agent",
+        "reason": "needs ParentImage, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_wmic_squiblytwo_bypass",
+        "reason": "needs Hashes, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_wmic_susp_execution_via_office_process",
+        "reason": "needs ParentImage, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_wmiprvse_susp_child_processes",
+        "reason": "needs ParentImage, which a command does not have before it runs"
+      },
+      {
+        "id": "proc_creation_win_wusa_susp_parent_execution",
+        "reason": "needs ParentImage, which a command does not have before it runs"
+      }
+    ],
+    "dropped": {}
+  }
+}

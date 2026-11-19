@@ -39,6 +39,23 @@
         "maxBytes": 5000000
       },
       "converter": "rulesets-convert-sigma.mjs"
+    },
+    "sigma-windows": {
+      "repo": "SigmaHQ/sigma",
+      "license": "DRL-1.1",
+      "repoLicense": "NOASSERTION",
+      "notice": "NOTICE",
+      "licenseCheck": {
+        "path": "LICENSE",
+        "contains": "Detection Rule License (DRL) 1.1"
+      },
+      "archive": {
+        "asset": "sigma_core.zip",
+        "include": "rules/windows/process_creation/",
+        "maxBytes": 5000000
+      },
+      "converter": "rulesets-convert-sigma.mjs",
+      "platform": "windows"
     }
   }
 }

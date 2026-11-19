@@ -1,3 +1,4 @@
+import { translateRe2, UnsupportedRegex } from './re2.js';
 import { parseCondition, referencedSelections, SigmaError, type CommandRule, type FieldClause, type FieldOp, type Selection } from './sigma.js';
 import type { ConversionReport, SkippedRule } from './types.js';
 import { parseYaml, YamlError, type YamlValue } from './yaml-lite.js';
@@ -10,7 +11,17 @@ import { parseYaml, YamlError, type YamlValue } from './yaml-lite.js';
 
 /** What the guard knows about a command before it runs. The other Sigma fields (the parent process, the user, ...) do not exist yet. */
 export const PROVIDED_FIELDS = ['Image', 'CommandLine', 'CurrentDirectory'] as const;
+/** Windows adds the file name the program was built with; the guard only has the name it was started by (see command-gate.ts). */
+export const WINDOWS_PROVIDED_FIELDS = [...PROVIDED_FIELDS, 'OriginalFileName'] as const;
+export type Platform = 'linux' | 'windows';
 const OPS = new Set(['contains', 'startswith', 'endswith']);
+const DASHES = ['/', '\u2013', '\u2014', '\u2015'];
+
+/** `windash`: a dash that starts an argument may also be written as / or as an en dash, em dash or horizontal bar. */
+function dashVariants(v: string): string[] {
+  if (!/(^|\s)-/.test(v)) return [v];
+  return [v, ...DASHES.map((d) => v.replace(/(^|\s)-/g, (_m, lead: string) => lead + d))];
+}
 
 const isMap = (v: YamlValue | undefined): v is { [k: string]: YamlValue } => typeof v === 'object' && v !== null && !Array.isArray(v);
 
@@ -20,8 +31,13 @@ function clausesOf(map: { [k: string]: YamlValue }): FieldClause[] {
     const [field, ...mods] = key.split('|');
     let op: FieldOp = 'equals';
     let all = false;
+    let windash = false;
+    let reI = false;
     for (const m of mods) {
       if (m === 'all') all = true;
+      else if (m === 'windash') windash = true;
+      else if (m === 're' && op === 'equals') op = 're';
+      else if (m === 'i' && mods.includes('re')) reI = true;
       else if (OPS.has(m) && op === 'equals') op = m as FieldOp;
       else throw new SigmaError(`the modifier "${m}" in ${key} is not supported`);
     }
@@ -31,8 +47,30 @@ function clausesOf(map: { [k: string]: YamlValue }): FieldClause[] {
       if (typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean') return String(v);
       throw new SigmaError(`${key} has a value that is not a string`);
     });
+    if (op === 're') {
+      if (windash) throw new SigmaError(`${key} combines re and windash`);
+      const sources: string[] = [];
+      const flags: string[] = [];
+      for (const v of values) {
+        try {
+          const t = translateRe2(v);
+          const f = [...new Set((t.flags + (reI ? 'i' : '')).replace(/[gdy]/g, ''))].join('');
+          new RegExp(t.source, f);
+          sources.push(t.source);
+          flags.push(f);
+        } catch (err) {
+          if (err instanceof UnsupportedRegex || err instanceof SyntaxError) throw new SigmaError(`${key} has a pattern that cannot be read (${err.message.slice(0, 60)})`);
+          throw err;
+        }
+      }
+      out.push({ field, op, values: sources, all, flags });
+      continue;
+    }
     if (values.some((v) => v.includes('*') || v.includes('?'))) throw new SigmaError(`${key} uses a wildcard, which is not supported`);
-    out.push({ field, op, values, all });
+    if (windash && all) {
+      // every value must be there, each in any of its dash spellings: one clause per value
+      for (const v of values) out.push({ field, op, values: dashVariants(v), all: false });
+    } else out.push({ field, op, values: windash ? values.flatMap(dashVariants) : values, all });
   }
   return out;
 }
@@ -43,7 +81,12 @@ function selectionOf(name: string, value: YamlValue): Selection {
   throw new SigmaError(`the selection ${name} is a keyword list or something else this converter does not read`);
 }
 
-export function convertSigma(files: Record<string, string>, meta: { name: string; version: string; repoUrl: string }): { ruleset: { format: 1; kind: 'commands'; name: string; version: string; rules: CommandRule[] }; report: ConversionReport } {
+export function convertSigma(
+  files: Record<string, string>,
+  meta: { name: string; version: string; repoUrl: string; platform?: Platform },
+): { ruleset: { format: 1; kind: 'commands'; name: string; version: string; platform?: 'windows'; rules: CommandRule[] }; report: ConversionReport } {
+  const platform: Platform = meta.platform ?? 'linux';
+  const provided: readonly string[] = platform === 'windows' ? WINDOWS_PROVIDED_FIELDS : PROVIDED_FIELDS;
   const rules: CommandRule[] = [];
   const skipped: SkippedRule[] = [];
   const seen = new Set<string>();
@@ -69,7 +112,7 @@ export function convertSigma(files: Record<string, string>, meta: { name: string
     if (seen.has(ruleId)) return skip('duplicate rule id');
     seen.add(ruleId);
     const logsource = isMap(doc.logsource) ? doc.logsource : {};
-    if (logsource.product !== 'linux' || logsource.category !== 'process_creation') return skip('not a Linux process creation rule');
+    if (logsource.product !== platform || logsource.category !== 'process_creation') return skip(`not a ${platform === 'windows' ? 'Windows' : 'Linux'} process creation rule`);
     const detection = isMap(doc.detection) ? doc.detection : null;
     if (!detection) return skip('the rule has no detection');
 
@@ -90,7 +133,7 @@ export function convertSigma(files: Record<string, string>, meta: { name: string
 
       const fields = new Set<string>();
       for (const n of used) for (const alt of selections[n]) for (const c of alt) fields.add(c.field);
-      const missing = [...fields].filter((f) => !(PROVIDED_FIELDS as readonly string[]).includes(f));
+      const missing = [...fields].filter((f) => !provided.includes(f));
       if (missing.length > 0) throw new SigmaError(`needs ${missing.join(', ')}, which a command does not have before it runs`);
 
       const description = (typeof doc.description === 'string' ? doc.description : '').replace(/\s+/g, ' ').trim().slice(0, 400);
@@ -113,7 +156,7 @@ export function convertSigma(files: Record<string, string>, meta: { name: string
   for (const path of Object.keys(files).sort()) handle(path);
 
   return {
-    ruleset: { format: 1, kind: 'commands', name: meta.name, version: meta.version, rules },
+    ruleset: { format: 1, kind: 'commands', name: meta.name, version: meta.version, ...(platform === 'windows' ? { platform: 'windows' as const } : {}), rules },
     report: { total: rules.length + skipped.length, converted: rules.length, skipped, dropped: {} },
   };
 }

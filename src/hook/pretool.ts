@@ -47,7 +47,7 @@ export async function evaluateToolCall(call: ToolCall, projectDir: string, cwd: 
     add(checkDestructive(call.command));
     add(checkSecrets(call.command));
     for (const r of await checkSecretsWithRulesets(call.command)) add(r);
-    for (const r of await checkCommandsWithRulesets(call.command, cwd)) add(r);
+    for (const r of await checkCommandsWithRulesets(call.command, cwd, call.tool)) add(r);
     const protectedWrite = findProtectedWrite(call.command, projectDir, cwd);
     if (protectedWrite) {
       if (protectedWrite.decision === 'deny') deny = true;

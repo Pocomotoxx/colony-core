@@ -69,7 +69,7 @@ if (commandsMode) {
   // The commands that the files contain (the lines of fenced code blocks in Markdown, run: lines of workflows, the scripts of
   // package.json) judged by the command rule sets. For a set of files that are known to hold ordinary commands, every match
   // is a false positive: this is how the false positive rate is counted before a rule may block.
-  const { eventsOf } = await mod('rulesets/command-gate.js');
+  const { eventsOf, windowsEventsOf } = await mod('rulesets/command-gate.js');
   const { ruleMatches } = await mod('rulesets/sigma.js');
   const sets = loaded.filter((s) => s.kind === 'commands');
   const commands = [];
@@ -96,8 +96,10 @@ if (commandsMode) {
   const byRule = {};
   const hits = [];
   for (const c of commands) {
-    const events = eventsOf(c.text, root);
+    const linuxEvents = eventsOf(c.text, root);
+    const windowsEvents = windowsEventsOf(c.text, root, 'PowerShell');
     for (const set of sets) {
+      const events = set.platform === 'windows' ? windowsEvents : linuxEvents;
       for (const rule of set.commands) {
         if (events.some((e) => ruleMatches(rule, e))) {
           byRule[rule.title] = (byRule[rule.title] ?? 0) + 1;
