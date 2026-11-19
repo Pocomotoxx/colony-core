@@ -78,7 +78,7 @@ test('a Windows rule is converted for what a command has (Image, CommandLine, Cu
   assert.match(why.parent, /needs ParentImage/);
   assert.match(why.hashes, /needs Hashes/);
   assert.match(why.expand, /modifier "expand"/);
-  assert.match(why.b64, /base64offset/);
+  assert.match(why.b64, /too short to look for in base64/);
   assert.match(why.lin, /not a Windows process creation/);
   // the Linux conversion is unchanged: no platform in its file, and OriginalFileName is not a field of a Linux command
   const linux = convertSigma({ 'rules/ok.yml': SAMPLE("selection:\n    OriginalFileName: 'x'\ncondition: selection", 'linux') }, { ...meta, platform: undefined });
@@ -138,9 +138,33 @@ test('wildcards: * is any run, ? any one character, a backslash makes them plain
   assert.ok(Date.now() - t0 < 2000);
 });
 
+test('base64offset: the value is found inside base64 text at any alignment; case matters; short values and other operators are refused', () => {
+  const rule = (detection: string) => {
+    const { ruleset, report } = convertSigma({ 'rules/r.yml': SAMPLE(detection) }, meta);
+    return { ruleset, report, compiled: ruleset.rules[0] ? compileCommandRule(ruleset.rules[0]) : null };
+  };
+  const one = rule("selection:\n    CommandLine|base64offset|contains: 'IEX (New'\ncondition: selection");
+  assert.equal(one.report.converted, 1);
+  const wrapped = (before: string, value: string, after: string): string => 'powershell -e ' + Buffer.from(before + value + after, 'utf-8').toString('base64');
+  for (const before of ['', 'a', 'ab', 'abc', 'abcd', 'x'.repeat(7)]) {
+    for (const after of ['', 'z', 'zz']) assert.equal(ruleMatches(one.compiled!, { CommandLine: wrapped(before, 'IEX (New', after) }), true, `${before.length} before, ${after.length} after`);
+  }
+  assert.equal(ruleMatches(one.compiled!, { CommandLine: wrapped('', 'iex (New', '') }), false, 'another spelling of the capitals is another base64 text');
+  assert.equal(ruleMatches(one.compiled!, { CommandLine: wrapped('', 'IEX (Old', '') }), false);
+  assert.equal(ruleMatches(one.compiled!, { CommandLine: 'IEX (New-Object x)' }), false, 'plain text is not base64');
+
+  const both = rule("selection:\n    CommandLine|base64offset|contains|all:\n        - 'Set-MpPreference'\n        - 'DisableRealtime'\ncondition: selection");
+  assert.equal(ruleMatches(both.compiled!, { CommandLine: wrapped('p', 'Set-MpPreference -DisableRealtimeMonitoring', '') }), true, 'each value is found at its own alignment');
+  assert.equal(ruleMatches(both.compiled!, { CommandLine: wrapped('p', 'Set-MpPreference', '') }), false, 'with all, both values are needed');
+  assert.equal(both.report.converted, 1);
+
+  assert.match(rule("selection:\n    CommandLine|base64offset|startswith: 'IEX (New'\ncondition: selection").report.skipped[0].reason, /only with contains/);
+  assert.match(rule("selection:\n    CommandLine|base64offset|contains: 'ab'\ncondition: selection").report.skipped[0].reason, /too short/);
+});
+
 // ---- the vendored set
 
-test('the vendored Windows set loads with its hashes verified: the same archive as the Linux set, 558 files, 346 rules, 212 skipped with a reason', async () => {
+test('the vendored Windows set loads with its hashes verified: the same archive as the Linux set, 558 files, 350 rules, 208 skipped with a reason', async () => {
   const set = await loadRuleset(vendoredWin);
   const linux = await loadRuleset(vendoredLinux);
   assert.equal(set.kind, 'commands');
@@ -152,8 +176,8 @@ test('the vendored Windows set loads with its hashes verified: the same archive 
   assert.equal(set.provenance.commit, linux.provenance.commit);
   assert.equal(set.provenance.license, 'DRL-1.1');
   assert.equal(set.provenance.sources?.length, 558);
-  assert.equal(set.commands.length, 346);
-  assert.equal(set.provenance.report.skipped.length, 212);
+  assert.equal(set.commands.length, 350);
+  assert.equal(set.provenance.report.skipped.length, 208);
   assert.ok(set.provenance.report.skipped.every((s) => s.reason.length > 10));
   assert.ok(set.commands.every((r) => r.author && r.title));
 });

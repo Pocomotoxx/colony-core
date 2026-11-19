@@ -2810,13 +2810,13 @@
   ],
   "normalized": {
     "file": "ruleset.json",
-    "sha256": "2eefeb9d2832f837db4415eb394b50409f90d7e25ed718e2de40973b180ffb20"
+    "sha256": "25a7ae561f6acdc9429ddbe3c79a7c1fa03114d588faf23d246f614b16cdb960"
   },
   "converter": "colony rulesets converter 1 (sigma windows process_creation)",
   "retrievedAt": "2026-11-19",
   "report": {
     "total": 558,
-    "converted": 346,
+    "converted": 350,
     "skipped": [
       {
         "id": "proc_creation_win_agentexecutor_susp_usage",
@@ -3211,24 +3211,8 @@
         "reason": "needs ParentImage, which a command does not have before it runs"
       },
       {
-        "id": "proc_creation_win_powershell_base64_frombase64string",
-        "reason": "the modifier \"base64offset\" in CommandLine|base64offset|contains is not supported"
-      },
-      {
-        "id": "proc_creation_win_powershell_base64_iex",
-        "reason": "the modifier \"base64offset\" in CommandLine|base64offset|contains is not supported"
-      },
-      {
-        "id": "proc_creation_win_powershell_base64_mppreference",
-        "reason": "the modifier \"base64offset\" in CommandLine|base64offset|contains is not supported"
-      },
-      {
         "id": "proc_creation_win_powershell_cmdline_special_characters",
         "reason": "needs ParentImage, which a command does not have before it runs"
-      },
-      {
-        "id": "proc_creation_win_powershell_defender_disable_feature",
-        "reason": "the modifier \"base64offset\" in CommandLine|base64offset|contains is not supported"
       },
       {
         "id": "proc_creation_win_powershell_run_script_from_ads",
