@@ -223,12 +223,46 @@ test('a secret below the entropy of its rule is not a finding, a random one is',
   assert.equal(shannonEntropy('aaaa'), 0);
 });
 
+test('a secret anywhere in a long text is found, once, also where two windows overlap or one is cut by a boundary', async () => {
+  const set = await loadRuleset(vendored);
+  const token = (seed: number) => 'ghp_' + fake(36, ALNUM, seed);
+  const filler = (n: number) => 'lorem ipsum dolor sit amet. '.repeat(Math.ceil(n / 28)).slice(0, n);
+  const t1 = token(31); // inside the overlap of the first two windows
+  const t2 = token(32); // far into the text
+  const text = filler(13_000) + ' x=' + t1 + ' ' + filler(40_000) + ' y=' + t2 + ' ' + filler(2000);
+  const found = scanSecrets(text, [set]).findings.filter((f) => f.rule === 'github-pat');
+  assert.equal(found.length, 2, 'two tokens, each reported once');
+  assert.deepEqual(found.map((f) => text.slice(f.offset, f.offset + f.length)), [t1, t2]);
+
+  // a private key block that crosses the end of the first window
+  const pem = ['-----BEGIN RSA PRIVATE' + ' KEY-----', ...Array.from({ length: 40 }, (_, i) => fake(64, ALNUM, 40 + i)), '-----END RSA PRIVATE' + ' KEY-----'].join('\n');
+  const at = 15_000;
+  const withKey = filler(at) + '\n' + pem + '\n' + filler(3000);
+  const keys = scanSecrets(withKey, [set]).findings.filter((f) => f.rule === 'private-key');
+  assert.equal(keys.length, 1);
+  assert.ok(keys[0].offset <= at + 40 && keys[0].offset + keys[0].length >= at + pem.length - 40, 'the whole block, not a piece of it');
+});
+
+test('a time budget stops a scan that would take long, and the result says it is incomplete', async () => {
+  const set = await loadRuleset(vendored);
+  // the keyword of a slow rule, then a long run it is slow on
+  const hostile = 'cohere ' + 'a1'.repeat(100_000);
+  const started = Date.now();
+  const result = scanSecrets(hostile, [set], { maxChars: 200_000, budgetMs: 200 });
+  assert.equal(result.incomplete, true);
+  assert.ok(Date.now() - started < 15_000, 'stopped long before the whole scan would have finished');
+  assert.equal(scanSecrets('plain text', [set], { budgetMs: 200 }).incomplete, false);
+});
+
 test('a text longer than the limit is checked up to the limit and says so', async () => {
   const set = await loadRuleset(vendored);
   const result = scanSecrets('x'.repeat(5000), [set], { maxChars: 1000 });
   assert.equal(result.truncated, true);
 });
 
+// Some converted rules take tens of microseconds per character on long alphanumeric runs, so this limit is deliberately
+// loose (it must hold on a busy machine): it catches a regex that backtracks catastrophically, not a slow one. A slow one
+// is bounded by the windows and the time budget of scanSecrets, which the tests below check.
 test('no rule is slow on hostile input: the converted regexes finish on long repetitive text', async () => {
   const set = await loadRuleset(vendored);
   const inputs = ['a'.repeat(20_000), '0'.repeat(20_000), ' '.repeat(20_000), '='.repeat(20_000), '-----BEGIN '.repeat(2000), 'AKIA'.repeat(5000), 'a1'.repeat(10_000), '"\'`'.repeat(6000)];
@@ -238,7 +272,7 @@ test('no rule is slow on hostile input: the converted regexes finish on long rep
       const started = Date.now();
       for (const m of input.matchAll(rule.regex)) void m;
       const took = Date.now() - started;
-      if (took > 1500) slow.push(`${rule.id}: ${took} ms on ${input.slice(0, 6)}...`);
+      if (took > 8000) slow.push(`${rule.id}: ${took} ms on ${input.slice(0, 6)}...`);
     }
   }
   assert.deepEqual(slow, [], 'a regex that backtracks catastrophically would show here');

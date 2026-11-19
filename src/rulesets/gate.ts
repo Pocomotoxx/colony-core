@@ -13,6 +13,8 @@ import { scanSecrets } from './loader.js';
 
 /** A hook call checks at most this many characters of one text: the guard must not hold up a tool call. */
 export const GUARD_SCAN_CHARS = 200_000;
+/** ... and for at most this long (some rules are slow on long alphanumeric text): a partly checked text is said so. */
+export const GUARD_BUDGET_MS = 1500;
 export const WARNINGS_FILE = 'ruleset-warnings.jsonl';
 
 export async function checkSecretsWithRulesets(text: string): Promise<GateResult[]> {
@@ -29,7 +31,16 @@ export async function checkSecretsWithRulesets(text: string): Promise<GateResult
   }
   if (loaded.length === 0) return out;
 
-  const scan = scanSecrets(text, loaded, { maxChars: GUARD_SCAN_CHARS });
+  const scan = scanSecrets(text, loaded, { maxChars: GUARD_SCAN_CHARS, budgetMs: GUARD_BUDGET_MS });
+  if (scan.incomplete) {
+    out.push({
+      gate: 'secret-rulesets',
+      decision: 'warn',
+      reason: `The rule set scan used up its time budget (${GUARD_BUDGET_MS} ms) on this text: only part of it was checked for secrets.`,
+      remediation: ['Check the text yourself, or run colony check --file on a smaller piece.'],
+      details: { incomplete: true },
+    });
+  }
   if (scan.findings.length === 0) return out;
   const rules = [...new Set(scan.findings.map((f) => f.rule))];
   // two rules often name the same secret (a provider rule and a generic one): that is one possible secret, not two
