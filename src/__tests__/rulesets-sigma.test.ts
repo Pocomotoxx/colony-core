@@ -226,7 +226,7 @@ test('a rule is converted only when it can be judged for a command; the others a
     'rules/ok.yml': SAMPLE("selection:\n    Image|endswith: '/rm'\n    CommandLine|contains: ' -rf '\ncondition: selection"),
     'rules/parent.yml': SAMPLE("selection:\n    ParentImage|endswith: '/git'\n    CommandLine|contains: 'x'\ncondition: selection"),
     'rules/cidr.yml': SAMPLE("selection:\n    CommandLine|cidr: '10.0.0.0/8'\ncondition: selection"),
-    'rules/wild.yml': SAMPLE("selection:\n    CommandLine|contains: 'a*b'\ncondition: selection"),
+    'rules/expand.yml': SAMPLE("selection:\n    CommandLine|expand: '%x%'\ncondition: selection"),
     'rules/keywords.yml': SAMPLE("keywords:\n    - 'mimikatz'\ncondition: keywords"),
     'rules/agg.yml': SAMPLE("selection:\n    CommandLine|contains: 'x'\ncondition: selection | count() > 3"),
     'rules/undefined.yml': SAMPLE("selection:\n    CommandLine|contains: 'x'\ncondition: selection and other"),
@@ -241,7 +241,7 @@ test('a rule is converted only when it can be judged for a command; the others a
   const why = Object.fromEntries(report.skipped.map((s) => [s.id, s.reason]));
   assert.match(why.parent, /needs ParentImage/);
   assert.match(why.cidr, /modifier "cidr"/);
-  assert.match(why.wild, /wildcard/);
+  assert.match(why.expand, /modifier "expand"/);
   assert.match(why.keywords, /keyword list/);
   assert.match(why.agg, /aggregation or a pipe/);
   assert.match(why.undefined, /other, which is not defined/);

@@ -66,7 +66,6 @@ function clausesOf(map: { [k: string]: YamlValue }): FieldClause[] {
       out.push({ field, op, values: sources, all, flags });
       continue;
     }
-    if (values.some((v) => v.includes('*') || v.includes('?'))) throw new SigmaError(`${key} uses a wildcard, which is not supported`);
     if (windash && all) {
       // every value must be there, each in any of its dash spellings: one clause per value
       for (const v of values) out.push({ field, op, values: dashVariants(v), all: false });

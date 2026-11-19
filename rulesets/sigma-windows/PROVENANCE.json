@@ -2810,13 +2810,13 @@
   ],
   "normalized": {
     "file": "ruleset.json",
-    "sha256": "31a4ebe3d6d55a3510f4ca91f9335abeb51afad0231a6c70fb000b29ff52035e"
+    "sha256": "2eefeb9d2832f837db4415eb394b50409f90d7e25ed718e2de40973b180ffb20"
   },
   "converter": "colony rulesets converter 1 (sigma windows process_creation)",
   "retrievedAt": "2026-11-19",
   "report": {
     "total": 558,
-    "converted": 336,
+    "converted": 346,
     "skipped": [
       {
         "id": "proc_creation_win_agentexecutor_susp_usage",
@@ -2845,10 +2845,6 @@
       {
         "id": "proc_creation_win_cmd_path_traversal",
         "reason": "needs ParentImage, ParentCommandLine, which a command does not have before it runs"
-      },
-      {
-        "id": "proc_creation_win_cmd_shadowcopy_access",
-        "reason": "CommandLine|contains|all uses a wildcard, which is not supported"
       },
       {
         "id": "proc_creation_win_cmd_sticky_key_like_backdoor_execution",
@@ -2947,16 +2943,8 @@
         "reason": "needs Hashes, which a command does not have before it runs"
       },
       {
-        "id": "proc_creation_win_hktl_crackmapexec_execution_patterns",
-        "reason": "CommandLine|contains uses a wildcard, which is not supported"
-      },
-      {
         "id": "proc_creation_win_hktl_crackmapexec_patterns",
         "reason": "needs User, which a command does not have before it runs"
-      },
-      {
-        "id": "proc_creation_win_hktl_crackmapexec_powershell_obfuscation",
-        "reason": "CommandLine|contains uses a wildcard, which is not supported"
       },
       {
         "id": "proc_creation_win_hktl_createminidump",
@@ -3009,10 +2997,6 @@
       {
         "id": "proc_creation_win_hktl_powersploit_empire_default_schtasks",
         "reason": "needs ParentImage, which a command does not have before it runs"
-      },
-      {
-        "id": "proc_creation_win_hktl_relay_attacks_tools",
-        "reason": "CommandLine|contains uses a wildcard, which is not supported"
       },
       {
         "id": "proc_creation_win_hktl_rubeus",
@@ -3077,10 +3061,6 @@
       {
         "id": "proc_creation_win_hwp_exploits",
         "reason": "needs ParentImage, which a command does not have before it runs"
-      },
-      {
-        "id": "proc_creation_win_iis_appcmd_service_account_password_dumped",
-        "reason": "CommandLine|contains uses a wildcard, which is not supported"
       },
       {
         "id": "proc_creation_win_iis_susp_module_registration",
@@ -3247,10 +3227,6 @@
         "reason": "needs ParentImage, which a command does not have before it runs"
       },
       {
-        "id": "proc_creation_win_powershell_decrypt_pattern",
-        "reason": "CommandLine|contains|all uses a wildcard, which is not supported"
-      },
-      {
         "id": "proc_creation_win_powershell_defender_disable_feature",
         "reason": "the modifier \"base64offset\" in CommandLine|base64offset|contains is not supported"
       },
@@ -3320,7 +3296,7 @@
       },
       {
         "id": "proc_creation_win_rar_susp_greedy_compression",
-        "reason": "CommandLine|contains uses a wildcard, which is not supported"
+        "reason": "needs Description, which a command does not have before it runs"
       },
       {
         "id": "proc_creation_win_regedit_trustedinstaller",
@@ -3419,10 +3395,6 @@
         "reason": "needs ParentImage, which a command does not have before it runs"
       },
       {
-        "id": "proc_creation_win_schtasks_delete_all",
-        "reason": "CommandLine|contains|all uses a wildcard, which is not supported"
-      },
-      {
         "id": "proc_creation_win_schtasks_powershell_persistence",
         "reason": "needs ParentImage, ParentCommandLine, which a command does not have before it runs"
       },
@@ -3479,10 +3451,6 @@
         "reason": "needs ParentImage, ParentCommandLine, which a command does not have before it runs"
       },
       {
-        "id": "proc_creation_win_susp_emoji_usage_in_cli_3",
-        "reason": "CommandLine|contains uses a wildcard, which is not supported"
-      },
-      {
         "id": "proc_creation_win_susp_eventlog_clear",
         "reason": "needs ParentImage, which a command does not have before it runs"
       },
@@ -3515,10 +3483,6 @@
         "reason": "needs ParentImage, which a command does not have before it runs"
       },
       {
-        "id": "proc_creation_win_susp_sensitive_file_access_shadowcopy",
-        "reason": "CommandLine|contains uses a wildcard, which is not supported"
-      },
-      {
         "id": "proc_creation_win_susp_service_dir",
         "reason": "needs ParentImage, which a command does not have before it runs"
       },
@@ -3528,7 +3492,7 @@
       },
       {
         "id": "proc_creation_win_susp_system_user_anomaly",
-        "reason": "CommandLine|contains uses a wildcard, which is not supported"
+        "reason": "needs IntegrityLevel, User, ParentCommandLine, ParentImage, which a command does not have before it runs"
       },
       {
         "id": "proc_creation_win_susp_workfolders",
@@ -3549,10 +3513,6 @@
       {
         "id": "proc_creation_win_sysinternals_psexesvc_as_system",
         "reason": "needs ParentImage, User, which a command does not have before it runs"
-      },
-      {
-        "id": "proc_creation_win_sysinternals_sdelete",
-        "reason": "CommandLine|contains uses a wildcard, which is not supported"
       },
       {
         "id": "proc_creation_win_sysinternals_sysmon_uninstall",

@@ -132,6 +132,95 @@ export interface CompiledClause {
   values: string[]; // lower case (not for re)
   all: boolean;
   res?: RegExp[];
+  /** Parallel to values: the pattern of a value that has a wildcard (null for a plain value, which is in values). */
+  globs?: Array<Glob | null>;
+}
+
+/** A value with wildcards: segments between the `*` of the value; a null in a segment is a `?` (any one character). */
+export type Glob = Array<Array<string | null>>;
+
+/**
+ * Read a Sigma value (the specification's escaping): `*` is any run of characters, `?` any one character. A
+ * backslash before a wildcard makes it a plain character (`\*`); `\\*` is a backslash and a wildcard, `\\\*` a
+ * backslash and a plain star. A run of backslashes not followed by a wildcard counts half, rounded up (one or two
+ * are one backslash, three or four are two).
+ */
+export function parseSigmaValue(raw: string): Glob {
+  const segs: Glob = [[]];
+  const cur = (): Array<string | null> => segs[segs.length - 1];
+  let i = 0;
+  while (i < raw.length) {
+    const c = raw[i];
+    if (c === '\\') {
+      let n = 0;
+      while (raw[i + n] === '\\') n++;
+      const next = raw[i + n];
+      const wildcard = next === '*' || next === '?';
+      const slashes = wildcard ? Math.floor(n / 2) : Math.ceil(n / 2);
+      for (let k = 0; k < slashes; k++) cur().push('\\');
+      i += n;
+      if (wildcard && n % 2 === 1) {
+        cur().push(next);
+        i++;
+      }
+    } else if (c === '*') {
+      segs.push([]);
+      i++;
+    } else if (c === '?') {
+      cur().push(null);
+      i++;
+    } else {
+      cur().push(c);
+      i++;
+    }
+  }
+  return segs;
+}
+
+const hasWildcard = (g: Glob): boolean => g.length > 1 || g[0].some((x) => x === null);
+
+function matchAt(text: string, seg: Array<string | null>, at: number): boolean {
+  if (at < 0 || at + seg.length > text.length) return false;
+  for (let k = 0; k < seg.length; k++) if (seg[k] !== null && text[at + k] !== seg[k]) return false;
+  return true;
+}
+
+/** The first place from `from` (not past `last`) where the segment matches, or -1. */
+function findSeg(text: string, seg: Array<string | null>, from: number, last: number): number {
+  for (let at = from; at <= last; at++) if (matchAt(text, seg, at)) return at;
+  return -1;
+}
+
+/** Does the text match the pattern the way the field operator says (contains, startswith, endswith, equals)? Linear in the text for each segment: no backtracking. */
+function globMatches(op: FieldOp, text: string, g: Glob): boolean {
+  const anchorStart = op === 'startswith' || op === 'equals';
+  const anchorEnd = op === 'endswith' || op === 'equals';
+  if (g.length === 1) {
+    const seg = g[0];
+    if (anchorStart && anchorEnd) return text.length === seg.length && matchAt(text, seg, 0);
+    if (anchorStart) return matchAt(text, seg, 0);
+    if (anchorEnd) return matchAt(text, seg, text.length - seg.length);
+    return findSeg(text, seg, 0, text.length - seg.length) >= 0;
+  }
+  let pos = 0;
+  let end = text.length;
+  const mids = g.slice();
+  const first = mids.shift()!;
+  const last = mids.pop()!;
+  if (anchorStart) {
+    if (!matchAt(text, first, 0)) return false;
+    pos = first.length;
+  } else mids.unshift(first);
+  if (anchorEnd) {
+    if (text.length - last.length < pos || !matchAt(text, last, text.length - last.length)) return false;
+    end = text.length - last.length;
+  } else mids.push(last);
+  for (const seg of mids) {
+    const at = findSeg(text, seg, pos, end - seg.length);
+    if (at < 0) return false;
+    pos = at + seg.length;
+  }
+  return true;
 }
 
 /** A pattern is tried on at most this much of a field, so a huge command cannot make a rule slow. */
@@ -150,6 +239,18 @@ export interface CompiledCommandRule {
   patterns: Map<string, RegExp>;
 }
 
+function compilePlain(c: FieldClause): CompiledClause {
+  const parsed = c.values.map((v) => parseSigmaValue(v.toLowerCase()));
+  const globs = parsed.map((g) => (hasWildcard(g) ? g : null));
+  return {
+    field: c.field,
+    op: c.op,
+    values: parsed.map((g, i) => (globs[i] ? '' : g[0].join(''))),
+    all: c.all,
+    ...(globs.some((g) => g) ? { globs } : {}),
+  };
+}
+
 export function compileCommandRule(rule: CommandRule): CompiledCommandRule {
   const selections = new Map<string, CompiledClause[][]>();
   for (const [name, sel] of Object.entries(rule.selections)) {
@@ -159,7 +260,7 @@ export function compileCommandRule(rule: CommandRule): CompiledCommandRule {
         alt.map((c) =>
           c.op === 're'
             ? { field: c.field, op: c.op, values: c.values, all: c.all, res: c.values.map((v, i) => new RegExp(v, c.flags?.[i] ?? '')) }
-            : { field: c.field, op: c.op, values: c.values.map((v) => v.toLowerCase()), all: c.all },
+            : compilePlain(c),
         ),
       ),
     );
@@ -186,7 +287,11 @@ function clauseMatches(c: CompiledClause, event: CommandEvent): boolean {
     return c.all ? c.res!.every(hit) : c.res!.some(hit);
   }
   const v = raw.toLowerCase();
-  const one = (want: string): boolean => (c.op === 'contains' ? v.includes(want) : c.op === 'startswith' ? v.startsWith(want) : c.op === 'endswith' ? v.endsWith(want) : v === want);
+  const one = (want: string, i: number): boolean => {
+    const g = c.globs?.[i];
+    if (g) return globMatches(c.op, v, g);
+    return c.op === 'contains' ? v.includes(want) : c.op === 'startswith' ? v.startsWith(want) : c.op === 'endswith' ? v.endsWith(want) : v === want;
+  };
   return c.all ? c.values.every(one) : c.values.some(one);
 }
 
