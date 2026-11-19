@@ -1,0 +1,55 @@
+{
+  "format": 1,
+  "name": "presidio",
+  "version": "2.2.366",
+  "commit": "211afc337241aee8bf495f282e83ef639a5d015f",
+  "sourceUrl": "https://github.com/microsoft/presidio/tree/2.2.366/presidio-analyzer/presidio_analyzer/predefined_recognizers/generic",
+  "license": "MIT",
+  "licenseFile": {
+    "file": "LICENSE",
+    "sha256": "f3e86ee59a49bcfb0d9a9547484d55224ea7b2d04f95b1947b4d18d17f6de535"
+  },
+  "sources": [
+    {
+      "file": "source/credit_card_recognizer.py",
+      "sha256": "762612c51d56339e6bd39362402a330d46d48c0aabe4db100012cd03fcb0e562",
+      "gitBlobSha1": "912bf8d197ac2ff600f4018dc7a8a08817122315",
+      "bytes": 2718
+    },
+    {
+      "file": "source/iban_patterns.py",
+      "sha256": "9762357625953cc7a8aa17c86871a884f428da9921358aa074058641e906080a",
+      "gitBlobSha1": "956ef3e29ef76fcf2d49e034f76861836b23a60a",
+      "bytes": 9086
+    },
+    {
+      "file": "source/ip_recognizer.py",
+      "sha256": "4d46aa9623114c3ee147c7f2f11455caf4911d42059e2583d46494574efe65e5",
+      "gitBlobSha1": "279e94e43a0f7e1d2adc71da99b135e358d19bed",
+      "bytes": 3072
+    },
+    {
+      "file": "source/mac_recognizer.py",
+      "sha256": "c9caea6308afcbf9e8588f01af8a65371e90c4178aaa4db27fb9bed7ada7714c",
+      "gitBlobSha1": "de8e422740e34b8ec6acf60d54004c817770dc4f",
+      "bytes": 2374
+    }
+  ],
+  "normalized": {
+    "file": "ruleset.json",
+    "sha256": "a468a366edeebc8c18557dfc4a3e1f550ae2de4c03a921fc2a1327b139f17515"
+  },
+  "converter": "colony rulesets converter 1 (presidio patterns)",
+  "retrievedAt": "2026-11-19",
+  "report": {
+    "total": 84,
+    "converted": 83,
+    "skipped": [
+      {
+        "id": "ip_address:IPv6_unspecified",
+        "reason": "the score 0.1 is below 0.3: the pattern alone is too weak"
+      }
+    ],
+    "dropped": {}
+  }
+}

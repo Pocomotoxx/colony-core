@@ -38,6 +38,26 @@ export interface RulesetFile {
   globalAllowlist: RuleAllowlist | null;
 }
 
+/** The kinds of personal data the PII rule sets find (names as in redact.ts, plus mac_address). */
+export type PiiEntity = 'ip_address' | 'iban' | 'credit_card' | 'mac_address';
+
+export interface PiiRule {
+  id: string;
+  entity: PiiEntity;
+  pattern: RulePattern;
+  /** The upstream's own score for the pattern alone (0 to 1); absent when the file that holds it is not vendored. */
+  score?: number;
+}
+
+/** A converted personal data rule set. It carries patterns only: the checks (checksums, address validity) are the colony's own. */
+export interface PiiRulesetFile {
+  format: 1;
+  kind: 'pii';
+  name: string;
+  version: string;
+  rules: PiiRule[];
+}
+
 export interface SkippedRule {
   id: string;
   reason: string;
