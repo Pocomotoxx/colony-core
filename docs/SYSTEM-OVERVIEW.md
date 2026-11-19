@@ -83,7 +83,7 @@ Az auditból ezek maradtak szándékosan megoldatlanul, vagy csak dokumentálva:
 
 - A nagybetűs `.GIT/…` útvonalat az őr Linuxon is tiltja (a nevet kisbetűsítve hasonlítja): túlvédés, nem megkerülés.
 - A radar-import a fájl `status: ok` és Guard-pontszám állítását nem tudja ellenőrizni. A helyi átvizsgálás újra lefut, a gyanús tétel "unverified" címkével kerül a memóriába.
-- A radar útvonalán a valódi IPv4-címek megmaradnak (a verziószámok megőrzése miatt), IPv6-ot a kitakarás nem fed (a presidio-készlet már megtalálja, a bekötése külön lépés).
+- A radar útvonalán a valódi IPv4-címek megmaradnak (a verziószámok megőrzése miatt: a `skip: ['ip_address']` csak az IPv4 alakra vonatkozik). Az IPv6 címet a kitakarás a presidio-készlettel eltünteti, a `::1` loopback kivételével.
 - A szűrő az idézett támadómondatot tartalmazó oktatási szöveget `hostile`-nak minősíti (hamis pozitív).
 - Az eval-futtató a hostot nem zárja homokozóba: a munkamappa csak kezdőkönyvtár, a host a felhasználó jogaival fut, és a környezetét örökli.
 - A mentés három külön fájlt ír (főkönyv, audit, integritásrekord). Egy megszakadás utáni boot BLOCKED, nem csendes; `--accept-changes` kell hozzá.

@@ -29,11 +29,14 @@ import { createHmac } from 'node:crypto';
 import { findSecretSpans } from './gates.js';
 import { luhnValid } from './injection-scan.js';
 import { ibanValid } from './rulesets/validators.js';
+import { activeRulesetsSync } from './rulesets/active.js';
+import { findPii } from './rulesets/pii.js';
+import type { LoadedRuleset, LoadResult } from './rulesets/loader.js';
 
-export type RedactKind = 'email' | 'credit_card' | 'iban' | 'phone' | 'ip_address' | 'jwt' | 'database_url' | 'secret' | 'bank_account' | 'tax_id' | 'taj';
+export type RedactKind = 'email' | 'credit_card' | 'iban' | 'phone' | 'ip_address' | 'jwt' | 'database_url' | 'secret' | 'bank_account' | 'tax_id' | 'taj' | 'mac_address';
 export type RedactAction = 'redact' | 'hash';
 
-export const REDACT_KINDS: readonly RedactKind[] = ['email', 'credit_card', 'iban', 'phone', 'ip_address', 'jwt', 'database_url', 'secret', 'bank_account', 'tax_id', 'taj'];
+export const REDACT_KINDS: readonly RedactKind[] = ['email', 'credit_card', 'iban', 'phone', 'ip_address', 'jwt', 'database_url', 'secret', 'bank_account', 'tax_id', 'taj', 'mac_address'];
 
 export interface RedactOptions {
   /** Kinds to replace by a salted hash instead of a placeholder. Secrets are always redacted. */
@@ -42,7 +45,8 @@ export interface RedactOptions {
   salt?: string;
   /**
    * Kinds to LEAVE in the text, for one shape that gives false alarms: a four-part version number such as 13.6.233.17
-   * is a valid IPv4 address, so release notes lose their versions. A secret is never left: asking for it is an error.
+   * is a valid IPv4 address, so release notes lose their versions. For ip_address this leaves the IPv4 form only: an
+   * IPv6 address cannot be a version number and is still redacted. A secret is never left: asking for it is an error.
    */
   skip?: readonly RedactKind[];
 }
@@ -58,7 +62,28 @@ interface Span {
   start: number;
   end: number;
   value: string;
+  /** An IPv6 address: not affected by skipping ip_address. */
+  v6?: boolean;
 }
+
+let warnedFor: LoadResult | undefined;
+
+/**
+ * The vendored personal data rule sets (presidio): IPv6 and IPv4 addresses with a prefix, IBANs of every country, bank cards of
+ * 13 to 19 digits, MAC addresses. A set that failed its hash checks is not used, and that is said once per load, loudly:
+ * the own patterns below still redact, so a broken set means less redaction, never none.
+ */
+function personalDataSets(): LoadedRuleset[] {
+  const result = activeRulesetsSync();
+  if (result.failed.length > 0 && warnedFor !== result) {
+    warnedFor = result;
+    for (const f of result.failed) console.warn(`[redact] the rule set '${f.name}' failed its checks and is NOT used (${f.error}); only the colony's own patterns redact personal data.`);
+  }
+  return result.loaded.filter((s) => s.kind === 'pii');
+}
+
+/** The IPv6 loopback address is not personal data, and it turns up in code (a host check): it is left alone. */
+const isIpv6Loopback = (value: string): boolean => /^::1(?:\/128)?$/.test(value);
 
 /** Hungarian TAJ (social security) number: nine digits, the last is a check digit (weights 3 and 7 alternating over the first eight, mod 10). */
 function tajValid(raw: string): boolean {
@@ -97,6 +122,14 @@ function collect(text: string): Span[] {
   add('ip_address', /\b(?:\d{1,3}\.){3}\d{1,3}\b/g, ipv4Valid);
   add('jwt', /\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\b/g);
   add('database_url', /\b(?:postgres(?:ql)?|mysql|mongodb(?:\+srv)?|redis):\/\/[^\s'"]+/g);
+  const sets = personalDataSets();
+  if (sets.length > 0) {
+    for (const f of findPii(text, sets).findings) {
+      const value = text.slice(f.offset, f.offset + f.length);
+      if (f.entity === 'ip_address' && isIpv6Loopback(value)) continue;
+      spans.push({ kind: f.entity, start: f.offset, end: f.offset + f.length, value, ...(f.entity === 'ip_address' && value.includes(':') ? { v6: true } : {}) });
+    }
+  }
   for (const s of findSecretSpans(text)) {
     spans.push({ kind: 'secret', start: s.offset, end: s.offset + s.length, value: text.slice(s.offset, s.offset + s.length) });
   }
@@ -126,7 +159,7 @@ export function redactText(input: string, options: RedactOptions = {}): RedactRe
   if (skipKinds.has('secret')) throw new Error('a secret is always redacted and cannot be skipped');
   for (const kind of skipKinds) if (!REDACT_KINDS.includes(kind)) throw new Error(`unknown kind to skip: ${String(kind)}`);
 
-  const spans = resolveOverlaps(collect(input).filter((s) => !skipKinds.has(s.kind)));
+  const spans = resolveOverlaps(collect(input).filter((s) => !skipKinds.has(s.kind) || (s.kind === 'ip_address' && s.v6 === true)));
   const counts = new Map<RedactKind, number>();
   let out = '';
   let cursor = 0;
