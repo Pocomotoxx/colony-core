@@ -1,0 +1,2 @@
+# Vendored rule sets are verified by hash: their bytes must not change on checkout (no line-ending conversion).
+rulesets/** -text
