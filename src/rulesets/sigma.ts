@@ -17,6 +17,8 @@ export interface FieldClause {
   all: boolean;
   /** For `re`: the JavaScript flags of each translated pattern (Sigma's `re` is case sensitive unless `re|i`). */
   flags?: string[];
+  /** Case sensitive: a base64 text has a different spelling for every capital. */
+  cs?: boolean;
 }
 
 /** An OR of alternatives, each an AND of field clauses (a selection written as a map is one alternative). */
@@ -132,6 +134,7 @@ export interface CompiledClause {
   values: string[]; // lower case (not for re)
   all: boolean;
   res?: RegExp[];
+  cs?: boolean;
   /** Parallel to values: the pattern of a value that has a wildcard (null for a plain value, which is in values). */
   globs?: Array<Glob | null>;
 }
@@ -240,13 +243,14 @@ export interface CompiledCommandRule {
 }
 
 function compilePlain(c: FieldClause): CompiledClause {
-  const parsed = c.values.map((v) => parseSigmaValue(v.toLowerCase()));
+  const parsed = c.values.map((v) => parseSigmaValue(c.cs ? v : v.toLowerCase()));
   const globs = parsed.map((g) => (hasWildcard(g) ? g : null));
   return {
     field: c.field,
     op: c.op,
     values: parsed.map((g, i) => (globs[i] ? '' : g[0].join(''))),
     all: c.all,
+    ...(c.cs ? { cs: true } : {}),
     ...(globs.some((g) => g) ? { globs } : {}),
   };
 }
@@ -286,7 +290,7 @@ function clauseMatches(c: CompiledClause, event: CommandEvent): boolean {
     const hit = (re: RegExp): boolean => ((re.lastIndex = 0), re.test(text));
     return c.all ? c.res!.every(hit) : c.res!.some(hit);
   }
-  const v = raw.toLowerCase();
+  const v = c.cs ? raw : raw.toLowerCase();
   const one = (want: string, i: number): boolean => {
     const g = c.globs?.[i];
     if (g) return globMatches(c.op, v, g);

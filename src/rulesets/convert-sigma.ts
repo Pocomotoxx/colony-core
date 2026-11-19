@@ -17,6 +17,20 @@ export type Platform = 'linux' | 'windows';
 const OPS = new Set(['contains', 'startswith', 'endswith']);
 const DASHES = ['/', '\u2013', '\u2014', '\u2015'];
 
+/**
+ * `base64offset`: the value as it appears inside a base64 text, whatever its position (three alignments). The
+ * characters that depend on the bytes before or after the value are cut off, as Sigma's own tools do.
+ */
+function base64Variants(value: string): string[] {
+  const bytes = Buffer.from(value, 'utf-8');
+  const starts = [0, 2, 3];
+  const ends: Array<number | undefined> = [undefined, -3, -2];
+  return [0, 1, 2].map((i) => {
+    const text = Buffer.concat([Buffer.alloc(i, 0x20), bytes]).toString('base64');
+    return text.slice(starts[i], ends[(bytes.length + i) % 3]);
+  });
+}
+
 /** `windash`: a dash that starts an argument may also be written as / or as an en dash, em dash or horizontal bar. */
 function dashVariants(v: string): string[] {
   if (!/(^|\s)-/.test(v)) return [v];
@@ -32,10 +46,12 @@ function clausesOf(map: { [k: string]: YamlValue }): FieldClause[] {
     let op: FieldOp = 'equals';
     let all = false;
     let windash = false;
+    let b64 = false;
     let reI = false;
     for (const m of mods) {
       if (m === 'all') all = true;
       else if (m === 'windash') windash = true;
+      else if (m === 'base64offset') b64 = true;
       else if (m === 're' && op === 'equals') op = 're';
       else if (m === 'i' && mods.includes('re')) reI = true;
       else if (OPS.has(m) && op === 'equals') op = m as FieldOp;
@@ -47,6 +63,17 @@ function clausesOf(map: { [k: string]: YamlValue }): FieldClause[] {
       if (typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean') return String(v);
       throw new SigmaError(`${key} has a value that is not a string`);
     });
+    if (b64) {
+      if (op !== 'contains' || windash) throw new SigmaError(`${key}: base64offset is read only with contains`);
+      const variants = (v: string): string[] => {
+        const out = base64Variants(v);
+        if (out.some((x) => x.length < 4)) throw new SigmaError(`${key} has a value too short to look for in base64 text`);
+        return out;
+      };
+      if (all) for (const v of values) out.push({ field, op, values: variants(v), all: false, cs: true });
+      else out.push({ field, op, values: values.flatMap(variants), all, cs: true });
+      continue;
+    }
     if (op === 're') {
       if (windash) throw new SigmaError(`${key} combines re and windash`);
       const sources: string[] = [];
