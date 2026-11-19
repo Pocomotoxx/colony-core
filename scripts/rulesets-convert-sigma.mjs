@@ -5,7 +5,7 @@
 //
 //   node scripts/rulesets-convert-sigma.mjs --archive <sigma_core.zip> --dir rulesets/sigma --version r2026-07-01 \
 //        --commit <sha> --digest sha256:<hex> --url <asset url> --retrieved 2026-11-19
-// Optional: --name <set name, default sigma> --platform <linux|windows> --include <folder in the package> --asset <file name>
+// Optional: --name <set name, default sigma> --platform <linux|windows> --category <process_creation|ps_script> --include <folder in the package> --asset <file name>
 //
 // The folder must hold NOTICE (written by the colony: the rules are under the Detection Rule License 1.1).
 import { Buffer } from 'node:buffer';
@@ -48,7 +48,12 @@ if (platform !== 'linux' && platform !== 'windows') {
 }
 const setName = optional('name') ?? 'sigma';
 const assetName = optional('asset') ?? 'sigma_core.zip';
-const PREFIX = optional('include') ?? `rules/${platform}/process_creation/`;
+const category = optional('category') ?? 'process_creation';
+if (category !== 'process_creation' && category !== 'ps_script') {
+  console.error('--category must be process_creation or ps_script');
+  process.exit(2);
+}
+const PREFIX = optional('include') ?? (category === 'ps_script' ? 'rules/windows/powershell/powershell_script/' : `rules/${platform}/process_creation/`);
 
 const archive = readFileSync(archivePath);
 if (digest !== `sha256:${sha256Hex(archive)}`) {
@@ -76,7 +81,7 @@ for (const e of picked) {
   texts[e.name] = bytes.toString('utf-8');
 }
 
-const { ruleset, report } = convertSigma(texts, { name: setName, version, repoUrl: `https://github.com/SigmaHQ/sigma/blob/${version}`, platform });
+const { ruleset, report } = convertSigma(texts, { name: setName, version, repoUrl: `https://github.com/SigmaHQ/sigma/blob/${version}`, platform, category });
 const normalized = JSON.stringify(ruleset, null, 2) + '\n';
 writeFileSync(join(dir, 'ruleset.json'), normalized, 'utf-8');
 
@@ -91,7 +96,7 @@ const provenance = {
   archive: { name: assetName, sha256: sha256Hex(archive), bytes: archive.length, url, digest },
   sources,
   normalized: { file: 'ruleset.json', sha256: sha256Hex(Buffer.from(normalized, 'utf-8')) },
-  converter: `colony rulesets converter 1 (sigma ${platform} process_creation)`,
+  converter: `colony rulesets converter 1 (sigma ${platform} ${category})`,
   retrievedAt: retrieved,
   report,
 };

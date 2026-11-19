@@ -1,0 +1,298 @@
+{
+  "format": 1,
+  "name": "sigma-powershell",
+  "version": "r2026-07-01",
+  "commit": "552f3fee420ef232a8e5790c4fae591847e32347",
+  "sourceUrl": "https://github.com/SigmaHQ/sigma/releases/tag/r2026-07-01",
+  "license": "DRL-1.1",
+  "licenseFile": {
+    "file": "NOTICE",
+    "sha256": "06c431bc6ea2ef2a448d408f4b50b65d73785a4ac5b0d94cbd13c5e74aae608d"
+  },
+  "archive": {
+    "name": "sigma_core.zip",
+    "sha256": "45ccbd62cbf0d7ccca6f44eaa010f86bb24f082b5411c5e22c71907e7770ee46",
+    "bytes": 1399726,
+    "url": "https://github.com/SigmaHQ/sigma/releases/download/r2026-07-01/sigma_core.zip",
+    "digest": "sha256:45ccbd62cbf0d7ccca6f44eaa010f86bb24f082b5411c5e22c71907e7770ee46"
+  },
+  "sources": [
+    {
+      "file": "source/rules/windows/powershell/powershell_script/posh_ps_aadinternals_cmdlets_execution.yml",
+      "sha256": "3b25182b87824ea6d96306257570b018a552749773d5bfe9eb869e89343f67a2",
+      "bytes": 2018
+    },
+    {
+      "file": "source/rules/windows/powershell/powershell_script/posh_ps_add_dnsclient_rule.yml",
+      "sha256": "45b49889677e87a2c5ae803496f5ae982ee3450a502502bab52a587cc76b8eb4",
+      "bytes": 972
+    },
+    {
+      "file": "source/rules/windows/powershell/powershell_script/posh_ps_adrecon_execution.yml",
+      "sha256": "7632545c9a4cad86abdab5cc6146a54d247a141750c50a3a6a1b6613e444bf43",
+      "bytes": 1014
+    },
+    {
+      "file": "source/rules/windows/powershell/powershell_script/posh_ps_amsi_bypass_pattern_nov22.yml",
+      "sha256": "db8c99ec1d92ccc85eb20937601127d60e14b5801c1d7ce31d246cb35e3d8f85",
+      "bytes": 886
+    },
+    {
+      "file": "source/rules/windows/powershell/powershell_script/posh_ps_apt_silence_eda.yml",
+      "sha256": "73a67d10262bc8d19ddf40fcd858981b27ce262f97ef29db88d4eb5628327f58",
+      "bytes": 1421
+    },
+    {
+      "file": "source/rules/windows/powershell/powershell_script/posh_ps_clearing_windows_console_history.yml",
+      "sha256": "72e0d93f04e2fa34548e82011d6927f272786cbe9d31dae0f603665f8651e25c",
+      "bytes": 1216
+    },
+    {
+      "file": "source/rules/windows/powershell/powershell_script/posh_ps_copy_item_system_directory.yml",
+      "sha256": "8251fff2a38f22eb93f2c9ade696beb1f83961f3621ccf60be30fc86b7a4ddf8",
+      "bytes": 953
+    },
+    {
+      "file": "source/rules/windows/powershell/powershell_script/posh_ps_create_volume_shadow_copy.yml",
+      "sha256": "dc853ccedb7af3a3a6035bb2ac3d78ee37b98ea91184dda7658411ae8ad91fec",
+      "bytes": 894
+    },
+    {
+      "file": "source/rules/windows/powershell/powershell_script/posh_ps_disable_psreadline_command_history.yml",
+      "sha256": "ae6120323224966c232f0b83a5b1cd078f6669ddfe289230b5e954f40f2f0762",
+      "bytes": 734
+    },
+    {
+      "file": "source/rules/windows/powershell/powershell_script/posh_ps_disable_windows_optional_feature.yml",
+      "sha256": "bc254c9c01bd9f54d896ac5055bb96e52fbb0181e67dac9d8fc9e5c608ffbfca",
+      "bytes": 1436
+    },
+    {
+      "file": "source/rules/windows/powershell/powershell_script/posh_ps_dsinternals_cmdlets.yml",
+      "sha256": "b29d67eb87276e1c6ed08db0f5aea11044d1eab064fdfcddfdaf87b21b42709a",
+      "bytes": 3792
+    },
+    {
+      "file": "source/rules/windows/powershell/powershell_script/posh_ps_etw_trace_evasion.yml",
+      "sha256": "6c4f908ce0850656bb0b49df10ec19afc87877681150f5fe11b37125c1f4363a",
+      "bytes": 1092
+    },
+    {
+      "file": "source/rules/windows/powershell/powershell_script/posh_ps_hktl_rubeus.yml",
+      "sha256": "45b1f7052a730165385586166dde91bb75e44b58d0f049f81327dfafccc4ca91",
+      "bytes": 1413
+    },
+    {
+      "file": "source/rules/windows/powershell/powershell_script/posh_ps_hktl_winpwn.yml",
+      "sha256": "03d44d784336023722696eb30cfff90fb7e642436b4725635c1039c0612cc55c",
+      "bytes": 1633
+    },
+    {
+      "file": "source/rules/windows/powershell/powershell_script/posh_ps_invoke_dnsexfiltration.yml",
+      "sha256": "6512497a3cc7ed82ef8543454d5fdd9c83835df7ad0a403acf2550ff10a62b2a",
+      "bytes": 955
+    },
+    {
+      "file": "source/rules/windows/powershell/powershell_script/posh_ps_invoke_obfuscation_clip.yml",
+      "sha256": "3cfda1b400b2c3655dfc0b176628092bce1b725f0ccffb885762c85619aece55",
+      "bytes": 759
+    },
+    {
+      "file": "source/rules/windows/powershell/powershell_script/posh_ps_invoke_obfuscation_obfuscated_iex.yml",
+      "sha256": "ce79163e40d3dc678df73d0a20776b0e4426d6fe58f1a5f762bae4e116c40a5b",
+      "bytes": 1279
+    },
+    {
+      "file": "source/rules/windows/powershell/powershell_script/posh_ps_invoke_obfuscation_stdin.yml",
+      "sha256": "c5deca5f82f47f8efe25fc6962bd56c1b1175aa781bb311b70f3544cae32dad6",
+      "bytes": 741
+    },
+    {
+      "file": "source/rules/windows/powershell/powershell_script/posh_ps_invoke_obfuscation_var.yml",
+      "sha256": "c337dddf74c2b5a3ac7d71310b89b4a1d44e0a0dc37577dde15cd1e114c4d2bc",
+      "bytes": 779
+    },
+    {
+      "file": "source/rules/windows/powershell/powershell_script/posh_ps_invoke_obfuscation_via_stdin.yml",
+      "sha256": "817f5d5d145b111354ef31b9274e1cca0a7393cb0af968c96f5d5d77eb0f855a",
+      "bytes": 729
+    },
+    {
+      "file": "source/rules/windows/powershell/powershell_script/posh_ps_invoke_obfuscation_via_use_clip.yml",
+      "sha256": "abe4d6b972c2b0c62ca5eb2d2bdb000b9fbf55c6e9a267dae99730db320307df",
+      "bytes": 730
+    },
+    {
+      "file": "source/rules/windows/powershell/powershell_script/posh_ps_invoke_obfuscation_via_use_mhsta.yml",
+      "sha256": "0d5ff794ec9394d16f66c761c8f4ec9776dbe101946d978411c0bb50fd0630e3",
+      "bytes": 835
+    },
+    {
+      "file": "source/rules/windows/powershell/powershell_script/posh_ps_invoke_obfuscation_via_use_rundll32.yml",
+      "sha256": "d2c41a962d67604788543cf044989d1130beaeb62db892f55cda0ed0f700acc9",
+      "bytes": 907
+    },
+    {
+      "file": "source/rules/windows/powershell/powershell_script/posh_ps_invoke_obfuscation_via_var.yml",
+      "sha256": "4cf1f3288d1bbcecda721c3420c4b6b315350f2413db78e323fc556ebc6e459f",
+      "bytes": 749
+    },
+    {
+      "file": "source/rules/windows/powershell/powershell_script/posh_ps_mailboxexport_share.yml",
+      "sha256": "2c46108e1575a8b73587771a2e38a41f741382a761c826bdc636443036e76c7e",
+      "bytes": 1138
+    },
+    {
+      "file": "source/rules/windows/powershell/powershell_script/posh_ps_malicious_commandlets.yml",
+      "sha256": "a637b4f549ed4bfa6b061273271225f3b6fdb47dcae77630b50cc0082adf1eca",
+      "bytes": 10087
+    },
+    {
+      "file": "source/rules/windows/powershell/powershell_script/posh_ps_memorydump_getstoragediagnosticinfo.yml",
+      "sha256": "5fb929549f8dfe51853af1290a3d8bcd43aa482c17c19d0b4c00195aa9245204",
+      "bytes": 788
+    },
+    {
+      "file": "source/rules/windows/powershell/powershell_script/posh_ps_nishang_malicious_commandlets.yml",
+      "sha256": "9b745ee7ff1c5f3b20964ea8d9a3de5e1ab67b85369274820ad3b12252ef9b63",
+      "bytes": 3948
+    },
+    {
+      "file": "source/rules/windows/powershell/powershell_script/posh_ps_ntfs_ads_access.yml",
+      "sha256": "71f64c0962ea5487d8c521aa8c79001ed137f7b6843c3a0541aca58220604ff2",
+      "bytes": 975
+    },
+    {
+      "file": "source/rules/windows/powershell/powershell_script/posh_ps_office_comobject_registerxll.yml",
+      "sha256": "1eef0f779dbcdfb88c72d3dc4d899d029c4d237df4e227596a445fe41dfc05d2",
+      "bytes": 886
+    },
+    {
+      "file": "source/rules/windows/powershell/powershell_script/posh_ps_potential_invoke_mimikatz.yml",
+      "sha256": "69247510cbdaf2b155e99cffd1d11c4a39d875e84c43c163a9f52cbcd34a1cda",
+      "bytes": 1056
+    },
+    {
+      "file": "source/rules/windows/powershell/powershell_script/posh_ps_powershell_web_access_installation.yml",
+      "sha256": "995bb2ba86649e4244cbf8e69d1dc594427265fc917084acd6b910b4b099ff9a",
+      "bytes": 1244
+    },
+    {
+      "file": "source/rules/windows/powershell/powershell_script/posh_ps_powerview_malicious_commandlets.yml",
+      "sha256": "130330cd0bed820fd66e6ae2025f8e7111b07fcabc619815cbeda6ac501c4eeb",
+      "bytes": 5072
+    },
+    {
+      "file": "source/rules/windows/powershell/powershell_script/posh_ps_prompt_credentials.yml",
+      "sha256": "19493adc568283754c9d12524299a3468c5ef23eeb24a00000ad8822a1cdd435",
+      "bytes": 709
+    },
+    {
+      "file": "source/rules/windows/powershell/powershell_script/posh_ps_psasyncshell.yml",
+      "sha256": "d21602ccedf6363357ad8f9d44d8ed0eaccea1a47bca29bb2e51e442688a8eb8",
+      "bytes": 655
+    },
+    {
+      "file": "source/rules/windows/powershell/powershell_script/posh_ps_psattack.yml",
+      "sha256": "72299ccfb4ca65c2d700b3c8010920607cbf6da8f6790ae309eda4e0dd9adc45",
+      "bytes": 611
+    },
+    {
+      "file": "source/rules/windows/powershell/powershell_script/posh_ps_remotefxvgpudisablement_abuse.yml",
+      "sha256": "653f1056b116014021db055660a91414ec1fa249f1aca176a0fcb3d7bf3ffca6",
+      "bytes": 1384
+    },
+    {
+      "file": "source/rules/windows/powershell/powershell_script/posh_ps_request_kerberos_ticket.yml",
+      "sha256": "bf1771f8ab5922e357105d6c3a6947e6d96cc036718058c4946ac767eefd255a",
+      "bytes": 1291
+    },
+    {
+      "file": "source/rules/windows/powershell/powershell_script/posh_ps_set_acl_susp_location.yml",
+      "sha256": "e8a88704647a05eb242b93287958690af62976ed8b0e81c009bb780ba43cc4a8",
+      "bytes": 1725
+    },
+    {
+      "file": "source/rules/windows/powershell/powershell_script/posh_ps_shellcode_b64.yml",
+      "sha256": "bc5ecdf7fdfc0cf1c6e207a9b014d5d098a3cbac61c2ab0b7705180e27eae5a7",
+      "bytes": 744
+    },
+    {
+      "file": "source/rules/windows/powershell/powershell_script/posh_ps_shellintel_malicious_commandlets.yml",
+      "sha256": "1ad131b7f6ecbdd4665a9c684920bad3d05fe4743700c3a9a3ceeafb0aad94cd",
+      "bytes": 832
+    },
+    {
+      "file": "source/rules/windows/powershell/powershell_script/posh_ps_susp_ace_tampering.yml",
+      "sha256": "6c56065a01834960689783bda7e67846df82826d58385e7f4b6fb5bbb78a15d7",
+      "bytes": 1060
+    },
+    {
+      "file": "source/rules/windows/powershell/powershell_script/posh_ps_susp_getprocess_lsass.yml",
+      "sha256": "abb5e82589d29cb07bad179194d602064d987420c842c9e1b03c817c6ac6621e",
+      "bytes": 878
+    },
+    {
+      "file": "source/rules/windows/powershell/powershell_script/posh_ps_susp_invocation_generic.yml",
+      "sha256": "54a102facc7b98c18a7bd9165a54653fa308684cc03a1cdc7e664b1cc717c872",
+      "bytes": 1166
+    },
+    {
+      "file": "source/rules/windows/powershell/powershell_script/posh_ps_susp_invocation_specific.yml",
+      "sha256": "b951802ebd02b19c0f41ce8fa26f54ce8b5001db21e064dc44a7c831aa7aca96",
+      "bytes": 2733
+    },
+    {
+      "file": "source/rules/windows/powershell/powershell_script/posh_ps_susp_service_dacl_modification_set_service.yml",
+      "sha256": "3b3ae290dd173005c0e8f6e731505f56089faed3136dfec38be72bae99381b44",
+      "bytes": 1523
+    },
+    {
+      "file": "source/rules/windows/powershell/powershell_script/posh_ps_susp_win32_shadowcopy_deletion.yml",
+      "sha256": "721cb0a6fc760920e42b6204e3b28c0ba383c0532ff9fd33fba0ba99ee02fce5",
+      "bytes": 1451
+    },
+    {
+      "file": "source/rules/windows/powershell/powershell_script/posh_ps_tamper_windows_defender_rem_mp.yml",
+      "sha256": "daa8de010f8a177b4e29735bdc9c5137809084c2b022041a290146dfcbe8d170",
+      "bytes": 1164
+    },
+    {
+      "file": "source/rules/windows/powershell/powershell_script/posh_ps_tamper_windows_defender_set_mp.yml",
+      "sha256": "60a6c68c4f65ea42e98c3ff1d716cfc366f2160190eb83e33325acff0f12f0ac",
+      "bytes": 3629
+    },
+    {
+      "file": "source/rules/windows/powershell/powershell_script/posh_ps_using_set_service_to_hide_services.yml",
+      "sha256": "01f577345197230c21bfe5fc09bd0f07adc74898cf2630fd0778faf87183f8ec",
+      "bytes": 1342
+    },
+    {
+      "file": "source/rules/windows/powershell/powershell_script/posh_ps_veeam_credential_dumping_script.yml",
+      "sha256": "cbff2f92592ddc60a89b4ab4c5dc95b1a80e8a370662fe69d19694cce9f08529",
+      "bytes": 999
+    },
+    {
+      "file": "source/rules/windows/powershell/powershell_script/posh_ps_win_api_susp_access.yml",
+      "sha256": "92fe97b725290b7210d4c2992c6f09bcd432f29efa39027364934c15d94511e9",
+      "bytes": 2267
+    },
+    {
+      "file": "source/rules/windows/powershell/powershell_script/posh_ps_wmimplant.yml",
+      "sha256": "8a9a2854ca99dbb3a4215a62db0432b9c6a2c2fa0e073d1d9cdc6d9b2206fbc1",
+      "bytes": 1263
+    }
+  ],
+  "normalized": {
+    "file": "ruleset.json",
+    "sha256": "c7e7ce54ccd09338ce82be76163bf71a911a3aed556d22a29b099c8fdc2aa7ab"
+  },
+  "converter": "colony rulesets converter 1 (sigma windows ps_script)",
+  "retrievedAt": "2026-11-19",
+  "report": {
+    "total": 53,
+    "converted": 53,
+    "skipped": [],
+    "dropped": {}
+  }
+}

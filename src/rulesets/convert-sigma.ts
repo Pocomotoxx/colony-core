@@ -14,6 +14,10 @@ export const PROVIDED_FIELDS = ['Image', 'CommandLine', 'CurrentDirectory'] as c
 /** Windows adds the file name the program was built with; the guard only has the name it was started by (see command-gate.ts). */
 export const WINDOWS_PROVIDED_FIELDS = [...PROVIDED_FIELDS, 'OriginalFileName'] as const;
 export type Platform = 'linux' | 'windows';
+/** The kind of event a rule is written for: a process that starts, or the text of a PowerShell script (Windows ps_script). */
+export type Category = 'process_creation' | 'ps_script';
+/** A PowerShell script has one field: its text. */
+export const SCRIPT_PROVIDED_FIELDS = ['ScriptBlockText'] as const;
 const OPS = new Set(['contains', 'startswith', 'endswith']);
 const DASHES = ['/', '\u2013', '\u2014', '\u2015'];
 
@@ -109,10 +113,12 @@ function selectionOf(name: string, value: YamlValue): Selection {
 
 export function convertSigma(
   files: Record<string, string>,
-  meta: { name: string; version: string; repoUrl: string; platform?: Platform },
-): { ruleset: { format: 1; kind: 'commands'; name: string; version: string; platform?: 'windows'; rules: CommandRule[] }; report: ConversionReport } {
+  meta: { name: string; version: string; repoUrl: string; platform?: Platform; category?: Category },
+): { ruleset: { format: 1; kind: 'commands'; name: string; version: string; platform?: 'windows'; category?: 'ps_script'; rules: CommandRule[] }; report: ConversionReport } {
   const platform: Platform = meta.platform ?? 'linux';
-  const provided: readonly string[] = platform === 'windows' ? WINDOWS_PROVIDED_FIELDS : PROVIDED_FIELDS;
+  const category: Category = meta.category ?? 'process_creation';
+  if (category === 'ps_script' && platform !== 'windows') throw new SigmaError('PowerShell script rules are Windows rules');
+  const provided: readonly string[] = category === 'ps_script' ? SCRIPT_PROVIDED_FIELDS : platform === 'windows' ? WINDOWS_PROVIDED_FIELDS : PROVIDED_FIELDS;
   const rules: CommandRule[] = [];
   const skipped: SkippedRule[] = [];
   const seen = new Set<string>();
@@ -138,7 +144,7 @@ export function convertSigma(
     if (seen.has(ruleId)) return skip('duplicate rule id');
     seen.add(ruleId);
     const logsource = isMap(doc.logsource) ? doc.logsource : {};
-    if (logsource.product !== platform || logsource.category !== 'process_creation') return skip(`not a ${platform === 'windows' ? 'Windows' : 'Linux'} process creation rule`);
+    if (logsource.product !== platform || logsource.category !== category) return skip(`not a ${platform === 'windows' ? 'Windows' : 'Linux'} ${category === 'ps_script' ? 'PowerShell script' : 'process creation'} rule`);
     const detection = isMap(doc.detection) ? doc.detection : null;
     if (!detection) return skip('the rule has no detection');
 
@@ -182,7 +188,7 @@ export function convertSigma(
   for (const path of Object.keys(files).sort()) handle(path);
 
   return {
-    ruleset: { format: 1, kind: 'commands', name: meta.name, version: meta.version, ...(platform === 'windows' ? { platform: 'windows' as const } : {}), rules },
+    ruleset: { format: 1, kind: 'commands', name: meta.name, version: meta.version, ...(platform === 'windows' ? { platform: 'windows' as const } : {}), ...(category === 'ps_script' ? { category: 'ps_script' as const } : {}), rules },
     report: { total: rules.length + skipped.length, converted: rules.length, skipped, dropped: {} },
   };
 }

@@ -268,7 +268,7 @@ test('the vendored set loads with its hashes verified: the archive, 31 files, 25
   assert.match(await fs.readFile(path.join(vendored, 'NOTICE'), 'utf-8'), /Detection Rule License \(DRL\) 1\.1/);
   const all = await loadRulesets();
   assert.deepEqual(all.failed, []);
-  assert.deepEqual(all.loaded.map((s) => `${s.name}:${s.kind}`).sort(), ['gitleaks:secrets', 'presidio:pii', 'sigma-windows:commands', 'sigma:commands']);
+  assert.deepEqual(all.loaded.map((s) => `${s.name}:${s.kind}`).sort(), ['gitleaks:secrets', 'presidio:pii', 'sigma-powershell:commands', 'sigma-windows:commands', 'sigma:commands']);
 });
 
 test('a changed rule file, changed converted rules, or a record without its archive is not loaded', async () => {

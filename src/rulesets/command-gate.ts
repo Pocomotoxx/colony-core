@@ -87,17 +87,66 @@ export function windowsEventsOf(command: string, cwd: string, tool?: string, dep
   return events.slice(0, MAX_EVENTS);
 }
 
+// ---- PowerShell scripts
+
+const MAX_SCRIPT = 24000;
+const MAX_SCRIPTS = 20;
+
+/** The text behind a -EncodedCommand (base64 of UTF-16LE), when it reads like text. */
+function decodeEncodedCommand(word: string): string | null {
+  if (word.length < 8 || word.length > 60000 || !/^[A-Za-z0-9+/]+={0,2}$/.test(word)) return null;
+  const text = Buffer.from(word, 'base64').toString('utf16le');
+  let plain = 0;
+  for (let i = 0; i < text.length; i++) {
+    const c = text.charCodeAt(i);
+    if (c === 9 || c === 10 || c === 13 || (c >= 32 && c < 127)) plain++;
+  }
+  return text.length > 0 && plain / text.length >= 0.9 ? text : null;
+}
+
+/**
+ * The scripts a command hands to PowerShell, for the rule sets written for the text of a script (Sigma ps_script, where
+ * the field is ScriptBlockText). A PowerShell tool call is a script itself; so is what follows powershell -Command, and
+ * what a powershell -EncodedCommand decodes to (the script block log shows the decoded text too).
+ */
+export function scriptEventsOf(command: string, tool?: string): CommandEvent[] {
+  const scripts: string[] = [];
+  const add = (s: string): void => {
+    if (s.trim() && scripts.length < MAX_SCRIPTS) scripts.push(s.slice(0, MAX_SCRIPT));
+  };
+  if (tool === 'PowerShell') add(command);
+  for (const simple of splitSimple(command)) {
+    const ws = words(simple);
+    const prog = baseName(ws[0] ?? '').toLowerCase().replace(/\.exe$/, '');
+    if (prog !== 'powershell' && prog !== 'pwsh') continue;
+    for (let i = 1; i < ws.length; i++) {
+      const w = ws[i].toLowerCase();
+      if (w === '-c' || w === '-command') {
+        add(ws.slice(i + 1).join(' '));
+        break;
+      }
+      if (/^-(e|ec|enc|encodedcommand)$/.test(w)) {
+        const decoded = ws[i + 1] ? decodeEncodedCommand(ws[i + 1]) : null;
+        if (decoded) add(decoded);
+        break;
+      }
+    }
+  }
+  return scripts.map((text) => ({ ScriptBlockText: text }));
+}
+
 export async function checkCommandsWithRulesets(command: string, cwd: string, tool?: string): Promise<GateResult[]> {
   const { loaded } = await activeRulesets();
   const sets = loaded.filter((s) => s.kind === 'commands');
   if (sets.length === 0) return [];
   const linux = eventsOf(command, cwd);
   const windows = windowsEventsOf(command, cwd, tool);
-  if (linux.length === 0 && windows.length === 0) return [];
+  const scripts = scriptEventsOf(command, tool);
+  if (linux.length === 0 && windows.length === 0 && scripts.length === 0) return [];
 
   const hits = new Map<string, { ruleset: string; version: string; id: string; title: string; author: string; level: string; status: string; link: string }>();
   for (const set of sets) {
-    const events = set.platform === 'windows' ? windows : linux;
+    const events = set.category === 'ps_script' ? scripts : set.platform === 'windows' ? windows : linux;
     for (const rule of set.commands) {
       if (hits.has(rule.id)) continue;
       if (events.some((e) => ruleMatches(rule, e))) hits.set(rule.id, { ruleset: set.name, version: set.version, id: rule.id, title: rule.title, author: rule.author, level: rule.level, status: rule.status, link: rule.link });
