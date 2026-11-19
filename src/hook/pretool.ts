@@ -6,6 +6,7 @@ import type { GuardDecision, GuardVerdict, ToolCall } from '../host/types.js';
 import { scanBashCommand } from './bash-rules.js';
 import { findProtectedWrite } from './shell-paths.js';
 import { checkSecretsWithRulesets, logRulesetWarnings } from '../rulesets/gate.js';
+import { checkCommandsWithRulesets } from '../rulesets/command-gate.js';
 
 /**
  * The gates as an interceptor. A host that supports tool hooks (Claude Code's PreToolUse) calls
@@ -46,6 +47,7 @@ export async function evaluateToolCall(call: ToolCall, projectDir: string, cwd: 
     add(checkDestructive(call.command));
     add(checkSecrets(call.command));
     for (const r of await checkSecretsWithRulesets(call.command)) add(r);
+    for (const r of await checkCommandsWithRulesets(call.command, cwd)) add(r);
     const protectedWrite = findProtectedWrite(call.command, projectDir, cwd);
     if (protectedWrite) {
       if (protectedWrite.decision === 'deny') deny = true;
