@@ -113,7 +113,23 @@ Az átállásról mérés dönt, nem a készlet jó híre:
 
 **Sebesség:** mind a 83 regex lefut 20 000 karakteres, ismétlődő és kellemetlen bemeneteken 1,5 másodpercen belül (a teszt őrzi).
 
-**Nincs bekötve.** A `redactText` a saját mintákat használja. A bekötés után a kitakarás IPv6-ot, MAC-et, 13 és 15 jegyű kártyát és kisbetűs IBAN-t is eltüntet, ami a kimenetet megváltoztatja (több redaktálás, nem kevesebb), ezért külön jóváhagyás és a loopback-kivétel kell hozzá.
+**Bekötés előtt** a `redactText` a saját mintákat használta (a bekötés a 6/d szakaszban). A bekötés után a kitakarás IPv6-ot, MAC-et, 13 és 15 jegyű kártyát és kisbetűs IBAN-t is eltüntet, ami a kimenetet megváltoztatja (több redaktálás, nem kevesebb), ezért külön jóváhagyás és a loopback-kivétel kell hozzá.
+
+## 6/d. A presidio-készlet a kitakarásban (2026-11-19)
+
+**Bekötve.** A `redactText` a saját mintái mellett a presidio-készletet is futtatja (`src/redact.ts`). Új kitakarási fajta: `mac_address` (helyőrző `[REDACTED:mac_address]`, `--hash mac_address` is működik). Az ütköző találatok közül a hosszabb nyer, ahogy eddig.
+
+**Ami megváltozik a kimenetben:** több kerül kitakarásra, kevesebb nem. Újonnan kitakarjuk az IPv6 címet (zónával és előtaggal is), az IPv4-be ágyazott IPv6 címet egészben (korábban csak a belső IPv4 ment el), a 13 és 15 jegyű bankkártyát, a kisbetűs IBAN-t és a MAC-címet.
+
+**Kivétel:** az IPv6 loopback (`::1`, `::1/128`) nem személyes adat, és a kódban gyakori (hosztellenőrzés), ezért marad. Az IPv4 viselkedése változatlan: a `127.0.0.1` ma is kitakarásra kerül, mert ezt a saját mintánk eddig is tette, és nem akartuk a kimenetet ennél jobban megváltoztatni.
+
+**A `skip: ['ip_address']` szűkült:** a radar a verziószámok (`13.6.233.17`) miatt kéri, és ez csak az IPv4 alakra vonatkozik. Az IPv6 cím nem lehet verziószám, ezért a `skip` mellett is kitakarásra kerül.
+
+**Hibás készlet:** ha a presidio-készlet nem megy át a hash-ellenőrzésen, a kitakarás **egyszer, hangosan szól** (stderr, betöltésenként), és a saját minták tovább kitakarnak. Kevesebb kitakarás lesz, de nem lesz hallgatás.
+
+**Mérés a repó saját fájljain** (153 fájl): a bekötés 2 fájl kitakarását változtatta, mindkettő a most írt teszt kitalált példáit tartalmazza (IPv6 és MAC-címek). A valódi kódban és dokumentumokban a `::1` kivétel miatt nincs új kitakarás. Ez egy kis korpusz: a hamis pozitívok (például egy 13–19 jegyű azonosító, amely véletlenül átmegy a Luhn-próbán) csak használat közben derülnek ki.
+
+**Ismert korlátok:** a készlet egy szövegből legfeljebb 2 000 000 karaktert vizsgál (a saját minták az egészet); a Presidio-minták a Python `\w` helyett az ASCII-t használják.
 
 ## 6/a. Az első mérés (2026-11-19)
 
