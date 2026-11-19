@@ -90,6 +90,8 @@ export interface LoadedRuleset {
   pii: CompiledPiiRule[];
   /** The command rules (empty unless this is a commands set). */
   commands: CompiledCommandRule[];
+  /** Which operating system's process events the command rules are written for (a commands set only; linux when not said). */
+  platform?: 'linux' | 'windows';
 }
 
 const compilePattern = (p: RulePattern): RegExp => new RegExp(p.source, `${p.flags.replace(/[dg]/g, '')}dg`);
@@ -180,7 +182,8 @@ export function loadRulesetSync(dir: string): LoadedRuleset {
       };
     }
     if (parsed?.kind === 'commands') {
-      const file = parsed as { format?: number; name?: string; version?: string; rules?: CommandRule[] };
+      const file = parsed as { format?: number; name?: string; version?: string; platform?: string; rules?: CommandRule[] };
+      if (file.platform !== undefined && file.platform !== 'windows') throw new RulesetError('ruleset.json names a platform that is not known');
       if (file.format !== 1 || !Array.isArray(file.rules)) throw new RulesetError('ruleset.json has an unsupported shape');
       if (file.name !== provenance.name || file.version !== provenance.version) throw new RulesetError('ruleset.json does not belong to the provenance record (name or version differs)');
       for (const r of file.rules) {
@@ -188,7 +191,7 @@ export function loadRulesetSync(dir: string): LoadedRuleset {
           throw new RulesetError(`a rule of ruleset.json is malformed (${typeof r?.id === 'string' ? r.id : '?'})`);
         }
       }
-      return { kind: 'commands', name: provenance.name, version: provenance.version, dir, provenance, rules: [], globalAllowlist: null, pii: [], commands: file.rules.map(compileCommandRule) };
+      return { kind: 'commands', name: provenance.name, version: provenance.version, dir, provenance, rules: [], globalAllowlist: null, pii: [], commands: file.rules.map(compileCommandRule), platform: file.platform === 'windows' ? 'windows' : 'linux' };
     }
     const file = checkSecretsShape(parsed as Partial<RulesetFile> | null, provenance.name, provenance.version);
     return {

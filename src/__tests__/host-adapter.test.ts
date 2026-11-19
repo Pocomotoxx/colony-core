@@ -20,7 +20,7 @@ const livePayload = {
 
 test('the adapter turns a Claude Code payload into a host-neutral request, with the session', () => {
   const r = toHostRequest(livePayload);
-  assert.deepEqual(r.call, { kind: 'shell', command: 'echo hacked > ./.colony/ledger.json' });
+  assert.deepEqual(r.call, { kind: 'shell', command: 'echo hacked > ./.colony/ledger.json', tool: 'Bash' });
   assert.deepEqual(r.session, { id: 'da441dc5-b702-496b-80a8-c13d68fbd897', cwd: '/home/u/project' });
 });
 

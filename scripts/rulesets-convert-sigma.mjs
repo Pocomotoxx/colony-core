@@ -1,10 +1,11 @@
-// Take the Linux process creation rules out of a Sigma release package, keep them as they are, convert them into the
+// Take the process creation rules (Linux by default, Windows with --platform windows) out of a Sigma release package, keep them as they are, convert them into the
 // colony's command rule format and write the provenance record (see docs/RULESETS-PLAN.md, section 7/a).
 // No network: it reads a package that was downloaded already, and refuses it unless its SHA-256 is the digest you give
 // (the one the GitHub releases API reports for the asset).
 //
 //   node scripts/rulesets-convert-sigma.mjs --archive <sigma_core.zip> --dir rulesets/sigma --version r2026-07-01 \
 //        --commit <sha> --digest sha256:<hex> --url <asset url> --retrieved 2026-11-19
+// Optional: --name <set name, default sigma> --platform <linux|windows> --include <folder in the package> --asset <file name>
 //
 // The folder must hold NOTICE (written by the colony: the rules are under the Detection Rule License 1.1).
 import { Buffer } from 'node:buffer';
@@ -36,7 +37,18 @@ const commit = need('commit');
 const digest = need('digest');
 const url = need('url');
 const retrieved = need('retrieved');
-const PREFIX = 'rules/linux/process_creation/';
+const optional = (name) => {
+  const i = args.indexOf(`--${name}`);
+  return i >= 0 ? args[i + 1] : undefined;
+};
+const platform = optional('platform') ?? 'linux';
+if (platform !== 'linux' && platform !== 'windows') {
+  console.error('--platform must be linux or windows');
+  process.exit(2);
+}
+const setName = optional('name') ?? 'sigma';
+const assetName = optional('asset') ?? 'sigma_core.zip';
+const PREFIX = optional('include') ?? `rules/${platform}/process_creation/`;
 
 const archive = readFileSync(archivePath);
 if (digest !== `sha256:${sha256Hex(archive)}`) {
@@ -64,22 +76,22 @@ for (const e of picked) {
   texts[e.name] = bytes.toString('utf-8');
 }
 
-const { ruleset, report } = convertSigma(texts, { name: 'sigma', version, repoUrl: `https://github.com/SigmaHQ/sigma/blob/${version}` });
+const { ruleset, report } = convertSigma(texts, { name: setName, version, repoUrl: `https://github.com/SigmaHQ/sigma/blob/${version}`, platform });
 const normalized = JSON.stringify(ruleset, null, 2) + '\n';
 writeFileSync(join(dir, 'ruleset.json'), normalized, 'utf-8');
 
 const provenance = {
   format: 1,
-  name: 'sigma',
+  name: setName,
   version,
   commit,
   sourceUrl: `https://github.com/SigmaHQ/sigma/releases/tag/${version}`,
   license: 'DRL-1.1',
   licenseFile: { file: 'NOTICE', sha256: sha256Hex(readFileSync(join(dir, 'NOTICE'))) },
-  archive: { name: 'sigma_core.zip', sha256: sha256Hex(archive), bytes: archive.length, url, digest },
+  archive: { name: assetName, sha256: sha256Hex(archive), bytes: archive.length, url, digest },
   sources,
   normalized: { file: 'ruleset.json', sha256: sha256Hex(Buffer.from(normalized, 'utf-8')) },
-  converter: 'colony rulesets converter 1 (sigma linux process_creation)',
+  converter: `colony rulesets converter 1 (sigma ${platform} process_creation)`,
   retrievedAt: retrieved,
   report,
 };

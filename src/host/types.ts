@@ -8,7 +8,7 @@
 
 export type ToolCall =
   /** A shell command (Bash, PowerShell, ...). */
-  | { kind: 'shell'; command: string }
+  | { kind: 'shell'; command: string; /** The host's name of the tool (Bash, PowerShell), when it said. */ tool?: string }
   /** A tool that writes a file. `path` is undefined when the host sent none. `texts` is what it writes. */
   | { kind: 'file-write'; tool: string; path: string | undefined; texts: string[] }
   /** Anything the colony does not look into. */

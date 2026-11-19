@@ -225,7 +225,7 @@ test('a rule is converted only when it can be judged for a command; the others a
   const files = {
     'rules/ok.yml': SAMPLE("selection:\n    Image|endswith: '/rm'\n    CommandLine|contains: ' -rf '\ncondition: selection"),
     'rules/parent.yml': SAMPLE("selection:\n    ParentImage|endswith: '/git'\n    CommandLine|contains: 'x'\ncondition: selection"),
-    'rules/re.yml': SAMPLE("selection:\n    CommandLine|re: 'a.*b'\ncondition: selection"),
+    'rules/cidr.yml': SAMPLE("selection:\n    CommandLine|cidr: '10.0.0.0/8'\ncondition: selection"),
     'rules/wild.yml': SAMPLE("selection:\n    CommandLine|contains: 'a*b'\ncondition: selection"),
     'rules/keywords.yml': SAMPLE("keywords:\n    - 'mimikatz'\ncondition: keywords"),
     'rules/agg.yml': SAMPLE("selection:\n    CommandLine|contains: 'x'\ncondition: selection | count() > 3"),
@@ -240,7 +240,7 @@ test('a rule is converted only when it can be judged for a command; the others a
   assert.equal(ruleset.rules[0].author, 'Someone');
   const why = Object.fromEntries(report.skipped.map((s) => [s.id, s.reason]));
   assert.match(why.parent, /needs ParentImage/);
-  assert.match(why.re, /modifier "re"/);
+  assert.match(why.cidr, /modifier "cidr"/);
   assert.match(why.wild, /wildcard/);
   assert.match(why.keywords, /keyword list/);
   assert.match(why.agg, /aggregation or a pipe/);
@@ -268,7 +268,7 @@ test('the vendored set loads with its hashes verified: the archive, 31 files, 25
   assert.match(await fs.readFile(path.join(vendored, 'NOTICE'), 'utf-8'), /Detection Rule License \(DRL\) 1\.1/);
   const all = await loadRulesets();
   assert.deepEqual(all.failed, []);
-  assert.deepEqual(all.loaded.map((s) => `${s.name}:${s.kind}`).sort(), ['gitleaks:secrets', 'presidio:pii', 'sigma:commands']);
+  assert.deepEqual(all.loaded.map((s) => `${s.name}:${s.kind}`).sort(), ['gitleaks:secrets', 'presidio:pii', 'sigma-windows:commands', 'sigma:commands']);
 });
 
 test('a changed rule file, changed converted rules, or a record without its archive is not loaded', async () => {
@@ -342,8 +342,9 @@ test('in the guard a match is a warning that names the rule and its author; the 
   const lines = (await fs.readFile(path.join(dir, '.colony', WARNINGS_FILE), 'utf-8')).trim().split('\n').map((l) => JSON.parse(l));
   assert.equal(lines.length, 1, 'only the call with a match is recorded');
   assert.equal(lines[0].gate, 'command-rulesets');
-  assert.deepEqual(lines[0].titles, ['Potential Netcat Reverse Shell Execution']);
-  assert.equal(lines[0].count, 1);
+  // the Windows set reads the same line as a program of its own (nc.exe) and finds its netcat rule too
+  assert.deepEqual([...lines[0].titles].sort(), ['PUA - Netcat Suspicious Execution', 'Potential Netcat Reverse Shell Execution']);
+  assert.equal(lines[0].count, 2);
 });
 
 test('through the hook the note goes to stderr and an allowed call prints nothing; the check command shows the result', async () => {

@@ -7,7 +7,7 @@
 
 export class SigmaError extends Error {}
 
-export type FieldOp = 'contains' | 'startswith' | 'endswith' | 'equals';
+export type FieldOp = 'contains' | 'startswith' | 'endswith' | 'equals' | 're';
 
 export interface FieldClause {
   field: string;
@@ -15,6 +15,8 @@ export interface FieldClause {
   values: string[];
   /** `|all`: every value must match, not any. */
   all: boolean;
+  /** For `re`: the JavaScript flags of each translated pattern (Sigma's `re` is case sensitive unless `re|i`). */
+  flags?: string[];
 }
 
 /** An OR of alternatives, each an AND of field clauses (a selection written as a map is one alternative). */
@@ -127,9 +129,13 @@ export function referencedSelections(cond: Cond, names: string[]): Set<string> {
 export interface CompiledClause {
   field: string;
   op: FieldOp;
-  values: string[]; // lower case
+  values: string[]; // lower case (not for re)
   all: boolean;
+  res?: RegExp[];
 }
+
+/** A pattern is tried on at most this much of a field, so a huge command cannot make a rule slow. */
+const RE_INPUT_MAX = 8000;
 
 export interface CompiledCommandRule {
   id: string;
@@ -149,7 +155,13 @@ export function compileCommandRule(rule: CommandRule): CompiledCommandRule {
   for (const [name, sel] of Object.entries(rule.selections)) {
     selections.set(
       name,
-      sel.map((alt) => alt.map((c) => ({ field: c.field, op: c.op, values: c.values.map((v) => v.toLowerCase()), all: c.all }))),
+      sel.map((alt) =>
+        alt.map((c) =>
+          c.op === 're'
+            ? { field: c.field, op: c.op, values: c.values, all: c.all, res: c.values.map((v, i) => new RegExp(v, c.flags?.[i] ?? '')) }
+            : { field: c.field, op: c.op, values: c.values.map((v) => v.toLowerCase()), all: c.all },
+        ),
+      ),
     );
   }
   const patterns = new Map<string, RegExp>();
@@ -168,6 +180,11 @@ export function compileCommandRule(rule: CommandRule): CompiledCommandRule {
 function clauseMatches(c: CompiledClause, event: CommandEvent): boolean {
   const raw = event[c.field];
   if (raw === undefined) return false;
+  if (c.op === 're') {
+    const text = raw.length > RE_INPUT_MAX ? raw.slice(0, RE_INPUT_MAX) : raw;
+    const hit = (re: RegExp): boolean => ((re.lastIndex = 0), re.test(text));
+    return c.all ? c.res!.every(hit) : c.res!.some(hit);
+  }
   const v = raw.toLowerCase();
   const one = (want: string): boolean => (c.op === 'contains' ? v.includes(want) : c.op === 'startswith' ? v.startsWith(want) : c.op === 'endswith' ? v.endsWith(want) : v === want);
   return c.all ? c.values.every(one) : c.values.some(one);

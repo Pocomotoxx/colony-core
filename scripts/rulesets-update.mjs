@@ -95,6 +95,7 @@ async function main() {
     if (typeof archive.include !== 'string' || !archive.include.endsWith('/') || !safePath(archive.include.slice(0, -1))) fail('sources.json: the archive include path is not valid');
     if (!Number.isInteger(archive.maxBytes) || archive.maxBytes < 1 || archive.maxBytes > MAX_ARCHIVE_BYTES) fail(`sources.json: the archive size limit must be 1 to ${MAX_ARCHIVE_BYTES} bytes`);
     if (!safePath(entry.notice)) fail('sources.json: the notice path is not valid');
+    if (entry.platform !== undefined && entry.platform !== 'windows' && entry.platform !== 'linux') fail('sources.json: the platform must be linux or windows');
     if (entry.files || entry.licenseFile) fail('sources.json: a set made from an archive lists no single files and no license file (it keeps its own notice)');
     if (entry.licenseCheck && (!safePath(entry.licenseCheck.path) || typeof entry.licenseCheck.contains !== 'string' || entry.licenseCheck.contains.length === 0)) fail('sources.json: the license check is not valid');
   } else {
@@ -290,7 +291,7 @@ async function main() {
   if (archive) {
     const archivePath = join(backup, 'archive.zip');
     writeFileSync(archivePath, archiveDownload.bytes);
-    converterArgs = ['--archive', archivePath, '--dir', setDir, '--version', tag, '--commit', commit, '--digest', archiveDownload.digest, '--url', archiveDownload.url, '--retrieved', today];
+    converterArgs = ['--archive', archivePath, '--dir', setDir, '--version', tag, '--commit', commit, '--digest', archiveDownload.digest, '--url', archiveDownload.url, '--retrieved', today, '--name', setName, '--include', archive.include, '--asset', archive.asset, ...(entry.platform ? ['--platform', entry.platform] : [])];
   } else {
     rmSync(join(setDir, 'source'), { recursive: true, force: true });
     for (const [remote, local] of files) {

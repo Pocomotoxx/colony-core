@@ -37,7 +37,7 @@ export function toHostRequest(payload: unknown): HostRequest {
   const tool = asString(p.tool_name) ?? '';
   const input = asRecord(p.tool_input);
   let call: ToolCall;
-  if (SHELL_TOOLS.includes(tool)) call = { kind: 'shell', command: asString(input.command) ?? '' };
+  if (SHELL_TOOLS.includes(tool)) call = { kind: 'shell', command: asString(input.command) ?? '', tool };
   else if (tool in FILE_TOOLS) call = { kind: 'file-write', tool, path: asString(input[FILE_TOOLS[tool]]), texts: texts(tool, input) };
   else call = { kind: 'other', name: tool };
   return { call, session: { id: asString(p.session_id), cwd: asString(p.cwd) } };

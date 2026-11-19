@@ -177,6 +177,10 @@ async function sigmaPackage(): Promise<Buffer> {
     data: ['title: A rule that is new in this release', 'id: 11111111-2222-4333-8444-555555555555', 'author: Someone Else', 'status: test', 'level: high', 'logsource:', '    product: linux', '    category: process_creation', 'detection:', '    selection:', "        Image|endswith: '/zzzz'", "        CommandLine|contains: 'zz-new'", '    condition: selection', ''].join('\n'),
   });
   entries.push({ name: 'rules/windows/process_creation/win_other.yml', data: 'title: not read\n' });
+  entries.push({
+    name: 'rules/windows/process_creation/proc_creation_win_new_rule.yml',
+    data: ['title: A Windows rule that is new in this release', 'id: 66666666-7777-4888-8999-000000000000', 'author: Someone Else', 'status: test', 'level: high', 'logsource:', '    product: windows', '    category: process_creation', 'detection:', '    selection:', "        Image|endswith: '\\\\zzzz.exe'", "        CommandLine|contains|windash: ' -zz-new'", '    condition: selection', ''].join('\n'),
+  });
   return makeZip(entries);
 }
 
@@ -410,6 +414,23 @@ test('an archive set is updated: the asset is proved by its digest, converted, c
     '/__download/4242',
     '/repos/SigmaHQ/sigma/contents/LICENSE',
   ]);
+});
+
+test('the Windows set is updated from the same package: its folder, its platform, its own name', async () => {
+  const dir = await workCopy();
+  const r = await run(dir, ['--set', 'sigma-windows', '--tag', SIGMA_TAG, '--yes']);
+  assert.equal(r.code, 0, r.stderr);
+  const out = JSON.parse(r.stdout);
+  assert.equal(out.set, 'sigma-windows');
+  assert.deepEqual(out.rules.added.ids, ['A Windows rule that is new in this release']);
+  assert.equal(out.rules.after, 1);
+  const set = await loadRuleset(path.join(dir, 'sigma-windows'));
+  assert.equal(set.platform, 'windows');
+  assert.equal(set.name, 'sigma-windows');
+  assert.equal(set.version, SIGMA_TAG);
+  assert.equal(set.provenance.report.total, 2, 'the new rule and the file that is not a rule; no Linux file');
+  assert.equal(set.provenance.archive?.name, 'sigma_core.zip');
+  assert.equal((await loadRuleset(path.join(dir, 'sigma'))).version, 'r2026-07-01', 'the Linux set is not touched');
 });
 
 test('an archive that cannot be proved, or a release that is not what it should be, is refused with the vendored set untouched', async () => {
