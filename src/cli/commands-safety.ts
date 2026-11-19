@@ -3,6 +3,7 @@ import { resolveInside, SafePathError } from '../safe-path.js';
 import { scanText } from '../injection-scan.js';
 import { REDACT_KINDS, redactText, RedactKind } from '../redact.js';
 import { aggregateDecision, checkDestructive, checkDiffSize, checkSecrets, checkToolAllowed, GateResult } from '../gates.js';
+import { checkSecretsWithRulesets } from '../rulesets/gate.js';
 import { CliError, CommandContext, CommandResult, Handler } from './context.js';
 
 // Commands: check, scan, redact
@@ -18,11 +19,19 @@ async function handle_check(ctx: CommandContext): Promise<CommandResult> {
   const add = (r: GateResult | null) => {
     if (r) results.push(r);
   };
+  // the vendored rule sets only warn; the own patterns decide what is blocked
+  const addRulesets = async (text: string) => {
+    for (const r of await checkSecretsWithRulesets(text)) add(r);
+  };
   if (values.command) {
     add(checkDestructive(values.command));
     add(checkSecrets(values.command));
+    await addRulesets(values.command);
   }
-  if (values.text) add(checkSecrets(values.text));
+  if (values.text) {
+    add(checkSecrets(values.text));
+    await addRulesets(values.text);
+  }
   if (values.file) {
     let abs: string;
     try {
@@ -34,7 +43,9 @@ async function handle_check(ctx: CommandContext): Promise<CommandResult> {
     const stat = await fs.stat(abs).catch(() => null);
     if (!stat?.isFile()) throw new CliError(`file '${values.file}' not found`);
     if (stat.size > 2_000_000) throw new CliError('--file is larger than 2 MB');
-    add(checkSecrets(await fs.readFile(abs, 'utf-8')));
+    const fileText = await fs.readFile(abs, 'utf-8');
+    add(checkSecrets(fileText));
+    await addRulesets(fileText);
     if (values['diff-lines'] !== undefined) {
       const lines = Number(values['diff-lines']);
       const threshold = values.threshold === undefined ? undefined : Number(values.threshold);

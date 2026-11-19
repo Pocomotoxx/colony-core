@@ -13,7 +13,7 @@ Egyfejlesztős segédeszköz egy AI-kódolóasszisztens (elsőként a Claude Cod
 - **Teszt:** a megbízhatatlan alakok (csővezeték, `|| true`) nem számítanak bizonyítéknak.
 
 ### 2. Őr a veszélyes műveletekre
-- **Teszt és élő használat (Claude Code 2.1.281):** a hook megtagadja az állapotmappa és a `.git` módosítását, valamint a romboló és kódfuttató parancsokat; a hook-beállítások (`.claude/settings*.json`) módosításánál rákérdez (`ask`), mert azt a felhasználó engedheti. Az útvonalakat feloldja (`cd`, `..`, abszolút útvonal, kis- és nagybetű, a már létező symlink és junction). A védett mappát a projekt gyökeréből számolja (a `.colony` keresése felfelé), nem a host aktuális könyvtárából.
+- **Teszt és élő használat (Claude Code 2.1.281):** a hook megtagadja az állapotmappa és a `.git` módosítását, valamint a romboló és kódfuttató parancsokat; a hook-beállítások (`.claude/settings*.json`) módosításánál rákérdez (`ask`), mert azt a felhasználó engedheti. Az útvonalakat feloldja (`cd`, `..`, abszolút útvonal, kis- és nagybetű, a már létező symlink és junction). A titokfelismerésben a saját minták mellett a gitleaks v8.30.1 készlet (221 szabály) **figyelmeztet**, nem blokkol (a találatok a `.colony/ruleset-warnings.jsonl` fájlba kerülnek a hamis pozitívok megszámolásához). A védett mappát a projekt gyökeréből számolja (a `.colony` keresése felfelé), nem a host aktuális könyvtárából.
 - **Korlát:** szöveges szabályok. Egy kreatív parancs elkerülheti. A hook a védelem egyik rétege, nem homokozó.
 
 ### 3. Hash-láncolt audit és integritás

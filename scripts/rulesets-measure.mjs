@@ -2,6 +2,7 @@
 // is switched over (see docs/RULESETS-PLAN.md, section 6). Read-only. It prints positions and rule names, never values.
 //
 //   node scripts/rulesets-measure.mjs [--max-list 60] <file-or-folder>...
+//   node scripts/rulesets-measure.mjs --log .colony/ruleset-warnings.jsonl     (what the guard's warnings have been so far)
 //
 // Folders are walked for text files (node_modules, .git, dist and rulesets are skipped, files over 1 MB are skipped).
 import { readdirSync, readFileSync, statSync } from 'node:fs';
@@ -15,13 +16,30 @@ const { loadRulesets, scanSecrets } = await mod('rulesets/loader.js');
 
 const args = process.argv.slice(2);
 let maxList = 60;
+let logFile;
 const targets = [];
 for (let i = 0; i < args.length; i++) {
   if (args[i] === '--max-list') maxList = Number(args[++i]);
+  else if (args[i] === '--log') logFile = args[++i];
   else targets.push(args[i]);
 }
+
+if (logFile) {
+  // the warnings the guard recorded (rule names and counts, no values): how often each rule fired, and in which tool
+  const rows = readFileSync(resolve(logFile), 'utf-8').split('\n').filter(Boolean).map((l) => JSON.parse(l));
+  const byRule = {};
+  const byTool = {};
+  for (const r of rows) {
+    for (const rule of r.rules ?? []) byRule[rule] = (byRule[rule] ?? 0) + 1;
+    byTool[r.tool] = (byTool[r.tool] ?? 0) + 1;
+  }
+  const sorted = (o) => Object.fromEntries(Object.entries(o).sort((a, b) => b[1] - a[1]));
+  console.log(JSON.stringify({ warnings: rows.length, from: rows[0] ? new Date(rows[0].at).toISOString() : null, to: rows.length ? new Date(rows[rows.length - 1].at).toISOString() : null, byRule: sorted(byRule), byTool: sorted(byTool) }, null, 2));
+  process.exit(0);
+}
+
 if (targets.length === 0) {
-  console.error('usage: node scripts/rulesets-measure.mjs [--max-list N] <file-or-folder>...');
+  console.error('usage: node scripts/rulesets-measure.mjs [--max-list N] <file-or-folder>... | --log <file>');
   process.exit(2);
 }
 

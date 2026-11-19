@@ -5,6 +5,7 @@ import { toHostRequest } from '../host/claude-code.js';
 import type { GuardDecision, GuardVerdict, ToolCall } from '../host/types.js';
 import { scanBashCommand } from './bash-rules.js';
 import { findProtectedWrite } from './shell-paths.js';
+import { checkSecretsWithRulesets, logRulesetWarnings } from '../rulesets/gate.js';
 
 /**
  * The gates as an interceptor. A host that supports tool hooks (Claude Code's PreToolUse) calls
@@ -44,6 +45,7 @@ export async function evaluateToolCall(call: ToolCall, projectDir: string, cwd: 
   if (call.kind === 'shell') {
     add(checkDestructive(call.command));
     add(checkSecrets(call.command));
+    for (const r of await checkSecretsWithRulesets(call.command)) add(r);
     const protectedWrite = findProtectedWrite(call.command, projectDir, cwd);
     if (protectedWrite) {
       if (protectedWrite.decision === 'deny') deny = true;
@@ -81,10 +83,12 @@ export async function evaluateToolCall(call: ToolCall, projectDir: string, cwd: 
     }
     for (const text of call.texts) {
       add(checkSecrets(text));
+      for (const r of await checkSecretsWithRulesets(text)) add(r);
       add(checkDiffSize(call.path ?? 'file', text.split('\n').length, LARGE_WRITE_LINES));
     }
   }
 
+  await logRulesetWarnings(projectDir, call.kind === 'file-write' ? call.tool : call.kind === 'shell' ? 'shell' : call.name, results);
   const gateDecision = aggregateDecision(results);
   for (const r of results) if (r.decision !== 'warn') reasons.push(r.reason);
   const notes = results.filter((r) => r.decision === 'warn').map((r) => r.reason);

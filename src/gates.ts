@@ -15,7 +15,7 @@
 export type GateDecision = 'allow' | 'warn' | 'require-confirmation' | 'block';
 
 export interface GateResult {
-  gate: 'destructive-ops' | 'secrets' | 'diff-size' | 'tool-allowlist';
+  gate: 'destructive-ops' | 'secrets' | 'secret-rulesets' | 'diff-size' | 'tool-allowlist';
   decision: Exclude<GateDecision, 'allow'>;
   reason: string;
   remediation: string[];
