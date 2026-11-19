@@ -226,8 +226,10 @@ function globMatches(op: FieldOp, text: string, g: Glob): boolean {
   return true;
 }
 
-/** A pattern is tried on at most this much of a field, so a huge command cannot make a rule slow. */
+/** A pattern is tried on windows of this size (a little overlapping), over at most RE_TOTAL_MAX characters of a field, so a huge command cannot make a rule slow. */
 const RE_INPUT_MAX = 8000;
+const RE_STEP = 7000;
+const RE_TOTAL_MAX = 24000;
 
 export interface CompiledCommandRule {
   id: string;
@@ -286,8 +288,14 @@ function clauseMatches(c: CompiledClause, event: CommandEvent): boolean {
   const raw = event[c.field];
   if (raw === undefined) return false;
   if (c.op === 're') {
-    const text = raw.length > RE_INPUT_MAX ? raw.slice(0, RE_INPUT_MAX) : raw;
-    const hit = (re: RegExp): boolean => ((re.lastIndex = 0), re.test(text));
+    const text = raw.length > RE_TOTAL_MAX ? raw.slice(0, RE_TOTAL_MAX) : raw;
+    const hit = (re: RegExp): boolean => {
+      for (let at = 0; ; at += RE_STEP) {
+        re.lastIndex = 0;
+        if (re.test(at === 0 && text.length <= RE_INPUT_MAX ? text : text.slice(at, at + RE_INPUT_MAX))) return true;
+        if (at + RE_INPUT_MAX >= text.length) return false;
+      }
+    };
     return c.all ? c.res!.every(hit) : c.res!.some(hit);
   }
   const v = c.cs ? raw : raw.toLowerCase();

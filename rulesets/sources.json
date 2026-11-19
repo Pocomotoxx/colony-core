@@ -56,6 +56,24 @@
       },
       "converter": "rulesets-convert-sigma.mjs",
       "platform": "windows"
+    },
+    "sigma-powershell": {
+      "repo": "SigmaHQ/sigma",
+      "license": "DRL-1.1",
+      "repoLicense": "NOASSERTION",
+      "notice": "NOTICE",
+      "licenseCheck": {
+        "path": "LICENSE",
+        "contains": "Detection Rule License (DRL) 1.1"
+      },
+      "archive": {
+        "asset": "sigma_core.zip",
+        "include": "rules/windows/powershell/powershell_script/",
+        "maxBytes": 5000000
+      },
+      "converter": "rulesets-convert-sigma.mjs",
+      "platform": "windows",
+      "category": "ps_script"
     }
   }
 }

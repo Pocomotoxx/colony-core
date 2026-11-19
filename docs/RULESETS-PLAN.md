@@ -262,7 +262,28 @@ Az átállásról mérés dönt, nem a készlet jó híre:
 
 **Bekötés.** Ugyanaz, mint a Linux-készleté: `command-rulesets` kapu, **csak figyelmeztet**, a `.colony/ruleset-warnings.jsonl` rögzíti, a `rulesets-measure.mjs --commands` a Windows-készletet is méri. A blokkolás feltétele változatlan (két hét használat, szabályonkénti átnézés, külön jóváhagyás).
 
-**Hátra van.** A Windows egyéb naplótípusai (PowerShell-szkriptblokk, rendszerleíró, fájl) más eseményt igényelnek; a döntés, hogy a Windows-készlet minden gépen fusson-e, vagy csak Windowson (most mindenhol fut, mert egy Windows-szöveg egy Linux-gépen is jelzést ér).
+**Hátra van.** A Windows egyéb naplótípusai (rendszerleíró, fájl; a PowerShell-szkriptblokk a 6/h-ban) más eseményt igényelnek; a döntés, hogy a Windows-készlet minden gépen fusson-e, vagy csak Windowson (most mindenhol fut, mert egy Windows-szöveg egy Linux-gépen is jelzést ér).
+
+## 6/h. A PowerShell-szkriptblokk szabályok (2026-11-19)
+
+**Átvett anyag.** Ugyanaz a csomag (`sigma_core.zip` `r2026-07-01`, `sha256:45ccbd62…`; a te jóváhagyásoddal újra letöltve egy üres ideiglenes mappába, az SHA-256 egyezett): a `rules/windows/powershell/powershell_script` mappa **53** fájlja bájtra azonosan a `rulesets/sigma-powershell/` alatt, külön készletként (saját `PROVENANCE.json` és `NOTICE`, DRL 1.1). A csomag két másik PowerShell-mappáját (`powershell_module` 18, `powershell_classic` 4) nem vettem át.
+
+**Átalakítás.** Mind az 53 szabály átjött, 0 maradt ki: egyetlen mezőt, a `ScriptBlockText`-et használják (`contains`, `all`, `re`, `startswith`), ez egy szkript szövege, amely egy futtatás előtti parancsnál megvan. Mind `status: test`. A készlet `ruleset.json`-jában új mező a `category: "ps_script"` (a loader ismeri; ami nincs benne, az folyamatindítás), a `sources.json` bejegyzésében és a frissítő szkriptben `category`, a konverterben `--category`.
+
+**Esemény.** Egy parancsból `ScriptBlockText` események lesznek: (1) a PowerShell-eszköz hívása maga egy szkript; (2) a `powershell`/`pwsh` `-Command`/`-c` utáni szöveg bármelyik shell-hívásban; (3) a `-EncodedCommand` (`-e`, `-enc`) **megfejtett** szövege (base64 UTF-16LE), ha szövegnek látszik (a karakterek legalább 90%-a nyomtatható ASCII) — a szkriptblokk-napló is a megfejtett szöveget mutatja. Egy hívásból legfeljebb 20 szkript, egyenként legfeljebb 24 000 karakter; a hosszabbat levágjuk, tehát egy 24 000 karakternél hosszabb szkript vége nincs megvizsgálva (egy támadó kitöltéssel kikerülheti; ez figyelmeztetés, nem védelem).
+
+**A `re` ablakai.** A reguláris kifejezés eddig a mező első 8000 karakterén futott; egy szkriptnél ez kevés, ezért most 8000 karakteres, 1000 karakterrel átfedő ablakokon fut, összesen legfeljebb 24 000 karakteren. A folyamatindítási szabályok parancsa eddig is legfeljebb 8000 karakter, azoknál semmi sem változott.
+
+**Mérés.**
+
+- 25 szokásos PowerShell-szkript (`Get-ChildItem`, `Remove-Item`, `Invoke-WebRequest`, `Compress-Archive`, `[Convert]::ToBase64String`, `gh pr checks`, ...): **0 találat**. A repó saját 112 parancsán nincs új találat.
+- 16 támadó-szerű szkript (letöltési kradle, `Invoke-Mimikatz`, PowerView, `Set-MpPreference`, AMSI-kikapcsolás, árnyékmásolat törlése, ...): **9-et** jelzett. A 7 hiány okát nem néztem meg: lehet, hogy a példám nem tartalmazza a szabály mintáját, lehet, hogy a készlet nem fed le egy technikát.
+- Egy kódolt parancs (`powershell -enc <base64>`, Bash-eszközből) a megfejtett szöveg alapján jelzett.
+- Hostile bemenet: négy szándékosan rossz szkript (60 000 karakter, 20 000 nyitó zárójel, ismétlődő sorok, ...) mind az 53 szabályon **44 ms** alatt lefutott.
+
+**Bekötés.** Ugyanaz, mint a többi parancs-készleté: `command-rulesets` kapu, **csak figyelmeztet**, a `.colony/ruleset-warnings.jsonl` rögzíti, a `rulesets-measure.mjs --commands` méri. A blokkolás feltétele változatlan.
+
+**Hátra van.** A `powershell_module` és `powershell_classic` mappa (más mezőket használnak; ezeket nem néztem meg); a rendszerleíró- és fájl-szabályok; a szkriptfájlok tartalma (egy `powershell -File x.ps1` fájlját nem olvassuk).
 
 ## 7. Szeletek
 

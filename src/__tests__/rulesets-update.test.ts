@@ -178,6 +178,10 @@ async function sigmaPackage(): Promise<Buffer> {
   });
   entries.push({ name: 'rules/windows/process_creation/win_other.yml', data: 'title: not read\n' });
   entries.push({
+    name: 'rules/windows/powershell/powershell_script/posh_ps_new_rule.yml',
+    data: ['title: A PowerShell script rule that is new in this release', 'id: 99999999-aaaa-4bbb-8ccc-dddddddddddd', 'author: Someone Else', 'status: test', 'level: high', 'logsource:', '    product: windows', '    category: ps_script', 'detection:', '    selection:', "        ScriptBlockText|contains: 'Invoke-ZzNew'", '    condition: selection', ''].join('\n'),
+  });
+  entries.push({
     name: 'rules/windows/process_creation/proc_creation_win_new_rule.yml',
     data: ['title: A Windows rule that is new in this release', 'id: 66666666-7777-4888-8999-000000000000', 'author: Someone Else', 'status: test', 'level: high', 'logsource:', '    product: windows', '    category: process_creation', 'detection:', '    selection:', "        Image|endswith: '\\\\zzzz.exe'", "        CommandLine|contains|windash: ' -zz-new'", '    condition: selection', ''].join('\n'),
   });
@@ -431,6 +435,22 @@ test('the Windows set is updated from the same package: its folder, its platform
   assert.equal(set.provenance.report.total, 2, 'the new rule and the file that is not a rule; no Linux file');
   assert.equal(set.provenance.archive?.name, 'sigma_core.zip');
   assert.equal((await loadRuleset(path.join(dir, 'sigma'))).version, 'r2026-07-01', 'the Linux set is not touched');
+});
+
+test('the PowerShell script set is updated from the same package, with its category', async () => {
+  const dir = await workCopy();
+  const r = await run(dir, ['--set', 'sigma-powershell', '--tag', SIGMA_TAG, '--yes']);
+  assert.equal(r.code, 0, r.stderr);
+  const out = JSON.parse(r.stdout);
+  assert.deepEqual(out.rules.added.ids, ['A PowerShell script rule that is new in this release']);
+  assert.equal(out.rules.after, 1);
+  const set = await loadRuleset(path.join(dir, 'sigma-powershell'));
+  assert.equal(set.category, 'ps_script');
+  assert.equal(set.platform, 'windows');
+  assert.equal(set.name, 'sigma-powershell');
+  assert.equal(set.version, SIGMA_TAG);
+  assert.equal(set.provenance.report.total, 1, 'only the folder of this set is read');
+  assert.equal((await loadRuleset(path.join(dir, 'sigma-windows'))).category, 'process_creation', 'the Windows process set is not touched');
 });
 
 test('an archive that cannot be proved, or a release that is not what it should be, is refused with the vendored set untouched', async () => {
