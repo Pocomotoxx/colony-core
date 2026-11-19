@@ -11,7 +11,8 @@ const { loadRulesets } = await import(pathToFileURL(join(root, 'dist', 'rulesets
 const { loaded, failed } = await loadRulesets();
 for (const s of loaded) {
   const p = s.provenance;
-  console.log(`ok      ${s.name} ${s.version}  ${s.rules.length} rules (${p.report.skipped.length} skipped of ${p.report.total})  license ${p.license}  commit ${p.commit.slice(0, 10)}  retrieved ${p.retrievedAt}`);
+  const count = s.kind === 'pii' ? s.pii.length : s.rules.length;
+  console.log(`ok      ${s.name} ${s.version}  ${s.kind}  ${count} rules (${p.report.skipped.length} skipped of ${p.report.total})  license ${p.license}  commit ${p.commit.slice(0, 10)}  retrieved ${p.retrievedAt}`);
   for (const sk of p.report.skipped) console.log(`          skipped ${sk.id}: ${sk.reason}`);
 }
 for (const f of failed) console.log(`FAILED  ${f.name}: ${f.error}`);

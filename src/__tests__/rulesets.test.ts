@@ -148,7 +148,7 @@ test('a changed file is not loaded: converted rules, upstream source, license, p
 
   const b = await copyOfVendored();
   await fs.appendFile(path.join(b, 'source', 'gitleaks.toml'), '\n# edited');
-  await assert.rejects(loadRuleset(b), /upstream source file does not match/);
+  await assert.rejects(loadRuleset(b), /upstream source file .* does not match/);
 
   const c = await copyOfVendored();
   await fs.rm(path.join(c, 'LICENSE'));

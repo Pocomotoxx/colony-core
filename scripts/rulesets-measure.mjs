@@ -3,6 +3,7 @@
 //
 //   node scripts/rulesets-measure.mjs [--max-list 60] <file-or-folder>...
 //   node scripts/rulesets-measure.mjs --log .colony/ruleset-warnings.jsonl     (what the guard's warnings have been so far)
+//   node scripts/rulesets-measure.mjs --pii [--max-list 60] <file-or-folder>...  (personal data: the presidio set against the own patterns)
 //
 // Folders are walked for text files (node_modules, .git, dist and rulesets are skipped, files over 1 MB are skipped).
 import { readdirSync, readFileSync, statSync } from 'node:fs';
@@ -17,10 +18,12 @@ const { loadRulesets, scanSecrets } = await mod('rulesets/loader.js');
 const args = process.argv.slice(2);
 let maxList = 60;
 let logFile;
+let piiMode = false;
 const targets = [];
 for (let i = 0; i < args.length; i++) {
   if (args[i] === '--max-list') maxList = Number(args[++i]);
   else if (args[i] === '--log') logFile = args[++i];
+  else if (args[i] === '--pii') piiMode = true;
   else targets.push(args[i]);
 }
 
@@ -58,6 +61,34 @@ const { loaded, failed } = await loadRulesets();
 if (failed.length > 0) console.error('rule sets that FAILED their checks and are not used:', JSON.stringify(failed));
 
 const lineOf = (text, offset) => text.slice(0, offset).split('\n').length;
+
+if (piiMode) {
+  // Personal data: what the presidio set finds, and whether the colony's own redaction would also take that text.
+  // A finding is judged by redacting its text on its own; positions and rule names are printed, never values.
+  const { findPii } = await mod('rulesets/pii.js');
+  const { redactText } = await mod('redact.js');
+  const rows = [];
+  for (const file of files) {
+    const text = readFileSync(file, 'utf-8');
+    const rel = relative(root, file).replace(/\\/g, '/');
+    for (const f of findPii(text, loaded).findings) {
+      const own = redactText(text.slice(f.offset, f.offset + f.length)).changed;
+      rows.push({ file: rel, line: lineOf(text, f.offset), entity: f.entity, rule: f.rule, own });
+    }
+  }
+  const entities = {};
+  for (const r of rows) {
+    const e = (entities[r.entity] ??= { findings: 0, alsoByOwnPatterns: 0, onlyByRuleSet: 0 });
+    e.findings++;
+    if (r.own) e.alsoByOwnPatterns++;
+    else e.onlyByRuleSet++;
+  }
+  console.log(JSON.stringify({ files: files.length, ruleSets: loaded.map((s) => `${s.name} ${s.version} (${s.kind})`), byEntity: entities }, null, 2));
+  const only = rows.filter((r) => !r.own);
+  console.log(`\nfound only by the rule set (${only.length}${only.length > maxList ? `, first ${maxList}` : ''}):`);
+  for (const r of only.slice(0, maxList)) console.log(`  ${r.file}:${r.line}  ${r.entity}  ${r.rule}`);
+  process.exit(0);
+}
 const perRule = new Map();
 const newHits = [];
 const oldHits = [];

@@ -28,6 +28,7 @@
 import { createHmac } from 'node:crypto';
 import { findSecretSpans } from './gates.js';
 import { luhnValid } from './injection-scan.js';
+import { ibanValid } from './rulesets/validators.js';
 
 export type RedactKind = 'email' | 'credit_card' | 'iban' | 'phone' | 'ip_address' | 'jwt' | 'database_url' | 'secret' | 'bank_account' | 'tax_id' | 'taj';
 export type RedactAction = 'redact' | 'hash';
@@ -57,18 +58,6 @@ interface Span {
   start: number;
   end: number;
   value: string;
-}
-
-function ibanValid(raw: string): boolean {
-  const iban = raw.replace(/\s/g, '').toUpperCase();
-  if (!/^[A-Z]{2}\d{2}[A-Z0-9]{11,30}$/.test(iban)) return false;
-  const rearranged = iban.slice(4) + iban.slice(0, 4);
-  let remainder = 0;
-  for (const ch of rearranged) {
-    const digits = ch >= 'A' ? String(ch.charCodeAt(0) - 55) : ch;
-    for (const d of digits) remainder = (remainder * 10 + (d.charCodeAt(0) - 48)) % 97;
-  }
-  return remainder === 1;
 }
 
 /** Hungarian TAJ (social security) number: nine digits, the last is a check digit (weights 3 and 7 alternating over the first eight, mod 10). */

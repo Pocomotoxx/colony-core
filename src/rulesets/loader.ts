@@ -1,19 +1,28 @@
 import { createHash } from 'node:crypto';
-import fs from 'node:fs/promises';
+import { readdirSync, readFileSync, existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import type { ConversionReport, RuleAllowlist, RuleEntry, RulePattern, RulesetFile, SecretFinding } from './types.js';
+import type { ConversionReport, PiiEntity, PiiRule, PiiRulesetFile, RuleAllowlist, RuleEntry, RulePattern, RulesetFile, SecretFinding } from './types.js';
 
 /**
  * Loading and running the vendored rule sets (see docs/RULESETS-PLAN.md).
  *
- * A rule set is a folder: `PROVENANCE.json`, the upstream license, the upstream source file as it was downloaded, and
- * `ruleset.json`, the converted rules that the core runs. The loader checks every one of them against the hashes in
+ * A rule set is a folder: `PROVENANCE.json`, the upstream license, the upstream source files as they were downloaded,
+ * and `ruleset.json`, the converted rules that the core runs. The loader checks every one of them against the hashes in
  * PROVENANCE.json. A set that fails any check is NOT loaded: the failure is returned, never swallowed, so that a
  * tampered or half-updated set cannot quietly mean "less protection".
+ *
+ * The files are small and are read synchronously: redaction is synchronous, and a hook is a short-lived process.
  */
 
 export class RulesetError extends Error {}
+
+export interface SourceHash {
+  file: string;
+  sha256: string;
+  gitBlobSha1: string;
+  bytes: number;
+}
 
 export interface Provenance {
   format: 1;
@@ -23,7 +32,10 @@ export interface Provenance {
   sourceUrl: string;
   license: string;
   licenseFile: { file: string; sha256: string };
-  source: { file: string; sha256: string; gitBlobSha1: string; bytes: number };
+  /** One upstream file (the gitleaks set) ... */
+  source?: SourceHash;
+  /** ... or several (the presidio set). */
+  sources?: SourceHash[];
   normalized: { file: string; sha256: string };
   converter: string;
   retrievedAt: string;
@@ -54,13 +66,24 @@ interface CompiledRule {
   allowlists: CompiledAllowlist[];
 }
 
+export interface CompiledPiiRule {
+  id: string;
+  entity: PiiEntity;
+  regex: RegExp;
+  score: number | null;
+}
+
 export interface LoadedRuleset {
+  kind: 'secrets' | 'pii';
   name: string;
   version: string;
   dir: string;
   provenance: Provenance;
+  /** The secret rules (empty for a pii set). */
   rules: CompiledRule[];
   globalAllowlist: CompiledAllowlist | null;
+  /** The personal data rules (empty for a secrets set). */
+  pii: CompiledPiiRule[];
 }
 
 const compilePattern = (p: RulePattern): RegExp => new RegExp(p.source, `${p.flags.replace(/[dg]/g, '')}dg`);
@@ -69,16 +92,15 @@ function compileAllowlist(a: RuleAllowlist): CompiledAllowlist {
   return { regexes: a.regexes.map(compilePattern), stopwords: a.stopwords, target: a.target, condition: a.condition };
 }
 
-async function readFile(file: string, what: string): Promise<Buffer> {
+function readBytes(file: string, what: string): Buffer {
   try {
-    return await fs.readFile(file);
+    return readFileSync(file);
   } catch {
     throw new RulesetError(`${what} is missing or unreadable: ${path.basename(file)}`);
   }
 }
 
-function checkShape(file: unknown, expectName: string, expectVersion: string): RulesetFile {
-  const f = file as Partial<RulesetFile> | null;
+function checkSecretsShape(f: Partial<RulesetFile> | null, expectName: string, expectVersion: string): RulesetFile {
   if (!f || typeof f !== 'object' || f.format !== 1 || !Array.isArray(f.rules)) throw new RulesetError('ruleset.json has an unsupported shape');
   if (f.name !== expectName || f.version !== expectVersion) throw new RulesetError('ruleset.json does not belong to the provenance record (name or version differs)');
   for (const r of f.rules as RuleEntry[]) {
@@ -89,37 +111,68 @@ function checkShape(file: unknown, expectName: string, expectVersion: string): R
   return f as RulesetFile;
 }
 
+const PII_ENTITIES = new Set<string>(['ip_address', 'iban', 'credit_card', 'mac_address']);
+
+function checkPiiShape(f: Partial<PiiRulesetFile> | null, expectName: string, expectVersion: string): PiiRulesetFile {
+  if (!f || typeof f !== 'object' || f.format !== 1 || f.kind !== 'pii' || !Array.isArray(f.rules)) throw new RulesetError('ruleset.json has an unsupported shape');
+  if (f.name !== expectName || f.version !== expectVersion) throw new RulesetError('ruleset.json does not belong to the provenance record (name or version differs)');
+  for (const r of f.rules as PiiRule[]) {
+    if (typeof r?.id !== 'string' || !PII_ENTITIES.has(r.entity) || typeof r.pattern?.source !== 'string' || typeof r.pattern?.flags !== 'string' || (r.score !== undefined && typeof r.score !== 'number')) {
+      throw new RulesetError(`a rule of ruleset.json is malformed (${typeof r?.id === 'string' ? r.id : '?'})`);
+    }
+  }
+  return f as PiiRulesetFile;
+}
+
 /** Load one rule set folder, verifying it first. Throws RulesetError when anything does not match. */
-export async function loadRuleset(dir: string): Promise<LoadedRuleset> {
+export function loadRulesetSync(dir: string): LoadedRuleset {
   let provenance: Provenance;
   try {
-    provenance = JSON.parse((await readFile(path.join(dir, 'PROVENANCE.json'), 'the provenance record')).toString('utf-8')) as Provenance;
+    provenance = JSON.parse(readBytes(path.join(dir, 'PROVENANCE.json'), 'the provenance record').toString('utf-8')) as Provenance;
   } catch (err) {
     if (err instanceof RulesetError) throw err;
     throw new RulesetError('PROVENANCE.json is not valid JSON');
   }
   if (provenance?.format !== 1 || typeof provenance.name !== 'string' || typeof provenance.version !== 'string') throw new RulesetError('PROVENANCE.json has an unsupported shape');
 
-  const license = await readFile(path.join(dir, provenance.licenseFile.file), 'the license file');
+  const license = readBytes(path.join(dir, provenance.licenseFile.file), 'the license file');
   if (sha256Hex(license) !== provenance.licenseFile.sha256) throw new RulesetError('the license file does not match its recorded hash');
 
-  const source = await readFile(path.join(dir, provenance.source.file), 'the upstream source file');
-  if (sha256Hex(source) !== provenance.source.sha256) throw new RulesetError('the upstream source file does not match its recorded SHA-256');
-  if (gitBlobSha1(source) !== provenance.source.gitBlobSha1) throw new RulesetError('the upstream source file does not match its recorded git blob hash');
+  const sources = provenance.sources ?? (provenance.source ? [provenance.source] : []);
+  if (sources.length === 0) throw new RulesetError('PROVENANCE.json records no upstream source file');
+  for (const s of sources) {
+    const bytes = readBytes(path.join(dir, s.file), 'the upstream source file');
+    if (sha256Hex(bytes) !== s.sha256) throw new RulesetError(`the upstream source file ${s.file} does not match its recorded SHA-256`);
+    if (gitBlobSha1(bytes) !== s.gitBlobSha1) throw new RulesetError(`the upstream source file ${s.file} does not match its recorded git blob hash`);
+  }
 
-  const normalizedBytes = await readFile(path.join(dir, provenance.normalized.file), 'the converted rules');
+  const normalizedBytes = readBytes(path.join(dir, provenance.normalized.file), 'the converted rules');
   if (sha256Hex(normalizedBytes) !== provenance.normalized.sha256) throw new RulesetError('the converted rules do not match their recorded hash (the file was changed after the conversion)');
 
-  let parsed: unknown;
+  let parsed: { kind?: string } | null;
   try {
-    parsed = JSON.parse(normalizedBytes.toString('utf-8'));
+    parsed = JSON.parse(normalizedBytes.toString('utf-8')) as { kind?: string } | null;
   } catch {
     throw new RulesetError('ruleset.json is not valid JSON');
   }
-  const file = checkShape(parsed, provenance.name, provenance.version);
 
   try {
+    if (parsed?.kind === 'pii') {
+      const file = checkPiiShape(parsed as Partial<PiiRulesetFile>, provenance.name, provenance.version);
+      return {
+        kind: 'pii',
+        name: file.name,
+        version: file.version,
+        dir,
+        provenance,
+        rules: [],
+        globalAllowlist: null,
+        pii: file.rules.map((r) => ({ id: r.id, entity: r.entity, regex: compilePattern(r.pattern), score: r.score ?? null })),
+      };
+    }
+    const file = checkSecretsShape(parsed as Partial<RulesetFile> | null, provenance.name, provenance.version);
     return {
+      kind: 'secrets',
       name: file.name,
       version: file.version,
       dir,
@@ -133,10 +186,16 @@ export async function loadRuleset(dir: string): Promise<LoadedRuleset> {
         allowlists: r.allowlists.map(compileAllowlist),
       })),
       globalAllowlist: file.globalAllowlist ? compileAllowlist(file.globalAllowlist) : null,
+      pii: [],
     };
   } catch (err) {
+    if (err instanceof RulesetError) throw err;
     throw new RulesetError(`a rule does not compile (${err instanceof Error ? err.message : String(err)})`);
   }
+}
+
+export async function loadRuleset(dir: string): Promise<LoadedRuleset> {
+  return loadRulesetSync(dir);
 }
 
 export interface LoadResult {
@@ -146,23 +205,19 @@ export interface LoadResult {
 }
 
 /** Load every rule set folder under `root` (a folder with a PROVENANCE.json). A missing root is an empty result. */
-export async function loadRulesets(root: string = defaultRulesetsDir()): Promise<LoadResult> {
+export function loadRulesetsSync(root: string = defaultRulesetsDir()): LoadResult {
   const result: LoadResult = { loaded: [], failed: [] };
   let names: string[];
   try {
-    names = (await fs.readdir(root, { withFileTypes: true })).filter((e) => e.isDirectory()).map((e) => e.name).sort();
+    names = readdirSync(root, { withFileTypes: true }).filter((e) => e.isDirectory()).map((e) => e.name).sort();
   } catch {
     return result;
   }
   for (const name of names) {
     const dir = path.join(root, name);
+    if (!existsSync(path.join(dir, 'PROVENANCE.json'))) continue; // not a rule set folder
     try {
-      await fs.access(path.join(dir, 'PROVENANCE.json'));
-    } catch {
-      continue; // not a rule set folder
-    }
-    try {
-      result.loaded.push(await loadRuleset(dir));
+      result.loaded.push(loadRulesetSync(dir));
     } catch (err) {
       result.failed.push({ name, error: err instanceof Error ? err.message : String(err) });
     }
@@ -170,7 +225,11 @@ export async function loadRulesets(root: string = defaultRulesetsDir()): Promise
   return result;
 }
 
-// ---- running the rules
+export async function loadRulesets(root: string = defaultRulesetsDir()): Promise<LoadResult> {
+  return loadRulesetsSync(root);
+}
+
+// ---- running the secret rules
 
 /** Shannon entropy in bits per character. */
 export function shannonEntropy(text: string): number {
@@ -213,7 +272,7 @@ export interface ScanResult {
 /**
  * Where the rule sets find secrets in `text`: rule set, rule, offset and length of the secret. The value is never
  * copied out. A rule runs only when the text holds one of its keywords; the secret must reach the rule's entropy and
- * must not be allowed by an allowlist.
+ * must not be allowed by an allowlist. Only the secrets sets are used.
  */
 export function scanSecrets(text: string, sets: LoadedRuleset[], options: { maxChars?: number } = {}): ScanResult {
   const limit = options.maxChars ?? MAX_TEXT_CHARS;
@@ -223,6 +282,7 @@ export function scanSecrets(text: string, sets: LoadedRuleset[], options: { maxC
   const findings: SecretFinding[] = [];
 
   for (const set of sets) {
+    if (set.kind !== 'secrets') continue;
     for (const rule of set.rules) {
       if (rule.keywords.length > 0 && !rule.keywords.some((k) => lowered.includes(k))) continue;
       let count = 0;

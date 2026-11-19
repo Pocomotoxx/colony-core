@@ -86,6 +86,35 @@ Az átállásról mérés dönt, nem a készlet jó híre:
 - **Korlát:** a hook hívásonként legfeljebb 200 000 karaktert vizsgál egy szövegből (a találat jelzi, ha csonkolt). A betöltés hívásonként kb. 25 ms. A hook stderr-jét a host nem feltétlenül mutatja meg a modellnek vagy neked: ezért van a napló.
 - **A blokkolás feltétele** (előre rögzítve, hogy a mérés után ne alakuljon az eredményhez): a napló legalább két hétnyi használatot fedjen, a szabályonkénti hamis pozitívokat átnézzük, és csak azok a szabályok kapcsolnak blokkolásra, amelyeknek a fejlesztő által átnézett mintán nincs hamis pozitívjuk. Az átállást külön jóváhagyás nyitja meg.
 
+## 6/c. A presidio-szelet (2026-11-19)
+
+**Mit vettünk át.** A `microsoft/presidio` 2.2.366 kiadásának négy fájlját (IP-cím, IBAN-minták, bankkártya, MAC-cím) és az MIT licencet, módosítatlanul. A git-blob hash-ek egyeznek az upstreaméval. A Presidio mintái **Python-forrásban** vannak, nem adatfájlban, ezért a `src/rulesets/py-patterns.ts` szigorú kinyerője csak a pontosan ismert alakot olvassa (`Pattern("név", r"regex", pontszám)` és az IBAN-fájl szövegösszefűzései), és minden mást hibával utasít vissza.
+
+**Ami a miénk, nem a Presidióé.** A minták az upstreamtől jönnek. Az ellenőrzők (Luhn, IBAN mod 97, IPv4 és IPv6 érvényesség, MAC) **a colony saját kódja** (`validators.ts`), mert az upstream ellenőrzői Python-kód. A Presidio pontszámait csak a túl gyenge minták kiszűrésére használjuk (0,3 alatt: az IPv6 „nem megadott" minta, a puszta `::`, ami C++-ban vagy Rustban is gyakori).
+
+**Átalakítás.** 84 mintából **83 jött át** (4 IP, 2 MAC, 1 kártya, 76 országos IBAN-minta). A Presidio alapból kis- és nagybetűfüggetlen, többsoros, pont-újsoros módban fut (jelzők: `ims`), ugyanígy futtatjuk. A Python `\w` és `\b` Unicode-érzékeny, a JavaScripté ASCII: ez csak azt érinti, mit tekintünk a találat szomszédos karakterének.
+
+**Mi maradt ki, és miért.** Az e-mail (a Presidio a nyilvános utótaglistát használja, és korlátlan kvantorai miatt kevésbé biztonságos hosszú bemeneten, a saját korlátos mintánk marad), a telefon (a `phonenumbers` könyvtárat használja, nem regexet), a kriptocím (a minta ellenőrzés nélkül túl sok hamis találatot adna), az URL, UUID és dátum (nem személyes adat).
+
+**Kitalált példákon** (rögzített generátorból, a számokat ellenőrző számjegyekkel készítettük, nem valódiak):
+
+| Eset | Saját kitakarás | presidio-készlet |
+|---|---|---|
+| IPv4, IPv4 előtaggal | talál | talál |
+| **IPv6**, IPv6 zónával | **nem** | talál |
+| IPv4-be ágyazott IPv6 | részben (csak a belső IPv4) | az egészet |
+| bankkártya, 16 jegy, csoportosan | talál | talál |
+| **bankkártya, 15 és 13 jegy** | **nem** | talál |
+| IBAN, nagybetűs (HU, DE, NO) | talál | talál |
+| **IBAN, kisbetűs** | **nem** | talál |
+| **MAC-cím** (kettőspontos, kötőjeles, Cisco pontos) | **nem** | talál |
+
+**A repó saját fájljain** (153 fájl): a készlet 62 találatot adott, ebből 46-ot a saját minták is megtalálnak. A maradék 16 majdnem mind a most írt teszt kitalált példája. Két valódi, új találat van: a `::1` (IPv6 loopback) a `scripts/lib/groq.mjs` és a `scripts/radar-fetch.mjs` egy-egy sorában. A loopback nem személyes adat: ezt a bekötésnél kezelni kell (például a `::1` és a `127.0.0.1` kivétele), különben a kitakarás a kódban talált loopback-címet is eltüntetné.
+
+**Sebesség:** mind a 83 regex lefut 20 000 karakteres, ismétlődő és kellemetlen bemeneteken 1,5 másodpercen belül (a teszt őrzi).
+
+**Nincs bekötve.** A `redactText` a saját mintákat használja. A bekötés után a kitakarás IPv6-ot, MAC-et, 13 és 15 jegyű kártyát és kisbetűs IBAN-t is eltüntet, ami a kimenetet megváltoztatja (több redaktálás, nem kevesebb), ezért külön jóváhagyás és a loopback-kivétel kell hozzá.
+
 ## 6/a. Az első mérés (2026-11-19)
 
 **Átalakítás:** a `gitleaks.toml` 222 szabályából **221 jött át**. Az egyetlen kihagyott a `pkcs12-file` (fájlnévre szóló szabály, mi szöveget vizsgálunk). Szabályok útvonal-kivételei (4 szabály, 4 kivétellista) elmaradnak, ami csak több találatot jelent. A regexek közül a mid-pattern `(?i)`, `(?-i:…)` és `(?s:…)` jelzős mintákat (22 szabály) kiírt kisbetű-nagybetű osztályokkal vittük át, mert a JavaScript Node 20-ban és 22-ben nem ismeri a hatókörös jelzőket.
@@ -115,7 +144,7 @@ Az átállásról mérés dönt, nem a készlet jó híre:
 | # | Szelet | Állapot |
 |---|---|---|
 | 1 | **Titokminták:** gitleaks v8.30.1 átvétele, betöltő, hash-ellenőrzés, átalakító, frissítő szkript, mérés, beillesztés | átvétel, átalakító, betöltő, kereső, mérés és a **jelzésként való bekötés kész**; a frissítő szkript (hálózat), a kitakarás átállása és a blokkolás hátra van |
-| 2 | **Személyes adatok:** a presidio felismerőinek átvétele a kitakaráshoz (a magyar adószám, TAJ és bankszámla marad saját) | ellenőrizendő: a regexek hordozhatósága, a licencfájl |
+| 2 | **Személyes adatok:** a presidio 2.2.366 mintáinak átvétele a kitakaráshoz (IP-cím, IBAN, bankkártya, MAC-cím; a magyar adószám, TAJ, bankszámla és az e-mail, telefon marad saját) | átvétel, Python-minta-kinyerő, átalakító, betöltő, ellenőrzők, mérés **kész**; a kitakarásba kötés hátra van (külön jóváhagyás) |
 | 3 | **Veszélyes parancsok:** nincs kész, átvehető készlet. Sigma (Linux folyamatindítás) lehet a jelölt, ha a szabályok licence tiszta és a naplóészlelési forma illeszkedik egy futtatás előtti őrhöz | kutatás; addig a saját `DESTRUCTIVE` tábla marad |
 | 4 | **Promptinjekció:** nincs elfogadott, karbantartott szabálykészlet (a vigil elavult, az llm-guard archivált). A garak próbái **tesztkorpuszként** használhatók a szűrőnk méréséhez | kutatás; a saját szűrő marad, a korlátait a `SYSTEM-OVERVIEW.md` rögzíti |
 
