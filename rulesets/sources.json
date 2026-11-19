@@ -1,5 +1,5 @@
 {
-  "note": "Where each vendored rule set comes from. scripts/rulesets-update.mjs reads this file: it downloads only these paths of these repositories, at a tag you name, and nothing else. Edit it by hand and in a reviewed change: it decides what the update script may fetch.",
+  "note": "Where each vendored rule set comes from. scripts/rulesets-update.mjs reads this file: it downloads only these paths (or this release asset) of these repositories, at a tag you name, and nothing else. Edit it by hand and in a reviewed change: it decides what the update script may fetch. repoLicense is what GitHub reports for the repository when that differs from the license of the rules (Sigma: the repository has none declared, its rules are under the DRL 1.1, which licenseCheck looks for in the repository LICENSE file).",
   "sets": {
     "gitleaks": {
       "repo": "gitleaks/gitleaks",
@@ -23,6 +23,22 @@
       },
       "converter": "rulesets-convert-presidio.mjs",
       "sourceUrl": "https://github.com/data-privacy-stack/presidio/tree/{tag}/presidio-analyzer/presidio_analyzer/predefined_recognizers/generic"
+    },
+    "sigma": {
+      "repo": "SigmaHQ/sigma",
+      "license": "DRL-1.1",
+      "repoLicense": "NOASSERTION",
+      "notice": "NOTICE",
+      "licenseCheck": {
+        "path": "LICENSE",
+        "contains": "Detection Rule License (DRL) 1.1"
+      },
+      "archive": {
+        "asset": "sigma_core.zip",
+        "include": "rules/linux/process_creation/",
+        "maxBytes": 5000000
+      },
+      "converter": "rulesets-convert-sigma.mjs"
     }
   }
 }

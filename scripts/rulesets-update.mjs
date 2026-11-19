@@ -6,15 +6,20 @@
 // It never updates by itself and never commits: it leaves the changed files in the working tree for a reviewed change.
 //
 // What it does, in this order, and stops at the first problem with the vendored set untouched:
-//   1. reads rulesets/sources.json (what may be fetched: repository, paths, license, converter);
+//   1. reads rulesets/sources.json (what may be fetched: repository, paths or release asset, license, converter);
 //   2. checks that the upstream repository still has the license the set was adopted under (a different one is refused);
 //   3. checks that the tag is a TAG (not a branch that can move), and reads the commit it points to;
-//   4. downloads every file at that tag and proves each one: its git blob hash must equal the one the repository reports;
-//   5. replaces the set's source files and license, runs the converter, loads the result with the loader's own checks;
+//   4. downloads what the set is made of and proves it:
+//        - single files (gitleaks, presidio): every file's git blob hash must equal the one the repository reports;
+//        - a release archive (sigma): the release must list the asset with a SHA-256 digest, and the downloaded bytes must have
+//          exactly that digest (the API sends the asset through ONE redirect to a signed address on githubusercontent.com,
+//          which is followed and nothing else);
+//   5. replaces the set's source files, runs the converter, loads the result with the loader's own checks;
 //      if any of that fails, the previous files are put back;
 //   6. prints what changed: rules added, removed and changed.
 //
-// Only https://api.github.com is contacted (a loopback address for the tests), without credentials, without redirects.
+// Only https://api.github.com is contacted (a loopback address for the tests), without credentials, and the one redirect of
+// an asset download is the only redirect that is ever followed.
 import { createHash } from 'node:crypto';
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -25,11 +30,13 @@ import { clearTimeout, setTimeout } from 'node:timers';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
-const CONVERTERS = new Set(['rulesets-convert.mjs', 'rulesets-convert-presidio.mjs']);
+const CONVERTERS = new Set(['rulesets-convert.mjs', 'rulesets-convert-presidio.mjs', 'rulesets-convert-sigma.mjs']);
 const MAX_FILE_BYTES = 1_000_000;
 const MAX_JSON_BYTES = 3_000_000;
+const MAX_ARCHIVE_BYTES = 20_000_000;
 const TIMEOUT_MS = 30_000;
 const DEFAULT_API = 'https://api.github.com';
+const USER_AGENT = 'colony-rulesets-update/1.0';
 
 /** A reason to stop, with an exit code. It is thrown and handled at the end: process.exit() after a fetch can crash Node on Windows. */
 class Stop extends Error {
@@ -77,14 +84,30 @@ async function main() {
   if (!/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(entry.repo ?? '')) fail('sources.json: the repository name is not valid');
   if (!CONVERTERS.has(entry.converter)) fail('sources.json: the converter is not one of the known ones');
   if (typeof entry.license !== 'string' || !/^[A-Za-z0-9.+-]{1,40}$/.test(entry.license)) fail('sources.json: the license is not an SPDX identifier');
-  if (!safePath(entry.licenseFile)) fail('sources.json: the license file path is not valid');
-  if (typeof entry.sourceUrl !== 'string' || !entry.sourceUrl.startsWith('https://github.com/')) fail('sources.json: the source URL is not a github.com address');
-  const files = Object.entries(entry.files ?? {});
-  if (files.length === 0) fail('sources.json: the set lists no files');
-  for (const [remote, local] of files) {
-    if (!safePath(remote) || !safePath(local) || !local.startsWith('source/')) fail('sources.json: a file path is not valid');
+  // what GitHub reports as the license of the repository: usually the same, but not for a repository whose rules have their own license
+  const repoLicense = entry.repoLicense ?? entry.license;
+  if (typeof repoLicense !== 'string' || !/^[A-Za-z0-9.+-]{1,40}$/.test(repoLicense)) fail('sources.json: the repository license is not an SPDX identifier');
+
+  const archive = entry.archive ?? null;
+  let files = [];
+  if (archive) {
+    if (!/^[A-Za-z0-9._+-]{1,80}\.zip$/.test(archive.asset ?? '')) fail('sources.json: the archive asset name is not valid');
+    if (typeof archive.include !== 'string' || !archive.include.endsWith('/') || !safePath(archive.include.slice(0, -1))) fail('sources.json: the archive include path is not valid');
+    if (!Number.isInteger(archive.maxBytes) || archive.maxBytes < 1 || archive.maxBytes > MAX_ARCHIVE_BYTES) fail(`sources.json: the archive size limit must be 1 to ${MAX_ARCHIVE_BYTES} bytes`);
+    if (!safePath(entry.notice)) fail('sources.json: the notice path is not valid');
+    if (entry.files || entry.licenseFile) fail('sources.json: a set made from an archive lists no single files and no license file (it keeps its own notice)');
+    if (entry.licenseCheck && (!safePath(entry.licenseCheck.path) || typeof entry.licenseCheck.contains !== 'string' || entry.licenseCheck.contains.length === 0)) fail('sources.json: the license check is not valid');
+  } else {
+    if (!safePath(entry.licenseFile)) fail('sources.json: the license file path is not valid');
+    if (typeof entry.sourceUrl !== 'string' || !entry.sourceUrl.startsWith('https://github.com/')) fail('sources.json: the source URL is not a github.com address');
+    files = Object.entries(entry.files ?? {});
+    if (files.length === 0) fail('sources.json: the set lists no files');
+    for (const [remote, local] of files) {
+      if (!safePath(remote) || !safePath(local) || !local.startsWith('source/')) fail('sources.json: a file path is not valid');
+    }
   }
 
+  const loopbackApi = process.env.COLONY_RULESETS_API_BASE !== undefined;
   const apiBase = (() => {
     const v = process.env.COLONY_RULESETS_API_BASE;
     if (v === undefined) return DEFAULT_API;
@@ -97,20 +120,26 @@ async function main() {
   const setDir = join(rulesetsDir, setName);
   if (!(setDir + sep).startsWith(rulesetsDir + sep)) fail('the rule set folder is outside the rule sets folder', 2);
   if (!existsSync(join(setDir, 'PROVENANCE.json'))) fail(`'${setName}' has no PROVENANCE.json: it is not an adopted rule set yet`, 2);
+  if (archive && !existsSync(join(setDir, entry.notice))) fail(`'${setName}' has no ${entry.notice}: a set made from an archive needs its notice`, 2);
   const before = JSON.parse(readFileSync(join(setDir, 'PROVENANCE.json'), 'utf-8'));
 
+  const repoPath = `/repos/${entry.repo}`;
   const plan = {
     set: setName,
     from: before.version,
     to: tag,
     repository: entry.repo,
     api: apiBase,
-    requests: [
-      `GET /repos/${entry.repo}`,
-      `GET /repos/${entry.repo}/git/ref/tags/${tag}`,
-      `GET /repos/${entry.repo}/commits/${tag}`,
-      ...[...files.map(([r]) => r), entry.licenseFile].map((p) => `GET /repos/${entry.repo}/contents/${p}?ref=${tag}`),
-    ],
+    requests: archive
+      ? [
+          `GET ${repoPath}`,
+          `GET ${repoPath}/git/ref/tags/${tag}`,
+          `GET ${repoPath}/commits/${tag}`,
+          `GET ${repoPath}/releases/tags/${tag}`,
+          `GET ${repoPath}/releases/assets/<the id of ${archive.asset}> (one redirect, to a signed address on githubusercontent.com)`,
+          ...(entry.licenseCheck ? [`GET ${repoPath}/contents/${entry.licenseCheck.path}?ref=${tag}`] : []),
+        ]
+      : [`GET ${repoPath}`, `GET ${repoPath}/git/ref/tags/${tag}`, `GET ${repoPath}/commits/${tag}`, ...[...files.map(([r]) => r), entry.licenseFile].map((p) => `GET ${repoPath}/contents/${p}?ref=${tag}`)],
   };
   if (dryRun || !yes) {
     console.log(JSON.stringify({ plan, note: 'Nothing was fetched or changed.' }, null, 2));
@@ -120,38 +149,43 @@ async function main() {
 
   // ---- the network, with nothing but the known host
 
+  /** The body of an answer, read up to `maxBytes` and no further. */
+  async function readBody(res, maxBytes, what) {
+    const reader = res.body.getReader();
+    const chunks = [];
+    let total = 0;
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      total += value.length;
+      if (total > maxBytes) {
+        await reader.cancel();
+        throw new Error(`${what} is larger than ${maxBytes} bytes`);
+      }
+      chunks.push(Buffer.from(value));
+    }
+    return Buffer.concat(chunks);
+  }
+
   async function getJson(path) {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
     try {
       const res = await fetch(`${apiBase}${path}`, {
-        headers: { Accept: 'application/vnd.github+json', 'User-Agent': 'colony-rulesets-update/1.0' },
+        headers: { Accept: 'application/vnd.github+json', 'User-Agent': USER_AGENT },
         redirect: 'error',
         signal: controller.signal,
       });
       if (res.status === 404) return { status: 404, body: null };
       if (!res.ok) throw new Error(`HTTP ${res.status} for ${path}`);
-      const reader = res.body.getReader();
-      const chunks = [];
-      let total = 0;
-      for (;;) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        total += value.length;
-        if (total > MAX_JSON_BYTES) {
-          await reader.cancel();
-          throw new Error(`the answer for ${path} is larger than ${MAX_JSON_BYTES} bytes`);
-        }
-        chunks.push(Buffer.from(value));
-      }
-      return { status: res.status, body: JSON.parse(Buffer.concat(chunks).toString('utf-8')) };
+      return { status: res.status, body: JSON.parse((await readBody(res, MAX_JSON_BYTES, `the answer for ${path}`)).toString('utf-8')) };
     } finally {
       clearTimeout(timer);
     }
   }
 
   async function download(remotePath) {
-    const { status, body } = await getJson(`/repos/${entry.repo}/contents/${remotePath}?ref=${encodeURIComponent(tag)}`);
+    const { status, body } = await getJson(`${repoPath}/contents/${remotePath}?ref=${encodeURIComponent(tag)}`);
     if (status === 404) fail(`${remotePath} does not exist at the tag ${tag}: the upstream may have moved or renamed it. Nothing was changed.`);
     if (body.type !== 'file' || body.encoding !== 'base64' || typeof body.content !== 'string') fail(`${remotePath} is not a plain file the API can hand over (too large, or not a file). Nothing was changed.`);
     if (typeof body.size !== 'number' || body.size > MAX_FILE_BYTES) fail(`${remotePath} is larger than ${MAX_FILE_BYTES} bytes. Nothing was changed.`);
@@ -162,23 +196,71 @@ async function main() {
     return bytes;
   }
 
+  /** The release archive: the asset the release lists, through the API's one redirect, proved by its SHA-256 digest. */
+  async function downloadArchive() {
+    const release = await getJson(`${repoPath}/releases/tags/${encodeURIComponent(tag)}`);
+    if (release.status === 404) fail(`${entry.repo} has no release for the tag ${tag}. Nothing was changed.`);
+    const asset = (release.body?.assets ?? []).find((a) => a?.name === archive.asset);
+    if (!asset) fail(`the release ${tag} of ${entry.repo} has no asset ${archive.asset}. Nothing was changed.`);
+    if (!Number.isInteger(asset.id) || asset.id < 1) fail(`the asset ${archive.asset} has no usable id. Nothing was changed.`);
+    if (typeof asset.digest !== 'string' || !/^sha256:[0-9a-f]{64}$/.test(asset.digest)) fail(`the asset ${archive.asset} has no SHA-256 digest in the release, so what is downloaded could not be proved. Nothing was changed.`);
+    if (!Number.isInteger(asset.size) || asset.size < 1 || asset.size > archive.maxBytes) fail(`the asset ${archive.asset} is ${asset.size} bytes, outside 1 to ${archive.maxBytes}. Nothing was changed.`);
+
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), TIMEOUT_MS * 2);
+    try {
+      // the API answers with a redirect to a signed address; only that one redirect is followed, and only to the known host
+      const first = await fetch(`${apiBase}${repoPath}/releases/assets/${asset.id}`, {
+        headers: { Accept: 'application/octet-stream', 'User-Agent': USER_AGENT },
+        redirect: 'manual',
+        signal: controller.signal,
+      });
+      if (first.status !== 302) fail(`the asset download answered ${first.status}, not the one redirect that is expected. Nothing was changed.`);
+      let target;
+      try {
+        target = new URL(first.headers.get('location') ?? '');
+      } catch {
+        fail('the asset download gave no valid redirect address. Nothing was changed.');
+      }
+      const allowed = loopbackApi ? target.host === new URL(apiBase).host : target.protocol === 'https:' && target.hostname.endsWith('.githubusercontent.com');
+      if (!allowed) fail(`the asset download redirects to ${target.host}, which is not an address GitHub serves release assets from. Nothing was changed.`);
+      const res = await fetch(target, { headers: { 'User-Agent': USER_AGENT }, redirect: 'error', signal: controller.signal });
+      if (!res.ok) fail(`the asset download answered ${res.status}. Nothing was changed.`);
+      const bytes = await readBody(res, archive.maxBytes, `the asset ${archive.asset}`);
+      const got = `sha256:${sha256(bytes)}`;
+      if (got !== asset.digest) fail(`the SHA-256 of the downloaded ${archive.asset} (${got}) is not the digest the release gives (${asset.digest}). Nothing was changed.`);
+      return { bytes, digest: asset.digest, url: `https://github.com/${entry.repo}/releases/download/${tag}/${archive.asset}` };
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
   let commit;
   const fetched = new Map();
   let licenseBytes;
+  let archiveDownload;
   try {
-    const meta = await getJson(`/repos/${entry.repo}`);
+    const meta = await getJson(repoPath);
     if (meta.status === 404) fail(`the repository ${entry.repo} was not found. Nothing was changed.`);
     const spdx = meta.body?.license?.spdx_id ?? null;
-    if (spdx !== entry.license) fail(`the license of ${entry.repo} is now ${spdx ?? 'unknown'}, not ${entry.license} (what the set was adopted under). This needs a decision, not an update. Nothing was changed.`);
+    if (spdx !== repoLicense) fail(`the license of ${entry.repo} is now ${spdx ?? 'unknown'}, not ${repoLicense} (what the set was adopted under). This needs a decision, not an update. Nothing was changed.`);
 
-    const ref = await getJson(`/repos/${entry.repo}/git/ref/tags/${tag}`);
+    const ref = await getJson(`${repoPath}/git/ref/tags/${tag}`);
     if (ref.status === 404) fail(`${tag} is not a tag of ${entry.repo}. A branch can move under you; only a release tag is accepted. Nothing was changed.`);
-    const commitInfo = await getJson(`/repos/${entry.repo}/commits/${tag}`);
+    const commitInfo = await getJson(`${repoPath}/commits/${tag}`);
     commit = commitInfo.body?.sha;
     if (!/^[0-9a-f]{40}$/.test(commit ?? '')) fail('the repository did not give a commit hash for the tag. Nothing was changed.');
 
-    for (const [remote] of files) fetched.set(remote, await download(remote));
-    licenseBytes = await download(entry.licenseFile);
+    if (archive) {
+      archiveDownload = await downloadArchive();
+      if (entry.licenseCheck) {
+        const text = (await download(entry.licenseCheck.path)).toString('utf-8');
+        if (!text.includes(entry.licenseCheck.contains)) fail(`${entry.licenseCheck.path} no longer says "${entry.licenseCheck.contains}": the license statement of ${entry.repo} changed. This needs a decision, not an update. Nothing was changed.`);
+      }
+    } else {
+      for (const [remote] of files) fetched.set(remote, await download(remote));
+      licenseBytes = await download(entry.licenseFile);
+    }
   } catch (err) {
     if (err instanceof Stop) throw err;
     const cause = err.cause?.code ?? err.cause?.message;
@@ -203,19 +285,22 @@ async function main() {
     fail(`${why}\nThe previous rule set was put back; nothing was changed.`);
   };
 
-  rmSync(join(setDir, 'source'), { recursive: true, force: true });
-  for (const [remote, local] of files) {
-    mkdirSync(dirname(join(setDir, local)), { recursive: true });
-    writeFileSync(join(setDir, local), fetched.get(remote));
-  }
-  writeFileSync(join(setDir, 'LICENSE'), licenseBytes);
-
   const today = new Date().toISOString().slice(0, 10);
-  const converted = spawnSync(
-    process.execPath,
-    [join(root, 'scripts', entry.converter), '--dir', setDir, '--name', setName, '--version', tag, '--commit', commit, '--source-url', entry.sourceUrl.split('{tag}').join(tag), '--license', entry.license, '--retrieved', today],
-    { encoding: 'utf-8' },
-  );
+  let converterArgs;
+  if (archive) {
+    const archivePath = join(backup, 'archive.zip');
+    writeFileSync(archivePath, archiveDownload.bytes);
+    converterArgs = ['--archive', archivePath, '--dir', setDir, '--version', tag, '--commit', commit, '--digest', archiveDownload.digest, '--url', archiveDownload.url, '--retrieved', today];
+  } else {
+    rmSync(join(setDir, 'source'), { recursive: true, force: true });
+    for (const [remote, local] of files) {
+      mkdirSync(dirname(join(setDir, local)), { recursive: true });
+      writeFileSync(join(setDir, local), fetched.get(remote));
+    }
+    writeFileSync(join(setDir, 'LICENSE'), licenseBytes);
+    converterArgs = ['--dir', setDir, '--name', setName, '--version', tag, '--commit', commit, '--source-url', entry.sourceUrl.split('{tag}').join(tag), '--license', entry.license, '--retrieved', today];
+  }
+  const converted = spawnSync(process.execPath, [join(root, 'scripts', entry.converter), ...converterArgs], { encoding: 'utf-8' });
   if (converted.status !== 0) restore(`the converter failed (the new release may use something this version of the converter does not know):\n${(converted.stderr || converted.stdout).slice(0, 600)}`);
 
   let loaded;
@@ -230,14 +315,15 @@ async function main() {
 
   const keyed = (rules) => new Map(rules.map((r) => [r.id, JSON.stringify(r)]));
   const newRules = JSON.parse(readFileSync(join(setDir, 'ruleset.json'), 'utf-8')).rules;
+  const label = new Map([...oldRules, ...newRules].map((r) => [r.id, r.title ?? r.id]));
   const a = keyed(oldRules);
   const b = keyed(newRules);
   const added = [...b.keys()].filter((id) => !a.has(id));
   const removed = [...a.keys()].filter((id) => !b.has(id));
   const changed = [...b.keys()].filter((id) => a.has(id) && a.get(id) !== b.get(id));
   const after = JSON.parse(readFileSync(join(setDir, 'PROVENANCE.json'), 'utf-8'));
-  const list = (ids) => ({ count: ids.length, ids: ids.slice(0, 30), ...(ids.length > 30 ? { more: ids.length - 30 } : {}) });
-  const licenseChanged = sha256(licenseBytes) !== before.licenseFile?.sha256;
+  const list = (ids) => ({ count: ids.length, ids: ids.slice(0, 30).map((id) => label.get(id)), ...(ids.length > 30 ? { more: ids.length - 30 } : {}) });
+  const licenseChanged = archive ? false : sha256(licenseBytes) !== before.licenseFile?.sha256;
 
   rmSync(backup, { recursive: true, force: true });
   console.log(
@@ -247,13 +333,16 @@ async function main() {
         from: before.version,
         to: tag,
         commit,
-        files: [...fetched.entries()].map(([remote, bytes]) => ({ file: remote, bytes: bytes.length, gitBlobSha1: gitBlobSha1(bytes) })),
-        license: { spdx: entry.license, textChanged: licenseChanged },
+        files: archive
+          ? [{ file: archive.asset, bytes: archiveDownload.bytes.length, sha256: sha256(archiveDownload.bytes), digest: archiveDownload.digest }]
+          : [...fetched.entries()].map(([remote, bytes]) => ({ file: remote, bytes: bytes.length, gitBlobSha1: gitBlobSha1(bytes) })),
+        license: { spdx: entry.license, textChanged: licenseChanged, ...(archive ? { noticeKept: entry.notice, statementChecked: Boolean(entry.licenseCheck) } : {}) },
         rules: { before: oldRules.length, after: newRules.length, added: list(added), removed: list(removed), changed: list(changed) },
         skipped: { before: before.report?.skipped?.length ?? 0, after: after.report.skipped.length, now: after.report.skipped.map((s) => `${s.id}: ${s.reason}`).slice(0, 10) },
         verified: `${loaded.name} ${loaded.version} passes the loader's hash checks`,
         next: [
           licenseChanged ? 'THE LICENSE TEXT CHANGED: read it before you accept this update.' : null,
+          archive ? `Read the authors of the added rules: the license asks for them to be named (the NOTICE of the set says so).` : null,
           `Review: git diff --stat rulesets/${setName}`,
           'Run: pnpm test, then pnpm rulesets:verify',
           `Commit it as a change of its own and open a pull request. To go back: git checkout -- rulesets/${setName}`,
