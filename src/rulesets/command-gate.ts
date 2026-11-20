@@ -1,6 +1,7 @@
 import type { GateResult } from '../gates.js';
 import { splitSimple, words } from '../hook/shell-paths.js';
 import { activeRulesets } from './active.js';
+import { registryEventsOf } from './registry-events.js';
 import { ruleMatches, type CommandEvent } from './sigma.js';
 
 /**
@@ -142,11 +143,12 @@ export async function checkCommandsWithRulesets(command: string, cwd: string, to
   const linux = eventsOf(command, cwd);
   const windows = windowsEventsOf(command, cwd, tool);
   const scripts = scriptEventsOf(command, tool);
-  if (linux.length === 0 && windows.length === 0 && scripts.length === 0) return [];
+  const registry = registryEventsOf(command);
+  if (linux.length === 0 && windows.length === 0 && scripts.length === 0 && registry.length === 0) return [];
 
   const hits = new Map<string, { ruleset: string; version: string; id: string; title: string; author: string; level: string; status: string; link: string }>();
   for (const set of sets) {
-    const events = set.category === 'ps_script' ? scripts : set.platform === 'windows' ? windows : linux;
+    const events = set.category === 'registry' ? registry : set.category === 'ps_script' ? scripts : set.platform === 'windows' ? windows : linux;
     for (const rule of set.commands) {
       if (hits.has(rule.id)) continue;
       if (events.some((e) => ruleMatches(rule, e))) hits.set(rule.id, { ruleset: set.name, version: set.version, id: rule.id, title: rule.title, author: rule.author, level: rule.level, status: rule.status, link: rule.link });

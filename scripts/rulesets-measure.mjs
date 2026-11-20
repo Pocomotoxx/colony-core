@@ -70,6 +70,7 @@ if (commandsMode) {
   // package.json) judged by the command rule sets. For a set of files that are known to hold ordinary commands, every match
   // is a false positive: this is how the false positive rate is counted before a rule may block.
   const { eventsOf, windowsEventsOf, scriptEventsOf } = await mod('rulesets/command-gate.js');
+const { registryEventsOf } = await mod('rulesets/registry-events.js');
   const { ruleMatches } = await mod('rulesets/sigma.js');
   const sets = loaded.filter((s) => s.kind === 'commands');
   const commands = [];
@@ -99,8 +100,9 @@ if (commandsMode) {
     const linuxEvents = eventsOf(c.text, root);
     const windowsEvents = windowsEventsOf(c.text, root, 'PowerShell');
     const scriptEvents = scriptEventsOf(c.text, 'PowerShell');
+    const registryEvents = registryEventsOf(c.text);
     for (const set of sets) {
-      const events = set.category === 'ps_script' ? scriptEvents : set.platform === 'windows' ? windowsEvents : linuxEvents;
+      const events = set.category === 'registry' ? registryEvents : set.category === 'ps_script' ? scriptEvents : set.platform === 'windows' ? windowsEvents : linuxEvents;
       for (const rule of set.commands) {
         if (events.some((e) => ruleMatches(rule, e))) {
           byRule[rule.title] = (byRule[rule.title] ?? 0) + 1;

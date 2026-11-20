@@ -96,7 +96,7 @@ async function main() {
     if (!Number.isInteger(archive.maxBytes) || archive.maxBytes < 1 || archive.maxBytes > MAX_ARCHIVE_BYTES) fail(`sources.json: the archive size limit must be 1 to ${MAX_ARCHIVE_BYTES} bytes`);
     if (!safePath(entry.notice)) fail('sources.json: the notice path is not valid');
     if (entry.platform !== undefined && entry.platform !== 'windows' && entry.platform !== 'linux') fail('sources.json: the platform must be linux or windows');
-    if (entry.category !== undefined && entry.category !== 'process_creation' && entry.category !== 'ps_script') fail('sources.json: the category must be process_creation or ps_script');
+    if (entry.category !== undefined && entry.category !== 'process_creation' && entry.category !== 'ps_script' && entry.category !== 'registry') fail('sources.json: the category must be process_creation, ps_script or registry');
     if (entry.files || entry.licenseFile) fail('sources.json: a set made from an archive lists no single files and no license file (it keeps its own notice)');
     if (entry.licenseCheck && (!safePath(entry.licenseCheck.path) || typeof entry.licenseCheck.contains !== 'string' || entry.licenseCheck.contains.length === 0)) fail('sources.json: the license check is not valid');
   } else {
