@@ -6,6 +6,7 @@ import type { GuardDecision, GuardVerdict, ToolCall } from '../host/types.js';
 import { scanBashCommand } from './bash-rules.js';
 import { findProtectedWrite } from './shell-paths.js';
 import { checkSecretsWithRulesets, logRulesetWarnings } from '../rulesets/gate.js';
+import { displayPath } from '../redact.js';
 import { checkCommandsWithRulesets, checkFileWriteWithRulesets } from '../rulesets/command-gate.js';
 
 /**
@@ -87,7 +88,7 @@ export async function evaluateToolCall(call: ToolCall, projectDir: string, cwd: 
     for (const text of call.texts) {
       add(checkSecrets(text));
       for (const r of await checkSecretsWithRulesets(text)) add(r);
-      add(checkDiffSize(call.path ?? 'file', text.split('\n').length, LARGE_WRITE_LINES));
+      add(checkDiffSize(call.path ? displayPath(path.isAbsolute(call.path) ? call.path : path.resolve(cwd, call.path), projectDir) : 'file', text.split('\n').length, LARGE_WRITE_LINES));
     }
   }
 

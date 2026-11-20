@@ -88,7 +88,7 @@ export async function logRulesetWarnings(projectDir: string, tool: string, resul
   try {
     const stateDir = path.join(projectDir, '.colony');
     if (!(await fs.stat(stateDir)).isDirectory()) return;
-    const lines = hits.map((r) => JSON.stringify({ at: Date.now(), tool, gate: r.gate, rules: r.details.rules, ...(Array.isArray(r.details.titles) ? { titles: r.details.titles } : {}), count: r.details.count, truncated: r.details.truncated === true }));
+    const lines = hits.map((r) => JSON.stringify({ at: Date.now(), tool, gate: r.gate, rules: r.details.rules, ...(Array.isArray(r.details.titles) ? { titles: r.details.titles } : {}), ...(Array.isArray(r.details.findings) && r.gate === 'command-rulesets' ? { findings: (r.details.findings as Array<Record<string, unknown>>).map((f) => ({ ruleset: f.ruleset, rule: f.rule, author: f.author })) } : {}), count: r.details.count, truncated: r.details.truncated === true }));
     await fs.appendFile(path.join(stateDir, WARNINGS_FILE), lines.join('\n') + '\n', 'utf-8');
   } catch {
     /* no state folder, or not writable: the warning was still shown */

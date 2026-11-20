@@ -111,16 +111,30 @@ export function summarizeCheck(command: string): string {
   for (const part of chain(command).parts) {
     const body = part.replace(/^(?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+)+/, '').replace(/^cd\s+\S+\s*&?/, '').trim();
     if (!CHECK_PATTERNS.some((re) => re.test(body))) continue;
-    const kept: string[] = [];
+    const kept = plainWords(body);
+    if (kept.length > 0) out.push(kept.join(' '));
+  }
+  return out.join(' && ').slice(0, 300);
+}
+
+/** The program of a command line and at most two plain words after it, nothing else (see summarizeCheck). */
+export function summarizeProgram(command: string): string {
+  const first = chain(command).parts[0] ?? '';
+  const body = first.replace(/^(?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+)+/, '').trim();
+  return plainWords(body).join(' ').slice(0, 300);
+}
+
+function plainWords(body: string): string[] {
+  const kept: string[] = [];
+  {
     for (const word of body.split(/\s+/)) {
       const flag = kept.length === 1 && /^--?[A-Za-z][A-Za-z-]*$/.test(word); // `node --test`: a flag right after the program, never a later one
       if (kept.length >= 3 || !/^[A-Za-z0-9_.:@/-]{1,32}$/.test(word) || (word.startsWith('-') && !flag)) break;
       if (word.length >= 20 && /\d/.test(word) && /[A-Za-z]/.test(word)) break;
       kept.push(word);
     }
-    if (kept.length > 0) out.push(kept.join(' '));
   }
-  return out.join(' && ').slice(0, 300);
+  return kept;
 }
 
 const hash = (text: string) => createHash('sha256').update(text).digest('hex').slice(0, 16);

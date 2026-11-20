@@ -26,11 +26,13 @@
  */
 
 import { createHmac } from 'node:crypto';
+import path from 'node:path';
 import { findSecretSpans } from './gates.js';
 import { luhnValid } from './injection-scan.js';
 import { ibanValid } from './rulesets/validators.js';
 import { activeRulesetsSync } from './rulesets/active.js';
 import { findPii } from './rulesets/pii.js';
+import { scanSecrets } from './rulesets/loader.js';
 import type { LoadedRuleset, LoadResult } from './rulesets/loader.js';
 
 export type RedactKind = 'email' | 'credit_card' | 'iban' | 'phone' | 'ip_address' | 'jwt' | 'database_url' | 'secret' | 'bank_account' | 'tax_id' | 'taj' | 'mac_address';
@@ -96,6 +98,20 @@ function tajValid(raw: string): boolean {
 
 const ipv4Valid = (value: string): boolean => value.split('.').every((o) => /^\d{1,3}$/.test(o) && Number(o) <= 255);
 
+const SECRET_SCAN_BUDGET_MS = 3000;
+
+/** A file name for a message: inside the project it is shown relative to it, else only its last part; redacted and short. */
+export function displayPath(file: string, projectDir?: string): string {
+  let shown = file;
+  if (projectDir && path.isAbsolute(file)) {
+    const rel = path.relative(projectDir, file);
+    shown = rel && !rel.startsWith('..') && !path.isAbsolute(rel) ? rel : path.basename(file);
+  }
+  // piece by piece: a key right before ".txt" or a separator has no boundary after it for the rules
+  const text = shown.split(/([\\/.])/).map((piece) => redactText(piece).text).join('');
+  return text.length > 120 ? `...${text.slice(-117)}` : text;
+}
+
 function collect(text: string): Span[] {
   const spans: Span[] = [];
   const add = (kind: RedactKind, regex: RegExp, accept: (value: string) => boolean = () => true) => {
@@ -132,6 +148,13 @@ function collect(text: string): Span[] {
   }
   for (const s of findSecretSpans(text)) {
     spans.push({ kind: 'secret', start: s.offset, end: s.offset + s.length, value: text.slice(s.offset, s.offset + s.length) });
+  }
+  // the vendored secret rules (gitleaks) too: a key only they know must not pass a redactor
+  const secretSets = activeRulesetsSync().loaded.filter((s) => s.kind === 'secrets');
+  if (secretSets.length > 0) {
+    for (const f of scanSecrets(text, secretSets, { budgetMs: SECRET_SCAN_BUDGET_MS }).findings) {
+      spans.push({ kind: 'secret', start: f.offset, end: f.offset + f.length, value: text.slice(f.offset, f.offset + f.length) });
+    }
   }
   return spans;
 }
