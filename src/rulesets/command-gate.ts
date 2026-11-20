@@ -19,6 +19,8 @@ import { ruleMatches, type CommandEvent } from './sigma.js';
 /** Programs that start another program; the command they start is judged too ("sudo bash -c ..."). */
 const WRAPPERS = new Set(['sudo', 'env', 'nohup', 'time', 'exec', 'command', 'nice', 'ionice', 'stdbuf', 'timeout', 'doas']);
 const MAX_EVENTS = 200;
+/** The findings kept with a warning, each with its own rule id and author (the licence asks that a rule's author is named). */
+const MAX_LOGGED_FINDINGS = 100;
 
 const baseName = (word: string): string => word.replace(/\\/g, '/').split('/').pop() ?? word;
 
@@ -160,6 +162,13 @@ export async function checkFileWriteWithRulesets(filePath: string, cwd: string):
   return commandWarnings(sets, () => events, 'the file this call writes');
 }
 
+/** The hits as a sentence: the first three with title, author, level and status; the authors of the rest are named too (the licence asks that a rule's author is named). */
+export function describeHits(list: ReadonlyArray<{ title: string; author: string; level: string; status: string }>): string {
+  const shown = list.slice(0, 3).map((h) => `"${h.title}" (author: ${h.author}; level ${h.level}, status ${h.status})`);
+  const more = list.length > 3 ? ` and ${list.length - 3} more (authors: ${[...new Set(list.slice(3).map((h) => h.author))].slice(0, 10).join(', ')})` : '';
+  return shown.join('; ') + more;
+}
+
 function commandWarnings(sets: LoadedRuleset[], eventsFor: (set: LoadedRuleset) => CommandEvent[], subject: string): GateResult[] {
   const hits = new Map<string, { ruleset: string; version: string; id: string; title: string; author: string; level: string; status: string; link: string }>();
   for (const set of sets) {
@@ -172,12 +181,11 @@ function commandWarnings(sets: LoadedRuleset[], eventsFor: (set: LoadedRuleset) 
   if (hits.size === 0) return [];
 
   const list = [...hits.values()];
-  const shown = list.slice(0, 3).map((h) => `"${h.title}" (author: ${h.author}; level ${h.level}, status ${h.status})`);
   return [
     {
       gate: 'command-rulesets',
       decision: 'warn',
-      reason: `${list[0].ruleset} ${list[0].version} rule${list.length > 1 ? 's' : ''} match${list.length > 1 ? '' : 'es'} ${subject}: ${shown.join('; ')}${list.length > 3 ? ` and ${list.length - 3} more` : ''}. Warning only; it does not block. Rules: https://github.com/SigmaHQ/sigma, licensed under the Detection Rule License 1.1.`,
+      reason: `${list[0].ruleset} ${list[0].version} rule${list.length > 1 ? 's' : ''} match${list.length > 1 ? '' : 'es'} ${subject}: ${describeHits(list)}. Warning only; it does not block. Rules: https://github.com/SigmaHQ/sigma, licensed under the Detection Rule License 1.1.`,
       remediation: [
         'Read the command: the rule describes behaviour that is typical of an attack, and it can also be an ordinary administration or development command.',
         'If it is ordinary, nothing to do; the warning is recorded so that false positives can be counted.',
@@ -186,7 +194,7 @@ function commandWarnings(sets: LoadedRuleset[], eventsFor: (set: LoadedRuleset) 
         count: list.length,
         rules: list.map((h) => h.id),
         titles: list.map((h) => h.title),
-        findings: list.slice(0, 20).map((h) => ({ ruleset: h.ruleset, rule: h.id, title: h.title, author: h.author, level: h.level, link: h.link })),
+        findings: list.slice(0, MAX_LOGGED_FINDINGS).map((h) => ({ ruleset: h.ruleset, rule: h.id, title: h.title, author: h.author, level: h.level, link: h.link })),
       },
     },
   ];

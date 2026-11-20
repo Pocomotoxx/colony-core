@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
 import { resolveInside, SafePathError } from '../safe-path.js';
 import { scanText } from '../injection-scan.js';
-import { REDACT_KINDS, redactText, RedactKind } from '../redact.js';
+import { displayPath, REDACT_KINDS, redactText, RedactKind } from '../redact.js';
 import { aggregateDecision, checkDestructive, checkDiffSize, checkSecrets, checkToolAllowed, GateResult } from '../gates.js';
 import { checkSecretsWithRulesets } from '../rulesets/gate.js';
 import { checkCommandsWithRulesets } from '../rulesets/command-gate.js';
@@ -53,7 +53,7 @@ async function handle_check(ctx: CommandContext): Promise<CommandResult> {
       const threshold = values.threshold === undefined ? undefined : Number(values.threshold);
       if (!Number.isFinite(lines) || lines < 0) throw new CliError('--diff-lines must be a non-negative number');
       if (threshold !== undefined && !(threshold >= 0)) throw new CliError('--threshold must be a non-negative number');
-      add(checkDiffSize(values.file, lines, threshold));
+      add(checkDiffSize(displayPath(abs, dir), lines, threshold));
     }
   }
   if (values.tool) {

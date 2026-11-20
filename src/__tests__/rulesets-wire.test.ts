@@ -9,7 +9,9 @@ import { findSecretSpans } from '../gates.js';
 import { runHook } from '../hook/cli.js';
 import { evaluatePreToolUse } from '../hook/pretool.js';
 import { useRulesetsDir } from '../rulesets/active.js';
-import { WARNINGS_FILE } from '../rulesets/gate.js';
+import { displayPath, redactText } from '../redact.js';
+import { describeHits } from '../rulesets/command-gate.js';
+import { logRulesetWarnings, WARNINGS_FILE } from '../rulesets/gate.js';
 
 // The vendored rule sets in the guard: they only warn, and every warning is recorded for counting.
 
@@ -165,4 +167,37 @@ test('the check command shows the warning and does not fail on it', async () => 
   assert.equal(out.decision, 'warn');
   assert.ok(out.results.some((x: any) => x.gate === 'secret-rulesets' && x.details.rules.includes('stripe-access-token')));
   assert.ok(!JSON.stringify(out).includes(STRIPE));
+});
+
+test('the common redactor knows the vendored secret rules: a key only they name does not pass it (audit A04)', () => {
+  const out = redactText(`output tail: token ${STRIPE} end`);
+  assert.ok(!out.text.includes(STRIPE));
+  assert.match(out.text, /\[REDACTED:secret\]/);
+  assert.equal(redactText('ordinary output, 3 passed').changed, false);
+});
+
+test('a file name in a message is relative to the project, redacted and short (audit A04)', () => {
+  const dir = path.join(root, 'proj');
+  assert.equal(displayPath(path.join(dir, 'src', 'a.ts'), dir), path.join('src', 'a.ts'));
+  assert.equal(displayPath(path.join(root, 'elsewhere', 'secret-name.txt'), dir), 'secret-name.txt', 'outside the project only the last part');
+  assert.ok(!displayPath(path.join(dir, `${STRIPE}.txt`), dir).includes(STRIPE));
+  assert.ok(displayPath('x'.repeat(500)).length <= 120);
+});
+
+test('the warning log keeps the rule id and the author of every finding the gate reports, for 1, 4 and 21 hits (audit B04)', async () => {
+  const dir = await project();
+  for (const count of [1, 4, 21]) {
+    const findings = Array.from({ length: count }, (_, i) => ({ ruleset: 'sigma-windows', rule: `rule-${i}`, title: `t${i}`, author: `Author ${i}`, level: 'high', link: 'x' }));
+    await logRulesetWarnings(dir, 'shell', [{ gate: 'command-rulesets', decision: 'warn', reason: 'r', remediation: [], details: { count, rules: findings.map((f) => f.rule), titles: findings.map((f) => f.title), findings } }]);
+  }
+  const lines = (await fs.readFile(path.join(dir, '.colony', WARNINGS_FILE), 'utf-8')).trim().split('\n').map((l) => JSON.parse(l));
+  assert.deepEqual(lines.map((l) => l.findings.length), [1, 4, 21]);
+  assert.deepEqual(lines[2].findings[20], { ruleset: 'sigma-windows', rule: 'rule-20', author: 'Author 20' });
+});
+
+test('a message about more than three hits still names the authors of the others (audit B04)', () => {
+  const hits = Array.from({ length: 6 }, (_, i) => ({ ruleset: 'sigma', version: 'v1', id: `i${i}`, title: `T${i}`, author: `Author ${i}`, level: 'high', status: 'test', link: 'x' }));
+  const text = describeHits(hits);
+  for (let i = 0; i < 6; i++) assert.ok(text.includes(`Author ${i}`), `Author ${i}`);
+  assert.match(text, /and 3 more \(authors: Author 3, Author 4, Author 5\)/);
 });

@@ -1,5 +1,6 @@
 import type { ColonyHub } from '../colony-hub.js';
 import { checkDestructive, checkSecrets } from '../gates.js';
+import { summarizeProgram } from '../evidence/evidence.js';
 import { redactText } from '../redact.js';
 import { runVerification, VerifyError } from '../verify/run.js';
 import type { TaskVerification } from '../types.js';
@@ -38,7 +39,7 @@ export async function verifyTaskCommand(hub: ColonyHub, taskId: string | undefin
 
   const run = await runVerification(argv, cwd, timeoutSec * 1000);
   const verification: TaskVerification = {
-    command: joined,
+    command: summarizeProgram(joined) || '[command]', // the program, not the arguments: the record is kept
     exitCode: run.exitCode,
     passed: run.passed,
     timedOut: run.timedOut,
