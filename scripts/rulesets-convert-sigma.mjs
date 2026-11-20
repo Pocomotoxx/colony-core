@@ -5,7 +5,7 @@
 //
 //   node scripts/rulesets-convert-sigma.mjs --archive <sigma_core.zip> --dir rulesets/sigma --version r2026-07-01 \
 //        --commit <sha> --digest sha256:<hex> --url <asset url> --retrieved 2026-11-19
-// Optional: --name <set name, default sigma> --platform <linux|windows> --category <process_creation|ps_script|registry> --include <folder in the package> --asset <file name>
+// Optional: --name <set name, default sigma> --platform <linux|windows> --category <process_creation|ps_script|registry|file> --include <folder in the package> --asset <file name>
 //
 // The folder must hold NOTICE (written by the colony: the rules are under the Detection Rule License 1.1).
 import { Buffer } from 'node:buffer';
@@ -49,11 +49,11 @@ if (platform !== 'linux' && platform !== 'windows') {
 const setName = optional('name') ?? 'sigma';
 const assetName = optional('asset') ?? 'sigma_core.zip';
 const category = optional('category') ?? 'process_creation';
-if (category !== 'process_creation' && category !== 'ps_script' && category !== 'registry') {
-  console.error('--category must be process_creation, ps_script or registry');
+if (category !== 'process_creation' && category !== 'ps_script' && category !== 'registry' && category !== 'file') {
+  console.error('--category must be process_creation, ps_script, registry or file');
   process.exit(2);
 }
-const PREFIX = optional('include') ?? (category === 'ps_script' ? 'rules/windows/powershell/powershell_script/' : category === 'registry' ? 'rules/windows/registry/' : `rules/${platform}/process_creation/`);
+const PREFIX = optional('include') ?? (category === 'ps_script' ? 'rules/windows/powershell/powershell_script/' : category === 'registry' ? 'rules/windows/registry/' : category === 'file' ? 'rules/windows/file/' : `rules/${platform}/process_creation/`);
 
 const archive = readFileSync(archivePath);
 if (digest !== `sha256:${sha256Hex(archive)}`) {

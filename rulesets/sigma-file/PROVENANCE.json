@@ -1,0 +1,509 @@
+{
+  "format": 1,
+  "name": "sigma-file",
+  "version": "r2026-07-01",
+  "commit": "552f3fee420ef232a8e5790c4fae591847e32347",
+  "sourceUrl": "https://github.com/SigmaHQ/sigma/releases/tag/r2026-07-01",
+  "license": "DRL-1.1",
+  "licenseFile": {
+    "file": "NOTICE",
+    "sha256": "1ed326d6899459efbc1347ac400d4792a91b6c4f7fee0ee7ce4a948e54df79c8"
+  },
+  "archive": {
+    "name": "sigma_core.zip",
+    "sha256": "45ccbd62cbf0d7ccca6f44eaa010f86bb24f082b5411c5e22c71907e7770ee46",
+    "bytes": 1399726,
+    "url": "https://github.com/SigmaHQ/sigma/releases/download/r2026-07-01/sigma_core.zip",
+    "digest": "sha256:45ccbd62cbf0d7ccca6f44eaa010f86bb24f082b5411c5e22c71907e7770ee46"
+  },
+  "sources": [
+    {
+      "file": "source/rules/windows/file/file_change/file_change_win_unusual_modification_by_dns_exe.yml",
+      "sha256": "e1baac31527572b6d0f5fdb5c839ec6713ca39907fa6ec2dbbef61d8ef390849",
+      "bytes": 899
+    },
+    {
+      "file": "source/rules/windows/file/file_delete/file_delete_win_delete_exchange_powershell_logs.yml",
+      "sha256": "175ab703cdab562d894996e225dff7d3248af3b0c49c75a5fea5f01debc71f00",
+      "bytes": 779
+    },
+    {
+      "file": "source/rules/windows/file/file_delete/file_delete_win_delete_prefetch.yml",
+      "sha256": "5cd9537b3b3c8cbd5c84fef26e8eb6c46bba6bea615224eb557291d8667db071",
+      "bytes": 874
+    },
+    {
+      "file": "source/rules/windows/file/file_delete/file_delete_win_unusual_deletion_by_dns_exe.yml",
+      "sha256": "94256741ead5b1c08b6f95d093a0320bc6d98d33e318d87f040c5932305779db",
+      "bytes": 915
+    },
+    {
+      "file": "source/rules/windows/file/file_event/file_event_win_anydesk_writing_susp_binaries.yml",
+      "sha256": "a34368f66ca76bd9cd367497d259f6954d72dbada1a8b37b21835f4841979e11",
+      "bytes": 1169
+    },
+    {
+      "file": "source/rules/windows/file/file_event/file_event_win_bloodhound_collection.yml",
+      "sha256": "9a10039f41f0f9ca5424571728d37838da43ca8aa84d44af4a0dc9166fc80969",
+      "bytes": 1444
+    },
+    {
+      "file": "source/rules/windows/file/file_event/file_event_win_creation_unquoted_service_path.yml",
+      "sha256": "fefb63f74fcd220f0b2ff2122a3e06abf03a9b4eafd0e1de946dc1e3c6f4d3f9",
+      "bytes": 923
+    },
+    {
+      "file": "source/rules/windows/file/file_event/file_event_win_cred_dump_tools_dropped_files.yml",
+      "sha256": "10b4b792b8a4139152d393e1605d14a488741a310c4f844519da73fd89111291",
+      "bytes": 1772
+    },
+    {
+      "file": "source/rules/windows/file/file_event/file_event_win_cscript_wscript_dropper.yml",
+      "sha256": "abbecdb06428f9caf98c2bde60f7d5a2d248f92137bd27f4b151a62f9c930dee",
+      "bytes": 1260
+    },
+    {
+      "file": "source/rules/windows/file/file_event/file_event_win_dcom_iertutil_dll_hijack.yml",
+      "sha256": "5e8dbb71572d0fe8895278089fb8efa76f505830dcf8f3cc2328c283876301e3",
+      "bytes": 941
+    },
+    {
+      "file": "source/rules/windows/file/file_event/file_event_win_dll_sideloading_space_path.yml",
+      "sha256": "815a35743eb374c8d5e8b7e93eabae1036f2f3795c70f30d92da8122ba0924ff",
+      "bytes": 1046
+    },
+    {
+      "file": "source/rules/windows/file/file_event/file_event_win_exchange_webshell_drop.yml",
+      "sha256": "6d0f05735186cd90ade6c6d33a677c66582a1d593df11abd551cb604b9acf1fc",
+      "bytes": 1384
+    },
+    {
+      "file": "source/rules/windows/file/file_event/file_event_win_hktl_crackmapexec_indicators.yml",
+      "sha256": "541397b6a680046075615d34f92783e713ae070620f089b2fe820fa3396965cd",
+      "bytes": 1571
+    },
+    {
+      "file": "source/rules/windows/file/file_event/file_event_win_hktl_dumpert.yml",
+      "sha256": "b41a801c7074ae9c841c3d02f5571682638e8497c5724033492ee25e58d8ac76",
+      "bytes": 821
+    },
+    {
+      "file": "source/rules/windows/file/file_event/file_event_win_hktl_hivenightmare_file_exports.yml",
+      "sha256": "b538dbf6c485ce5902aad84e469956568e09df62b92b49152d5bfe8cd41cad01",
+      "bytes": 1162
+    },
+    {
+      "file": "source/rules/windows/file/file_event/file_event_win_hktl_inveigh_artefacts.yml",
+      "sha256": "f8db50c45272d8ea625767901280f58d24686e7ce0febcf420420b89f8710770",
+      "bytes": 1231
+    },
+    {
+      "file": "source/rules/windows/file/file_event/file_event_win_hktl_krbrelay_remote_ioc.yml",
+      "sha256": "512638a287079459d7bf0695282f99e1225259946641b81bfc0e9eabff402a41",
+      "bytes": 846
+    },
+    {
+      "file": "source/rules/windows/file/file_event/file_event_win_hktl_mimikatz_files.yml",
+      "sha256": "0f6eeec794001fa74bb294acfe2130656d138de6806ae1faa5f63d4078aa999f",
+      "bytes": 855
+    },
+    {
+      "file": "source/rules/windows/file/file_event/file_event_win_hktl_nppspy.yml",
+      "sha256": "b006a8267fbd705f087c7f36b131cee1e2c0e2a54795052ddbe4daf901aad9c0",
+      "bytes": 809
+    },
+    {
+      "file": "source/rules/windows/file/file_event/file_event_win_hktl_powerup_dllhijacking.yml",
+      "sha256": "2e5884117ed85a38eeb30c3f12d9426c777d940c711a8dd11e60b9c0b3ceee0c",
+      "bytes": 1018
+    },
+    {
+      "file": "source/rules/windows/file/file_event/file_event_win_hktl_quarkspw_filedump.yml",
+      "sha256": "8a8c1180fe8b6b925223334164c94057328c7680706dcac672330019242ab08d",
+      "bytes": 652
+    },
+    {
+      "file": "source/rules/windows/file/file_event/file_event_win_hktl_remote_cred_dump.yml",
+      "sha256": "f04dd54eaf791c663c99d5eb7d4a7bc29f62e8915986b5981eeb527bf4966f31",
+      "bytes": 981
+    },
+    {
+      "file": "source/rules/windows/file/file_event/file_event_win_hktl_safetykatz.yml",
+      "sha256": "25bef85f4f6caf8e54ad1e8104bf108e228c6ea24c785b8b919d01e5ab15f7c2",
+      "bytes": 713
+    },
+    {
+      "file": "source/rules/windows/file/file_event/file_event_win_iphlpapi_dll_sideloading.yml",
+      "sha256": "fb7afaf658d7cf8f64ba16029f0af40e327abcc42b81c12ba8c420ffc62eb3d2",
+      "bytes": 886
+    },
+    {
+      "file": "source/rules/windows/file/file_event/file_event_win_iso_file_mount.yml",
+      "sha256": "876543fc15b268b4468a6533ac0cdd164a9af9e6c5cd0143fed9800c981d46cf",
+      "bytes": 1182
+    },
+    {
+      "file": "source/rules/windows/file/file_event/file_event_win_lsass_default_dump_file_names.yml",
+      "sha256": "d93454fad0d02f3ba05215b5682e65a6fefcd28b37a546419e47693d28477df5",
+      "bytes": 2491
+    },
+    {
+      "file": "source/rules/windows/file/file_event/file_event_win_lsass_shtinkering.yml",
+      "sha256": "0f0c52cf5b666d98f525f785e7fba34d832476970d2c1323453f22e76c806344",
+      "bytes": 1122
+    },
+    {
+      "file": "source/rules/windows/file/file_event/file_event_win_lsass_werfault_dump.yml",
+      "sha256": "5d4c0289396f414c83bb3e83993a6fab42f2b9211a20292c04ce5300823fcada",
+      "bytes": 713
+    },
+    {
+      "file": "source/rules/windows/file/file_event/file_event_win_mal_adwind.yml",
+      "sha256": "7f667d4d911f22444bd73012eaae058164b125b7e99e9ad136badbc271fac24e",
+      "bytes": 1036
+    },
+    {
+      "file": "source/rules/windows/file/file_event/file_event_win_mal_octopus_scanner.yml",
+      "sha256": "f103ee389bebab256feadf9e5f293e64e37d616d1790879cfe4f9e3e8ccfb594",
+      "bytes": 660
+    },
+    {
+      "file": "source/rules/windows/file/file_event/file_event_win_msdt_susp_directories.yml",
+      "sha256": "b593ddd00c3c3314c1b3603ddd40183175b373ff6f6170408dd99c85886ba3b7",
+      "bytes": 1077
+    },
+    {
+      "file": "source/rules/windows/file/file_event/file_event_win_mysqld_uncommon_file_creation.yml",
+      "sha256": "2af2b83e1ab0d7b816817b8582c7483f1726f8426e891dabd61baa2e7da66a0f",
+      "bytes": 990
+    },
+    {
+      "file": "source/rules/windows/file/file_event/file_event_win_net_cli_artefact.yml",
+      "sha256": "103243becfb8a17a81175704420f89351bd8dedc0882f8b309cd5a89ad57cf27",
+      "bytes": 2337
+    },
+    {
+      "file": "source/rules/windows/file/file_event/file_event_win_new_files_in_uncommon_appdata_folder.yml",
+      "sha256": "beff5da848dc5ab8d2a29e2226c68f273b532508a642c8a4a980539b60c075c4",
+      "bytes": 1400
+    },
+    {
+      "file": "source/rules/windows/file/file_event/file_event_win_ntds_dit_uncommon_parent_process.yml",
+      "sha256": "7d93bc1e1fcc1da68188e1f4caeb68b881a350fbf1f63e266e63df0dbf8dc2d8",
+      "bytes": 1944
+    },
+    {
+      "file": "source/rules/windows/file/file_event/file_event_win_ntds_dit_uncommon_process.yml",
+      "sha256": "4436b490503eff6815d67437c67e4e34f6cb74c2fdbbcdd12565cfba9027d8e5",
+      "bytes": 1443
+    },
+    {
+      "file": "source/rules/windows/file/file_event/file_event_win_ntds_exfil_tools.yml",
+      "sha256": "bb32b9c7f9335605634c96a2eb93283b5606324e92b9d85f2de4a03435d66a2f",
+      "bytes": 1292
+    },
+    {
+      "file": "source/rules/windows/file/file_event/file_event_win_office_addin_persistence.yml",
+      "sha256": "25269f0e3c0ac9571710f2cd788d47d29f06e3e49675fe917a8e8026d77f1edc",
+      "bytes": 1344
+    },
+    {
+      "file": "source/rules/windows/file/file_event/file_event_win_office_macro_files_from_susp_process.yml",
+      "sha256": "eaeb0dc4e5064faecfbb1632c6c59f125c2987fb25f8c8193ff8ed0c2c920b39",
+      "bytes": 1611
+    },
+    {
+      "file": "source/rules/windows/file/file_event/file_event_win_office_onenote_susp_dropped_files.yml",
+      "sha256": "87588dd9eb8a3c2648f5d00853940851606341a5ed062632556f94f80c4d02b1",
+      "bytes": 1849
+    },
+    {
+      "file": "source/rules/windows/file/file_event/file_event_win_office_outlook_newform.yml",
+      "sha256": "6bb5da8f596d3f210aa7171d5b0e914d683021dcc1f9f86df66ff26132745acc",
+      "bytes": 1130
+    },
+    {
+      "file": "source/rules/windows/file/file_event/file_event_win_office_outlook_susp_macro_creation.yml",
+      "sha256": "665cf89bf841499f4b3a24dfb72ee38ecb97eca9948918c5f78914aa64ba2ac4",
+      "bytes": 1024
+    },
+    {
+      "file": "source/rules/windows/file/file_event/file_event_win_office_startup_persistence.yml",
+      "sha256": "e1ed130667bdf7419ae674305cd9d3ee1d5566d9412c501e7c007e864b4f7372",
+      "bytes": 1827
+    },
+    {
+      "file": "source/rules/windows/file/file_event/file_event_win_office_susp_file_extension.yml",
+      "sha256": "558f11b81947f1e232e4193527434fb89664c1ce597781e974952b05fcfd5849",
+      "bytes": 2542
+    },
+    {
+      "file": "source/rules/windows/file/file_event/file_event_win_office_uncommon_file_startup.yml",
+      "sha256": "6188b8aba79a8911505daacb5d1b4923f175e68ddbaf8e642bba4e7feadca116",
+      "bytes": 2686
+    },
+    {
+      "file": "source/rules/windows/file/file_event/file_event_win_pcre_net_temp_file.yml",
+      "sha256": "dc5ea59da929e583b0d77b20831103f32d9e30a7af3bfcbe3dd6ee895a0c24ec",
+      "bytes": 694
+    },
+    {
+      "file": "source/rules/windows/file/file_event/file_event_win_powershell_exploit_scripts.yml",
+      "sha256": "1e7bdc7dcc5e4d88787eb5d717511ca1f32f3b4b81befec6bf4b4b555c070c00",
+      "bytes": 11339
+    },
+    {
+      "file": "source/rules/windows/file/file_event/file_event_win_powershell_startup_shortcuts.yml",
+      "sha256": "a93b60d73aebb42693e7441de309350017a57cbbd5ddf7f79ebb57c14c7ad266",
+      "bytes": 1598
+    },
+    {
+      "file": "source/rules/windows/file/file_event/file_event_win_rdp_file_susp_creation.yml",
+      "sha256": "f71d904b79660fbbba224bb8097c4f121a1f21c646d79127080d10a34d753fc2",
+      "bytes": 1698
+    },
+    {
+      "file": "source/rules/windows/file/file_event/file_event_win_redmimicry_winnti_filedrop.yml",
+      "sha256": "97b9fff6058e3a798efea2a9c4ab85eabed97cd2753b74bb256d4d9db8d3caa5",
+      "bytes": 652
+    },
+    {
+      "file": "source/rules/windows/file/file_event/file_event_win_regedit_print_as_pdf.yml",
+      "sha256": "98e45cf37a3d2f52ef3bd6ba641cd3b081d2c86b946ba4031166a253f0d9b60a",
+      "bytes": 781
+    },
+    {
+      "file": "source/rules/windows/file/file_event/file_event_win_ripzip_attack.yml",
+      "sha256": "c4a6c889bb80ff909463e89ccc199827686a2d3c61e17230502d23e11d14fb45",
+      "bytes": 1287
+    },
+    {
+      "file": "source/rules/windows/file/file_event/file_event_win_sam_dump.yml",
+      "sha256": "bf6eb68d113c3a0caf1516cdb6055d5a32f441c5a8e7e52f7cd9ee54655b18fa",
+      "bytes": 1645
+    },
+    {
+      "file": "source/rules/windows/file/file_event/file_event_win_shell_write_susp_directory.yml",
+      "sha256": "fbaac75b263855b77cfeff593a1b099159fc20d7b2417cf9a96463e8039d1c37",
+      "bytes": 1519
+    },
+    {
+      "file": "source/rules/windows/file/file_event/file_event_win_shell_write_susp_files_extensions.yml",
+      "sha256": "e76229c800add301cb3b1ef3a70276ad42c8980c2cbdc1d36e6bebc22dbfcf40",
+      "bytes": 2530
+    },
+    {
+      "file": "source/rules/windows/file/file_event/file_event_win_susp_colorcpl.yml",
+      "sha256": "306cae1a63bc4baa74420ef4933744eefe1b6a7002625938fdf8b9d664bd98d7",
+      "bytes": 735
+    },
+    {
+      "file": "source/rules/windows/file/file_event/file_event_win_susp_desktopimgdownldr_file.yml",
+      "sha256": "737a364c9839d5fa8e48ba934283566a86502f868df0869558f90804bdb48d9e",
+      "bytes": 1112
+    },
+    {
+      "file": "source/rules/windows/file/file_event/file_event_win_susp_double_extension.yml",
+      "sha256": "55d66ff736f27d5271790d4ff6d4c750471296214e83d1f261789d273d200810",
+      "bytes": 2488
+    },
+    {
+      "file": "source/rules/windows/file/file_event/file_event_win_susp_dpapi_backup_and_cert_export_ioc.yml",
+      "sha256": "bec6c923fbe86633b86a0d4a3d65606d123ead6e6e891f042d63ef3e779230d7",
+      "bytes": 1099
+    },
+    {
+      "file": "source/rules/windows/file/file_event/file_event_win_susp_exchange_aspx_write.yml",
+      "sha256": "588911a89962fc565bbda7631c23cdd2411a913caebbb4554399889232c59016",
+      "bytes": 799
+    },
+    {
+      "file": "source/rules/windows/file/file_event/file_event_win_susp_executable_creation.yml",
+      "sha256": "e89919d07261efad01ca6c59ae52e6af19a5326d1ada3fdbd2e6503467400ee6",
+      "bytes": 986
+    },
+    {
+      "file": "source/rules/windows/file/file_event/file_event_win_susp_get_variable.yml",
+      "sha256": "5bb56d431ea95b81cc0e1e4dfc682d21753e6e265d565babfcbb7af4e6b77aa5",
+      "bytes": 1057
+    },
+    {
+      "file": "source/rules/windows/file/file_event/file_event_win_susp_legitimate_app_dropping_archive.yml",
+      "sha256": "5472da99e9779b875019b0e034da3756db873293f3bce92033bdfccc9e87ce04",
+      "bytes": 1728
+    },
+    {
+      "file": "source/rules/windows/file/file_event/file_event_win_susp_legitimate_app_dropping_exe.yml",
+      "sha256": "ec8aa04cc97ad073c67f2e331d007155a48d42d284dcc759db35ee7e9ab9722a",
+      "bytes": 2148
+    },
+    {
+      "file": "source/rules/windows/file/file_event/file_event_win_susp_legitimate_app_dropping_script.yml",
+      "sha256": "6f67b50c4b0cc8a2ec1e972823da5708b358095a548662cc3f1a1ba58a0f572a",
+      "bytes": 2390
+    },
+    {
+      "file": "source/rules/windows/file/file_event/file_event_win_susp_recycle_bin_fake_exec.yml",
+      "sha256": "b3964ed1c120bc31c2c0986e1a533ebe7a89a23597694e69b906c9f3cddc0da6",
+      "bytes": 1139
+    },
+    {
+      "file": "source/rules/windows/file/file_event/file_event_win_susp_right_to_left_override_extension_spoofing.yml",
+      "sha256": "74fe34baa5f80911d1c2dc1386f9f9069edab92da702686720f455e5cde6e55b",
+      "bytes": 2225
+    },
+    {
+      "file": "source/rules/windows/file/file_event/file_event_win_susp_startup_folder_persistence.yml",
+      "sha256": "f9dae1cc14c5541b5512559e278c56d4b36ae288b263741ba694b316c814ebd8",
+      "bytes": 2029
+    },
+    {
+      "file": "source/rules/windows/file/file_event/file_event_win_susp_system_interactive_powershell.yml",
+      "sha256": "0536b14770e8c1ef3d5416b9a546f1efaadb6c54a2edf11efbe29a4823ccbb1a",
+      "bytes": 967
+    },
+    {
+      "file": "source/rules/windows/file/file_event/file_event_win_susp_task_write.yml",
+      "sha256": "82313978dcef20037a0f1e73de4567ef1033de014c6557dbb22f60e64407f1a9",
+      "bytes": 766
+    },
+    {
+      "file": "source/rules/windows/file/file_event/file_event_win_sysinternals_livekd_default_dump_name.yml",
+      "sha256": "dd1df70e817f6659ed22b4db5411525946b4c1545e9829c3f7258c5bde084df6",
+      "bytes": 760
+    },
+    {
+      "file": "source/rules/windows/file/file_event/file_event_win_sysinternals_livekd_driver_susp_creation.yml",
+      "sha256": "91b240804215e122eb222c9a9ace964457e1d11fa30a012d914c38eb26edc790",
+      "bytes": 908
+    },
+    {
+      "file": "source/rules/windows/file/file_event/file_event_win_sysinternals_procexp_driver_susp_creation.yml",
+      "sha256": "ee535b8fff9e16acfb1dfdc4ee07e8cfca793b8f98cc939c2201513fffc6659b",
+      "bytes": 1390
+    },
+    {
+      "file": "source/rules/windows/file/file_event/file_event_win_sysinternals_psexec_service_key.yml",
+      "sha256": "b742e33eb0d56c654300de8ac448ca988d8e7970579cbca82de46da315a626ea",
+      "bytes": 976
+    },
+    {
+      "file": "source/rules/windows/file/file_event/file_event_win_system32_local_folder_privilege_escalation.yml",
+      "sha256": "e1fa191523243525ef87740fff7a7ff427bd8e0bf8d06d40f4a26f644423b828",
+      "bytes": 1200
+    },
+    {
+      "file": "source/rules/windows/file/file_event/file_event_win_taskmgr_lsass_dump.yml",
+      "sha256": "73247aaa9640ddc30f382da2a0718643f2f82403509db385c111205b611fb814",
+      "bytes": 1132
+    },
+    {
+      "file": "source/rules/windows/file/file_event/file_event_win_tsclient_filewrite_startup.yml",
+      "sha256": "35628d176c49c6ff2584b6094c7d5725e133a3a051c8483806316dcd32167f00",
+      "bytes": 648
+    },
+    {
+      "file": "source/rules/windows/file/file_event/file_event_win_uac_bypass_consent_comctl32.yml",
+      "sha256": "b0a829d042cec032fae82dd06f74bfd8eb41423bf1631dc0b7ce6007c024237d",
+      "bytes": 666
+    },
+    {
+      "file": "source/rules/windows/file/file_event/file_event_win_uac_bypass_dotnet_profiler.yml",
+      "sha256": "c3c25e87d28177406e6d1d276a8a5caf288e05db1a70994c69dcdc515dfa5fe2",
+      "bytes": 672
+    },
+    {
+      "file": "source/rules/windows/file/file_event/file_event_win_uac_bypass_eventvwr.yml",
+      "sha256": "458299eddb1352de8057c37730d3f424c2328840c1bb0aa3d52ab5408d888236",
+      "bytes": 1126
+    },
+    {
+      "file": "source/rules/windows/file/file_event/file_event_win_uac_bypass_idiagnostic_profile.yml",
+      "sha256": "f9ce16658b425723c50edb50d6bcc3100a84cf8718d5d942ac8e11d22be3a767",
+      "bytes": 750
+    },
+    {
+      "file": "source/rules/windows/file/file_event/file_event_win_uac_bypass_ieinstal.yml",
+      "sha256": "d908e5719e25da848bb2991f3a8d543c905607de4d2a6a4ecbb776f9326845c2",
+      "bytes": 733
+    },
+    {
+      "file": "source/rules/windows/file/file_event/file_event_win_uac_bypass_msconfig_gui.yml",
+      "sha256": "6c8b90f8e897cf7f822f3944e9c1137287ec808d304772a38f26f026dc2df0e0",
+      "bytes": 657
+    },
+    {
+      "file": "source/rules/windows/file/file_event/file_event_win_uac_bypass_ntfs_reparse_point.yml",
+      "sha256": "883bf7e3ec89ecbea172fa601cf5659fc0150cc5d6f3db44e959fc11a3e509bf",
+      "bytes": 702
+    },
+    {
+      "file": "source/rules/windows/file/file_event/file_event_win_uac_bypass_winsat.yml",
+      "sha256": "0d8d2a7a4f4e08e4227f6b792409537b485b99a1aa130e40ee584333c44f9727",
+      "bytes": 744
+    },
+    {
+      "file": "source/rules/windows/file/file_event/file_event_win_uac_bypass_wmp.yml",
+      "sha256": "05c68666cef49831fdeab9ea2f6dac3b0e733ac24839b6b7be7ea2393d266e82",
+      "bytes": 814
+    },
+    {
+      "file": "source/rules/windows/file/file_event/file_event_win_vscode_tunnel_renamed_execution.yml",
+      "sha256": "35d70fec3fe1d7a5dbc053b9f70baabccdc9733153b0de356097060e23335550",
+      "bytes": 968
+    },
+    {
+      "file": "source/rules/windows/file/file_event/file_event_win_wmi_persistence_script_event_consumer_write.yml",
+      "sha256": "1f31f134ced3c2a75f6deedb3b2d0bdf7b76d03d8745b5bf8f465b6849d33421",
+      "bytes": 668
+    },
+    {
+      "file": "source/rules/windows/file/file_event/file_event_win_wmiexec_default_filename.yml",
+      "sha256": "ca93d942f56ca19d64e1155f6b872242430d90878cae6b0de7f908e273b21187",
+      "bytes": 891
+    },
+    {
+      "file": "source/rules/windows/file/file_event/file_event_win_wmiprvse_wbemcomn_dll_hijack.yml",
+      "sha256": "c3754c06e7bc070527323e17538d1e6dba5879b3d440d2f9381afdfdee32eee5",
+      "bytes": 828
+    },
+    {
+      "file": "source/rules/windows/file/file_event/file_event_win_wpbbin_persistence.yml",
+      "sha256": "cb10b8674f897f77824e060faf052a39c1a14261fc121c9a74c86aa2f69495c9",
+      "bytes": 894
+    }
+  ],
+  "normalized": {
+    "file": "ruleset.json",
+    "sha256": "94350bfa770d1ad053da682ba817709fbf6f80279cd055db10f27f2737823574"
+  },
+  "converter": "colony rulesets converter 1 (sigma windows file)",
+  "retrievedAt": "2026-11-20",
+  "report": {
+    "total": 91,
+    "converted": 86,
+    "skipped": [
+      {
+        "id": "file_delete_win_delete_prefetch",
+        "reason": "needs User, which a command does not have before it runs"
+      },
+      {
+        "id": "file_event_win_exchange_webshell_drop",
+        "reason": "needs CommandLine, which a command does not have before it runs"
+      },
+      {
+        "id": "file_event_win_net_cli_artefact",
+        "reason": "needs ParentImage, ParentCommandLine, CommandLine, which a command does not have before it runs"
+      },
+      {
+        "id": "file_event_win_ntds_dit_uncommon_parent_process",
+        "reason": "needs ParentImage, which a command does not have before it runs"
+      },
+      {
+        "id": "file_event_win_office_macro_files_from_susp_process",
+        "reason": "needs ParentImage, which a command does not have before it runs"
+      }
+    ],
+    "dropped": {}
+  }
+}

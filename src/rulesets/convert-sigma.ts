@@ -15,7 +15,10 @@ export const PROVIDED_FIELDS = ['Image', 'CommandLine', 'CurrentDirectory'] as c
 export const WINDOWS_PROVIDED_FIELDS = [...PROVIDED_FIELDS, 'OriginalFileName'] as const;
 export type Platform = 'linux' | 'windows';
 /** The kind of event a rule is written for: a process that starts, or the text of a PowerShell script (Windows ps_script). */
-export type Category = 'process_creation' | 'ps_script' | 'registry';
+export type Category = 'process_creation' | 'ps_script' | 'registry' | 'file';
+/** What a Sigma file rule can be about, and the fields of a file event the guard can give (see file-events.ts). */
+const FILE_LOGSOURCES = ['file_event', 'file_change', 'file_delete'];
+export const FILE_PROVIDED_FIELDS = ['TargetFilename', 'Image'] as const;
 /** What a Sigma registry rule can be about, and the fields of a registry event the guard can give (see registry-events.ts). */
 const REGISTRY_LOGSOURCES = ['registry_set', 'registry_delete', 'registry_event'];
 export const REGISTRY_PROVIDED_FIELDS = ['TargetObject', 'Details', 'Image', 'EventType'] as const;
@@ -117,11 +120,11 @@ function selectionOf(name: string, value: YamlValue): Selection {
 export function convertSigma(
   files: Record<string, string>,
   meta: { name: string; version: string; repoUrl: string; platform?: Platform; category?: Category },
-): { ruleset: { format: 1; kind: 'commands'; name: string; version: string; platform?: 'windows'; category?: 'ps_script' | 'registry'; rules: CommandRule[] }; report: ConversionReport } {
+): { ruleset: { format: 1; kind: 'commands'; name: string; version: string; platform?: 'windows'; category?: 'ps_script' | 'registry' | 'file'; rules: CommandRule[] }; report: ConversionReport } {
   const platform: Platform = meta.platform ?? 'linux';
   const category: Category = meta.category ?? 'process_creation';
   if (category !== 'process_creation' && platform !== 'windows') throw new SigmaError('PowerShell script and registry rules are Windows rules');
-  const provided: readonly string[] = category === 'registry' ? REGISTRY_PROVIDED_FIELDS : category === 'ps_script' ? SCRIPT_PROVIDED_FIELDS : platform === 'windows' ? WINDOWS_PROVIDED_FIELDS : PROVIDED_FIELDS;
+  const provided: readonly string[] = category === 'file' ? FILE_PROVIDED_FIELDS : category === 'registry' ? REGISTRY_PROVIDED_FIELDS : category === 'ps_script' ? SCRIPT_PROVIDED_FIELDS : platform === 'windows' ? WINDOWS_PROVIDED_FIELDS : PROVIDED_FIELDS;
   const rules: CommandRule[] = [];
   const skipped: SkippedRule[] = [];
   const seen = new Set<string>();
@@ -147,8 +150,8 @@ export function convertSigma(
     if (seen.has(ruleId)) return skip('duplicate rule id');
     seen.add(ruleId);
     const logsource = isMap(doc.logsource) ? doc.logsource : {};
-    const sourceOk = category === 'registry' ? typeof logsource.category === 'string' && REGISTRY_LOGSOURCES.includes(logsource.category) : logsource.category === category;
-    if (logsource.product !== platform || !sourceOk) return skip(`not a ${platform === 'windows' ? 'Windows' : 'Linux'} ${category === 'ps_script' ? 'PowerShell script' : category === 'registry' ? 'registry' : 'process creation'} rule`);
+    const sourceOk = category === 'registry' || category === 'file' ? typeof logsource.category === 'string' && (category === 'file' ? FILE_LOGSOURCES : REGISTRY_LOGSOURCES).includes(logsource.category) : logsource.category === category;
+    if (logsource.product !== platform || !sourceOk) return skip(`not a ${platform === 'windows' ? 'Windows' : 'Linux'} ${category === 'ps_script' ? 'PowerShell script' : category === 'registry' ? 'registry' : category === 'file' ? 'file' : 'process creation'} rule`);
     const detection = isMap(doc.detection) ? doc.detection : null;
     if (!detection) return skip('the rule has no detection');
 
@@ -181,7 +184,7 @@ export function convertSigma(
         status: str('status'),
         description,
         link: `${meta.repoUrl}/${path}`,
-        ...(category === 'registry' ? { on: String(logsource.category) } : {}),
+        ...(category === 'registry' || category === 'file' ? { on: String(logsource.category) } : {}),
         selections,
         condition,
       });

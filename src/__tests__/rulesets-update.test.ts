@@ -182,6 +182,10 @@ async function sigmaPackage(): Promise<Buffer> {
     data: ['title: A registry rule that is new in this release', 'id: 12121212-3434-4565-8787-909090909090', 'author: Someone Else', 'status: test', 'level: high', 'logsource:', '    product: windows', '    category: registry_set', 'detection:', '    selection:', "        TargetObject|endswith: '\\\\ZzNewValue'", '    condition: selection', ''].join('\n'),
   });
   entries.push({
+    name: 'rules/windows/file/file_event/file_event_win_new_rule.yml',
+    data: ['title: A file rule that is new in this release', 'id: 13131313-3434-4565-8787-909090909090', 'author: Someone Else', 'status: test', 'level: high', 'logsource:', '    product: windows', '    category: file_event', 'detection:', '    selection:', "        TargetFilename|endswith: '\\\\zznew.exe'", '    condition: selection', ''].join('\n'),
+  });
+  entries.push({
     name: 'rules/windows/powershell/powershell_script/posh_ps_new_rule.yml',
     data: ['title: A PowerShell script rule that is new in this release', 'id: 99999999-aaaa-4bbb-8ccc-dddddddddddd', 'author: Someone Else', 'status: test', 'level: high', 'logsource:', '    product: windows', '    category: ps_script', 'detection:', '    selection:', "        ScriptBlockText|contains: 'Invoke-ZzNew'", '    condition: selection', ''].join('\n'),
   });
@@ -467,6 +471,19 @@ test('the registry set is updated from the same package, with its category and t
   const set = await loadRuleset(path.join(dir, 'sigma-registry'));
   assert.equal(set.category, 'registry');
   assert.equal(set.commands[0].on, 'registry_set');
+  assert.equal(set.provenance.report.total, 1, 'only the folder of this set is read');
+});
+
+test('the file set is updated from the same package, with its category and the kind of event of each rule', async () => {
+  const dir = await workCopy();
+  const r = await run(dir, ['--set', 'sigma-file', '--tag', SIGMA_TAG, '--yes']);
+  assert.equal(r.code, 0, r.stderr);
+  const out = JSON.parse(r.stdout);
+  assert.deepEqual(out.rules.added.ids, ['A file rule that is new in this release']);
+  assert.equal(out.rules.after, 1);
+  const set = await loadRuleset(path.join(dir, 'sigma-file'));
+  assert.equal(set.category, 'file');
+  assert.equal(set.commands[0].on, 'file_event');
   assert.equal(set.provenance.report.total, 1, 'only the folder of this set is read');
 });
 

