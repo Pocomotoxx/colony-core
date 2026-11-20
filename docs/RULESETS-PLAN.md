@@ -325,6 +325,11 @@ Az átállásról mérés dönt, nem a készlet jó híre:
 
 **Hátra van.** A fájl-szabályok Linux oldala (2 szabály), a `file_change`, az írt tartalom és a szkriptfájlok.
 
+## 6/k. A külső audit B05 és A02 megállapításának javítása (2026-11-20)
+
+**B05, a horgony és az ablak.** A reguláris kifejezés egy hosszú mezőn ablakonként fut; az ablak széle így `^`-ként vagy `$`-ként viselkedhetett. Most a kifejezés megjegyzi, a mező melyik végéhez köti (`^`, `$`; az escape-elt és a karakterosztályon belüli jel nem horgony): a kezdethez kötött az első ablakon, a véghez kötött a **valódi mező** utolsó ablakán (a 24 000 karakteres olvasási határon túl is) fut, a mindkettőhöz kötött egy ablaknál hosszabb mezőn nem egyezik (nem ítélhető meg). A `m` jelzős kifejezés sorokhoz köt, ezt egy ablak nem tudja megkülönböztetni a mezőtől: ez az egyetlen eset, amely közelítő marad. A 49 `re` értékből jelenleg 6 véghez kötött (mind fájlnév-végződés), kezdethez köttött és `m` jelzős nincs.
+
+**A02, egy hibaszabály az útvonalakra.** A két útvonalfeloldó (`src/safe-path.ts` aszinkron és a shell-ellenőrzés szinkron változata, most közös szabállyal) eltérően kezelte a hibákat. Most: ami nincs ott (`ENOENT`, `ENOTDIR`), azt a szülőjén át oldja fel; egy **lógó link** (olyan, amely nem létező helyre mutat) arra a helyre vezet, ahová mutat, mert egy írás rajta át azt hozná létre (korábban egy projekten kívülre vagy a `.colony`-ba mutató lógó linken át a fájlírás áthaladt: kódolvasásból igazolt, a régi kódon nem futtattam); minden más hiba (jogosultság, linkhurok, ...) `SafePathError(UNRESOLVABLE)`, vagyis az ismeretlen állapotot nem a név szövege alapján ítéli meg. A fájl-eszköz ilyenkor megtagad, a shell-ellenőrzés a projekten belüli útvonalra rákérdez (`ask`). **Nem védett:** az ellenőrzés és a host művelete közötti időrés (egyidejű útvonalváltoztatás).
 ## 7. Szeletek
 
 | # | Szelet | Állapot |

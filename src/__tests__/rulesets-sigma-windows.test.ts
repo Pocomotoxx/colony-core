@@ -217,6 +217,28 @@ test('a pattern is tried on windows of the text, up to 24000 characters', () => 
   assert.equal(at(25000, 26000), false, 'past the 24000 characters that are read');
 });
 
+test('^ and $ are about the whole field, not about a window of it (audit B05)', () => {
+  const one = (re: string) => compileCommandRule(convertSigma({ 'rules/r.yml': PS(`selection:\n    ScriptBlockText|re: '${re}'\ncondition: selection`) }, psMeta).ruleset.rules[0]);
+  const tail = one('needle[0-9]+$');
+  const head = one('^needle[0-9]+');
+  const both = one('^needle[0-9]+$');
+  const field = (before: number, after: number): { ScriptBlockText: string } => ({ ScriptBlockText: 'a'.repeat(before) + 'needle42' + 'a'.repeat(after) });
+  // the text ends the way the pattern says: inside a window, but the window is not the end of the field
+  assert.equal(ruleMatches(tail, field(7992, 4000)), false, 'needle42 ends the first window, the field goes on');
+  assert.equal(ruleMatches(tail, field(7992, 0)), true, 'and when it really is the end');
+  assert.equal(ruleMatches(tail, field(20000, 0)), true, 'the end of a long field');
+  assert.equal(ruleMatches(tail, field(30000, 0)), true, 'also past the 24000 characters that are read in windows');
+  assert.equal(ruleMatches(tail, field(0, 0)), true, 'a short field is as before');
+  // the text starts the way the pattern says
+  assert.equal(ruleMatches(head, field(7000, 4000)), false, 'a window starts at 7000, the field does not');
+  assert.equal(ruleMatches(head, field(0, 20000)), true, 'the real start of a long field');
+  // both ends: a field longer than a window cannot be judged, a short one can
+  assert.equal(ruleMatches(both, field(0, 0)), true);
+  assert.equal(ruleMatches(both, field(0, 12000)), false);
+  assert.equal(ruleMatches(one('needle\\$'), { ScriptBlockText: 'needle$' + 'a'.repeat(12000) }), true, 'an escaped dollar is not an anchor');
+  assert.equal(ruleMatches(one('[$]needle'), { ScriptBlockText: 'a'.repeat(7990) + '$needle' + 'a'.repeat(5000) }), true, 'nor a dollar in a character class');
+});
+
 // ---- registry
 
 const REG = (detection: string, category = 'registry_set'): string => SAMPLE(detection).replace('category: process_creation', `category: ${category}`);
