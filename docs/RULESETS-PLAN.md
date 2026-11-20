@@ -74,7 +74,9 @@ Amit végigcsinál, és az első hibánál megáll úgy, hogy a mostani készlet
 
 **Valós próba (2026-11-19):** mindkét készleten lefuttattam ugyanarra a címkére, amelyen már vannak (gitleaks v8.30.1, presidio 2.2.366). A letöltött fájlok git-blob hash-e egyezett, a commit is, 0 hozzáadott, 0 eltűnt, 0 változott szabály. **Egy hibát ez fedett fel:** a `microsoft/presidio` végleges átirányítás (301) az `data-privacy-stack/presidio` repóra (ugyanaz a repó, azonosító 132129752, MIT, nem archivált). A szkript az átirányítást helyesen visszautasította, ezért a `sources.json` a kanonikus nevet tartalmazza. A presidio provenance-ában ezért a forrás-URL az új szervezetre mutat.
 
-**Visszalépés:** `git checkout -- rulesets/<név>`. **Nem igazolt:** egy valódi, új kiadásra még nem futott (a tesztek hamis GitHub-API ellen futnak), ezért az első valódi frissítésnél az átalakító új szintaxison elbukhat: ekkor a szkript visszaállít, és kimondja, mit nem ismer.
+**Visszalépés:** `git checkout -- rulesets/<név>`. **Nem igazolt:** egy valódi, új kiadásra még nem futott (a tesztek hamis GitHub-API ellen futnak), ezért az első valódi frissítésnél az átalakító új szintaxison elbukhat: ekkor a szkript nem érinti a meglévő készletet, és kimondja, mit nem ismer.
+
+**Frissítés a külső audit után (B02, B03).** A fájlokat a szkript a címke helyett arra a commitra kéri, amelyre a címkét feloldotta, és a letöltés végén újra megkérdezi a címke commitját: ha elmozdult, elutasítja. Az új készletet egy előkészítő mappában (`rulesets/.stage-*`) építi fel: a meglévő készlet másolatán fut az átalakító és a betöltő ellenőrzése, és csak ezután cseréli be két átnevezéssel (ha a második elbukik, az elsőt visszacsinálja). Egy zár (`rulesets/.update.lock`) két párhuzamos frissítést elválaszt; a szkript kilépéskor mindkettőt takarítja, de egy megölt folyamat után kézzel kell törölni a zárat (az üzenet ezt mondja). **Nem védett:** a két átnevezés közötti pillanatban kilőtt folyamat készlet nélkül hagy egy mappát; ezt a betöltő most hiányzó készletként jelzi (B01).
 
 ## 5. Beillesztés
 
