@@ -41,6 +41,16 @@ export async function checkSecretsWithRulesets(text: string): Promise<GateResult
       details: { incomplete: true },
     });
   }
+  if (scan.truncated) {
+    // said whatever the scan found: a text that is cut and has no finding must not look checked
+    out.push({
+      gate: 'secret-rulesets',
+      decision: 'warn',
+      reason: `This text is longer than ${GUARD_SCAN_CHARS} characters: only the first ${GUARD_SCAN_CHARS} were checked for secrets.`,
+      remediation: ['Check the rest yourself, or run colony check --file on smaller pieces.'],
+      details: { truncated: true, checkedChars: GUARD_SCAN_CHARS, totalChars: text.length },
+    });
+  }
   if (scan.findings.length === 0) return out;
   const rules = [...new Set(scan.findings.map((f) => f.rule))];
   // two rules often name the same secret (a provider rule and a generic one): that is one possible secret, not two

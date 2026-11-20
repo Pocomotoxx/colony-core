@@ -124,6 +124,38 @@ test('a rule set that fails its checks is reported on every call, and the own pa
   }
 });
 
+test('a rule set that sources.json lists but that is gone is reported like a failed one; so is a folder that cannot be read', async () => {
+  const sets = path.join(root, `sets${n++}`);
+  await fs.mkdir(sets);
+  await fs.cp(path.join(repo, 'rulesets', 'gitleaks'), path.join(sets, 'gitleaks'), { recursive: true });
+  await fs.writeFile(path.join(sets, 'sources.json'), JSON.stringify({ sets: { gitleaks: {}, presidio: {} } }));
+  useRulesetsDir(sets);
+  try {
+    const v = await bash('git status', await project());
+    assert.equal(v.notes.length, 1);
+    assert.match(v.notes[0], /rule set 'presidio' failed its checks and is NOT used \(the rule set is listed in sources\.json but its folder or its PROVENANCE\.json is missing\)/);
+  } finally {
+    useRulesetsDir(undefined);
+  }
+  useRulesetsDir(path.join(root, 'no-such-rule-set-folder'));
+  try {
+    const v = await bash('git status', await project());
+    assert.match(v.notes.join('\n'), /rule set '\(rule set folder\)' failed its checks and is NOT used \(the folder cannot be read/);
+  } finally {
+    useRulesetsDir(undefined);
+  }
+});
+
+test('a text longer than the scan limit is said to be cut even when nothing was found', async () => {
+  const dir = await project();
+  const harmless = 'lorem ipsum dolor sit amet '.repeat(8500); // 229 500 characters, no secret
+  const v = await bash(`echo ${harmless}`, dir);
+  assert.equal(v.decision, 'allow');
+  assert.match(v.notes.join('\n'), /longer than 200000 characters: only the first 200000 were checked for secrets/);
+  const short = await bash('echo hello', dir);
+  assert.deepEqual(short.notes, []);
+});
+
 test('the check command shows the warning and does not fail on it', async () => {
   const dir = await project(false);
   assert.equal((await runCommand(['boot', '--dir', dir], process.cwd())).code, 0);
