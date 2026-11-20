@@ -211,6 +211,8 @@ test('the findings are positions, never values', async () => {
 });
 
 test('no personal data rule is slow on hostile input', async () => {
+  // The unit is ONE rule on ONE input, the limit 1500 ms (the observed time is about 1 ms, whole set on one input about 6 ms).
+  // It catches a regex that backtracks catastrophically; it does not measure speed and says nothing about the whole set.
   const set = await loadRuleset(vendored);
   const inputs = ['a'.repeat(20_000), '0'.repeat(20_000), ' '.repeat(20_000), ':'.repeat(20_000), '1.'.repeat(10_000), 'AA00 '.repeat(4000), 'GB82 WEST 1234 '.repeat(1500), 'ab:'.repeat(7000), '12-'.repeat(7000)];
   const slow: string[] = [];
