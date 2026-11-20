@@ -51,6 +51,11 @@ export interface RedactOptions {
    * IPv6 address cannot be a version number and is still redacted. A secret is never left: asking for it is an error.
    */
   skip?: readonly RedactKind[];
+  /**
+   * Only the colony's own built-in patterns, not the vendored rule sets (presidio, gitleaks). A fixed baseline for measurements:
+   * what the own patterns find does not change when a rule set is added or updated.
+   */
+  builtinOnly?: boolean;
 }
 
 export interface RedactResult {
@@ -112,7 +117,7 @@ export function displayPath(file: string, projectDir?: string): string {
   return text.length > 120 ? `...${text.slice(-117)}` : text;
 }
 
-function collect(text: string): Span[] {
+function collect(text: string, builtinOnly = false): Span[] {
   const spans: Span[] = [];
   const add = (kind: RedactKind, regex: RegExp, accept: (value: string) => boolean = () => true) => {
     for (const m of text.matchAll(regex)) {
@@ -138,7 +143,7 @@ function collect(text: string): Span[] {
   add('ip_address', /\b(?:\d{1,3}\.){3}\d{1,3}\b/g, ipv4Valid);
   add('jwt', /\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\b/g);
   add('database_url', /\b(?:postgres(?:ql)?|mysql|mongodb(?:\+srv)?|redis):\/\/[^\s'"]+/g);
-  const sets = personalDataSets();
+  const sets = builtinOnly ? [] : personalDataSets();
   if (sets.length > 0) {
     for (const f of findPii(text, sets).findings) {
       const value = text.slice(f.offset, f.offset + f.length);
@@ -150,7 +155,7 @@ function collect(text: string): Span[] {
     spans.push({ kind: 'secret', start: s.offset, end: s.offset + s.length, value: text.slice(s.offset, s.offset + s.length) });
   }
   // the vendored secret rules (gitleaks) too: a key only they know must not pass a redactor
-  const secretSets = activeRulesetsSync().loaded.filter((s) => s.kind === 'secrets');
+  const secretSets = builtinOnly ? [] : activeRulesetsSync().loaded.filter((s) => s.kind === 'secrets');
   if (secretSets.length > 0) {
     for (const f of scanSecrets(text, secretSets, { budgetMs: SECRET_SCAN_BUDGET_MS }).findings) {
       spans.push({ kind: 'secret', start: f.offset, end: f.offset + f.length, value: text.slice(f.offset, f.offset + f.length) });
@@ -174,6 +179,11 @@ function resolveOverlaps(spans: Span[]): Span[] {
   return kept;
 }
 
+/** Where redaction would act: kind, start and end of each span (no value). For measurements and tests. */
+export function findRedactSpans(text: string, options: { builtinOnly?: boolean } = {}): Array<{ kind: RedactKind; start: number; end: number }> {
+  return resolveOverlaps(collect(text, options.builtinOnly === true)).map((s) => ({ kind: s.kind, start: s.start, end: s.end }));
+}
+
 export function redactText(input: string, options: RedactOptions = {}): RedactResult {
   const hashKinds = new Set(options.hash ?? []);
   if (hashKinds.size > 0 && !options.salt) throw new Error('hashing needs a salt: an unsalted hash of a phone number or e-mail address can be guessed back');
@@ -182,7 +192,7 @@ export function redactText(input: string, options: RedactOptions = {}): RedactRe
   if (skipKinds.has('secret')) throw new Error('a secret is always redacted and cannot be skipped');
   for (const kind of skipKinds) if (!REDACT_KINDS.includes(kind)) throw new Error(`unknown kind to skip: ${String(kind)}`);
 
-  const spans = resolveOverlaps(collect(input).filter((s) => !skipKinds.has(s.kind) || (s.kind === 'ip_address' && s.v6 === true)));
+  const spans = resolveOverlaps(collect(input, options.builtinOnly === true).filter((s) => !skipKinds.has(s.kind) || (s.kind === 'ip_address' && s.v6 === true)));
   const counts = new Map<RedactKind, number>();
   let out = '';
   let cursor = 0;
