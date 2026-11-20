@@ -1,0 +1,14 @@
+Sigma rules (SigmaHQ): Windows registry rules of the core package, release r2026-07-01
+
+The files in source/ are Sigma rules taken, unmodified, from the release package sigma_core.zip of
+https://github.com/SigmaHQ/sigma (release r2026-07-01; the commit and the SHA-256 of the package are in PROVENANCE.json).
+
+The rules are released under the Detection Rule License (DRL) 1.1:
+https://github.com/SigmaHQ/Detection-Rule-License
+
+The license asks, among other things, for the author of a rule to be named when the rules are shared and in every
+message that is based on a match of a rule. Each rule file keeps its "author" field, and the colony names the author
+of the rule in every warning that a match produces. The rule set itself is at https://github.com/SigmaHQ/sigma .
+
+This NOTICE was written by the colony project. It is not a file of the upstream repository; the text of the license is
+at the address above.

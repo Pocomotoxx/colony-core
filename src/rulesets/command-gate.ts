@@ -2,6 +2,8 @@ import type { GateResult } from '../gates.js';
 import { splitSimple, words } from '../hook/shell-paths.js';
 import { activeRulesets } from './active.js';
 import { registryEventsOf } from './registry-events.js';
+import { fileEventsOf, fileWriteEventOf } from './file-events.js';
+import type { LoadedRuleset } from './loader.js';
 import { ruleMatches, type CommandEvent } from './sigma.js';
 
 /**
@@ -144,11 +146,24 @@ export async function checkCommandsWithRulesets(command: string, cwd: string, to
   const windows = windowsEventsOf(command, cwd, tool);
   const scripts = scriptEventsOf(command, tool);
   const registry = registryEventsOf(command);
-  if (linux.length === 0 && windows.length === 0 && scripts.length === 0 && registry.length === 0) return [];
+  const files = fileEventsOf(command, cwd);
+  if (linux.length === 0 && windows.length === 0 && scripts.length === 0 && registry.length === 0 && files.length === 0) return [];
+  return commandWarnings(sets, (set) => (set.category === 'file' ? files : set.category === 'registry' ? registry : set.category === 'ps_script' ? scripts : set.platform === 'windows' ? windows : linux), 'a command of this call');
+}
 
+/** The file rules judge a file the Write or Edit tool writes too (the path only; the data written is not looked at). */
+export async function checkFileWriteWithRulesets(filePath: string, cwd: string): Promise<GateResult[]> {
+  const { loaded } = await activeRulesets();
+  const sets = loaded.filter((s) => s.kind === 'commands' && s.category === 'file');
+  const events = fileWriteEventOf(filePath, cwd);
+  if (sets.length === 0 || events.length === 0) return [];
+  return commandWarnings(sets, () => events, 'the file this call writes');
+}
+
+function commandWarnings(sets: LoadedRuleset[], eventsFor: (set: LoadedRuleset) => CommandEvent[], subject: string): GateResult[] {
   const hits = new Map<string, { ruleset: string; version: string; id: string; title: string; author: string; level: string; status: string; link: string }>();
   for (const set of sets) {
-    const events = set.category === 'registry' ? registry : set.category === 'ps_script' ? scripts : set.platform === 'windows' ? windows : linux;
+    const events = eventsFor(set);
     for (const rule of set.commands) {
       if (hits.has(rule.id)) continue;
       if (events.some((e) => ruleMatches(rule, e))) hits.set(rule.id, { ruleset: set.name, version: set.version, id: rule.id, title: rule.title, author: rule.author, level: rule.level, status: rule.status, link: rule.link });
@@ -162,7 +177,7 @@ export async function checkCommandsWithRulesets(command: string, cwd: string, to
     {
       gate: 'command-rulesets',
       decision: 'warn',
-      reason: `${list[0].ruleset} ${list[0].version} rule${list.length > 1 ? 's' : ''} match${list.length > 1 ? '' : 'es'} a command of this call: ${shown.join('; ')}${list.length > 3 ? ` and ${list.length - 3} more` : ''}. Warning only; it does not block. Rules: https://github.com/SigmaHQ/sigma, licensed under the Detection Rule License 1.1.`,
+      reason: `${list[0].ruleset} ${list[0].version} rule${list.length > 1 ? 's' : ''} match${list.length > 1 ? '' : 'es'} ${subject}: ${shown.join('; ')}${list.length > 3 ? ` and ${list.length - 3} more` : ''}. Warning only; it does not block. Rules: https://github.com/SigmaHQ/sigma, licensed under the Detection Rule License 1.1.`,
       remediation: [
         'Read the command: the rule describes behaviour that is typical of an attack, and it can also be an ordinary administration or development command.',
         'If it is ordinary, nothing to do; the warning is recorded so that false positives can be counted.',

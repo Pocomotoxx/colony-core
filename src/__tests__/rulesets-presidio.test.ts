@@ -137,7 +137,7 @@ test('the set loads with its hashes verified; a changed or missing file is not l
 
   const all = await loadRulesets();
   assert.deepEqual(all.failed, []);
-  assert.deepEqual(all.loaded.map((s) => `${s.name}:${s.kind}`).sort(), ['gitleaks:secrets', 'presidio:pii', 'sigma-powershell:commands', 'sigma-registry:commands', 'sigma-windows:commands', 'sigma:commands']);
+  assert.deepEqual(all.loaded.map((s) => `${s.name}:${s.kind}`).sort(), ['gitleaks:secrets', 'presidio:pii', 'sigma-file:commands', 'sigma-powershell:commands', 'sigma-registry:commands', 'sigma-windows:commands', 'sigma:commands']);
 });
 
 // ---- the checks

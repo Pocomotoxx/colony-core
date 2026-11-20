@@ -1,0 +1,4768 @@
+{
+  "format": 1,
+  "kind": "commands",
+  "name": "sigma-file",
+  "version": "r2026-07-01",
+  "platform": "windows",
+  "category": "file",
+  "rules": [
+    {
+      "id": "9f383dc0-fdeb-4d56-acbc-9f9f4f8f20f3",
+      "title": "Unusual File Modification by dns.exe",
+      "author": "Tim Rauch (Nextron Systems), Elastic (idea)",
+      "level": "high",
+      "status": "test",
+      "description": "Detects an unexpected file being modified by dns.exe which my indicate activity related to remote code execution or other forms of exploitation as seen in CVE-2020-1350 (SigRed)",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/windows/file/file_change/file_change_win_unusual_modification_by_dns_exe.yml",
+      "on": "file_change",
+      "selections": {
+        "selection": [
+          [
+            {
+              "field": "Image",
+              "op": "endswith",
+              "values": [
+                "\\dns.exe"
+              ],
+              "all": false
+            }
+          ]
+        ],
+        "filter": [
+          [
+            {
+              "field": "TargetFilename",
+              "op": "endswith",
+              "values": [
+                "\\dns.log"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "and",
+        "l": {
+          "t": "sel",
+          "name": "selection"
+        },
+        "r": {
+          "t": "not",
+          "e": {
+            "t": "sel",
+            "name": "filter"
+          }
+        }
+      }
+    },
+    {
+      "id": "a55349d8-9588-4c5a-8e3b-1925fe2a4ffe",
+      "title": "Exchange PowerShell Cmdlet History Deleted",
+      "author": "Nasreddine Bencherchali (Nextron Systems)",
+      "level": "high",
+      "status": "test",
+      "description": "Detects the deletion of the Exchange PowerShell cmdlet History logs which may indicate an attempt to destroy forensic evidence",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/windows/file/file_delete/file_delete_win_delete_exchange_powershell_logs.yml",
+      "on": "file_delete",
+      "selections": {
+        "selection": [
+          [
+            {
+              "field": "TargetFilename",
+              "op": "startswith",
+              "values": [
+                "\\Logging\\CmdletInfra\\LocalPowerShell\\Cmdlet\\"
+              ],
+              "all": false
+            },
+            {
+              "field": "TargetFilename",
+              "op": "contains",
+              "values": [
+                "_Cmdlet_"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "sel",
+        "name": "selection"
+      }
+    },
+    {
+      "id": "8f0b1fb1-9bd4-4e74-8cdf-a8de4d2adfd0",
+      "title": "Unusual File Deletion by Dns.exe",
+      "author": "Tim Rauch (Nextron Systems), Elastic (idea)",
+      "level": "high",
+      "status": "test",
+      "description": "Detects an unexpected file being deleted by dns.exe which my indicate activity related to remote code execution or other forms of exploitation as seen in CVE-2020-1350 (SigRed)",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/windows/file/file_delete/file_delete_win_unusual_deletion_by_dns_exe.yml",
+      "on": "file_delete",
+      "selections": {
+        "selection": [
+          [
+            {
+              "field": "Image",
+              "op": "endswith",
+              "values": [
+                "\\dns.exe"
+              ],
+              "all": false
+            }
+          ]
+        ],
+        "filter": [
+          [
+            {
+              "field": "TargetFilename",
+              "op": "endswith",
+              "values": [
+                "\\dns.log"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "and",
+        "l": {
+          "t": "sel",
+          "name": "selection"
+        },
+        "r": {
+          "t": "not",
+          "e": {
+            "t": "sel",
+            "name": "filter"
+          }
+        }
+      }
+    },
+    {
+      "id": "2d367498-5112-4ae5-a06a-96e7bc33a211",
+      "title": "Suspicious Binary Writes Via AnyDesk",
+      "author": "Nasreddine Bencherchali (Nextron Systems)",
+      "level": "high",
+      "status": "test",
+      "description": "Detects AnyDesk writing binary files to disk other than \"gcapi.dll\". According to RedCanary research it is highly abnormal for AnyDesk to write executable files to disk besides gcapi.dll, which is a legitimate DLL that is part of the Google Chrome web browser used to interact with the Google Cloud API. (See reference section for more details)",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/windows/file/file_event/file_event_win_anydesk_writing_susp_binaries.yml",
+      "on": "file_event",
+      "selections": {
+        "selection": [
+          [
+            {
+              "field": "Image",
+              "op": "endswith",
+              "values": [
+                "\\AnyDesk.exe",
+                "\\AnyDeskMSI.exe"
+              ],
+              "all": false
+            },
+            {
+              "field": "TargetFilename",
+              "op": "endswith",
+              "values": [
+                ".dll",
+                ".exe"
+              ],
+              "all": false
+            }
+          ]
+        ],
+        "filter_dlls": [
+          [
+            {
+              "field": "TargetFilename",
+              "op": "endswith",
+              "values": [
+                "\\gcapi.dll"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "and",
+        "l": {
+          "t": "sel",
+          "name": "selection"
+        },
+        "r": {
+          "t": "not",
+          "e": {
+            "t": "of",
+            "quant": "one",
+            "pattern": "filter_*"
+          }
+        }
+      }
+    },
+    {
+      "id": "02773bed-83bf-469f-b7ff-e676e7d78bab",
+      "title": "BloodHound Collection Files",
+      "author": "C.J. May",
+      "level": "high",
+      "status": "test",
+      "description": "Detects default file names outputted by the BloodHound collection tool SharpHound",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/windows/file/file_event/file_event_win_bloodhound_collection.yml",
+      "on": "file_event",
+      "selections": {
+        "selection": [
+          [
+            {
+              "field": "TargetFilename",
+              "op": "endswith",
+              "values": [
+                "BloodHound.zip",
+                "_computers.json",
+                "_containers.json",
+                "_gpos.json",
+                "_groups.json",
+                "_ous.json",
+                "_users.json"
+              ],
+              "all": false
+            }
+          ]
+        ],
+        "filter_optional_ms_winapps": [
+          [
+            {
+              "field": "Image",
+              "op": "endswith",
+              "values": [
+                "\\svchost.exe"
+              ],
+              "all": false
+            },
+            {
+              "field": "TargetFilename",
+              "op": "startswith",
+              "values": [
+                "C:\\Program Files\\WindowsApps\\Microsoft."
+              ],
+              "all": false
+            },
+            {
+              "field": "TargetFilename",
+              "op": "endswith",
+              "values": [
+                "\\pocket_containers.json"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "and",
+        "l": {
+          "t": "sel",
+          "name": "selection"
+        },
+        "r": {
+          "t": "not",
+          "e": {
+            "t": "of",
+            "quant": "one",
+            "pattern": "filter_optional_*"
+          }
+        }
+      }
+    },
+    {
+      "id": "8c3c76ca-8f8b-4b1d-aaf3-81aebcd367c9",
+      "title": "Creation Exe for Service with Unquoted Path",
+      "author": "frack113",
+      "level": "high",
+      "status": "test",
+      "description": "Adversaries may execute their own malicious payloads by hijacking vulnerable file path references. Adversaries can take advantage of paths that lack surrounding quotations by placing an executable in a higher level directory within the path, so that Windows will choose the adversary's executable to launch.",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/windows/file/file_event/file_event_win_creation_unquoted_service_path.yml",
+      "on": "file_event",
+      "selections": {
+        "selection": [
+          [
+            {
+              "field": "TargetFilename",
+              "op": "equals",
+              "values": [
+                "C:\\program.exe"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "sel",
+        "name": "selection"
+      }
+    },
+    {
+      "id": "8fbf3271-1ef6-4e94-8210-03c2317947f6",
+      "title": "Cred Dump Tools Dropped Files",
+      "author": "Teymur Kheirkhabarov, oscd.community",
+      "level": "high",
+      "status": "test",
+      "description": "Files with well-known filenames (parts of credential dump software or files produced by them) creation",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/windows/file/file_event/file_event_win_cred_dump_tools_dropped_files.yml",
+      "on": "file_event",
+      "selections": {
+        "selection": [
+          [
+            {
+              "field": "TargetFilename",
+              "op": "contains",
+              "values": [
+                "\\fgdump-log",
+                "\\kirbi",
+                "\\pwdump",
+                "\\pwhashes",
+                "\\wce_ccache",
+                "\\wce_krbtkts"
+              ],
+              "all": false
+            }
+          ],
+          [
+            {
+              "field": "TargetFilename",
+              "op": "endswith",
+              "values": [
+                "\\cachedump.exe",
+                "\\cachedump64.exe",
+                "\\DumpExt.dll",
+                "\\DumpSvc.exe",
+                "\\Dumpy.exe",
+                "\\fgexec.exe",
+                "\\lsremora.dll",
+                "\\lsremora64.dll",
+                "\\NTDS.out",
+                "\\procdump.exe",
+                "\\procdump64.exe",
+                "\\procdump64a.exe",
+                "\\pstgdump.exe",
+                "\\pwdump.exe",
+                "\\SAM.out",
+                "\\SECURITY.out",
+                "\\servpw.exe",
+                "\\servpw64.exe",
+                "\\SYSTEM.out",
+                "\\test.pwd",
+                "\\wceaux.dll"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "sel",
+        "name": "selection"
+      }
+    },
+    {
+      "id": "002bdb95-0cf1-46a6-9e08-d38c128a6127",
+      "title": "WScript or CScript Dropper - File",
+      "author": "Tim Shelton",
+      "level": "high",
+      "status": "test",
+      "description": "Detects a file ending in jse, vbe, js, vba, vbs, wsf, wsh written by cscript.exe or wscript.exe",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/windows/file/file_event/file_event_win_cscript_wscript_dropper.yml",
+      "on": "file_event",
+      "selections": {
+        "selection": [
+          [
+            {
+              "field": "Image",
+              "op": "endswith",
+              "values": [
+                "\\wscript.exe",
+                "\\cscript.exe"
+              ],
+              "all": false
+            },
+            {
+              "field": "TargetFilename",
+              "op": "contains",
+              "values": [
+                ":\\Perflogs\\",
+                ":\\ProgramData\\",
+                ":\\Temp\\",
+                ":\\Tmp\\",
+                ":\\Users\\",
+                ":\\Windows\\Temp\\",
+                "\\AppData\\Local\\Temp",
+                "\\AppData\\Roaming\\Temp",
+                "\\Start Menu\\Programs\\Startup\\",
+                "\\Temporary Internet"
+              ],
+              "all": false
+            },
+            {
+              "field": "TargetFilename",
+              "op": "endswith",
+              "values": [
+                ".js",
+                ".jse",
+                ".vba",
+                ".vbe",
+                ".vbs",
+                ".wsf",
+                ".wsh"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "sel",
+        "name": "selection"
+      }
+    },
+    {
+      "id": "2f7979ae-f82b-45af-ac1d-2b10e93b0baa",
+      "title": "Potential DCOM InternetExplorer.Application DLL Hijack",
+      "author": "Roberto Rodriguez @Cyb3rWard0g, Open Threat Research (OTR), wagga",
+      "level": "critical",
+      "status": "test",
+      "description": "Detects potential DLL hijack of \"iertutil.dll\" found in the DCOM InternetExplorer.Application Class over the network",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/windows/file/file_event/file_event_win_dcom_iertutil_dll_hijack.yml",
+      "on": "file_event",
+      "selections": {
+        "selection": [
+          [
+            {
+              "field": "Image",
+              "op": "equals",
+              "values": [
+                "System"
+              ],
+              "all": false
+            },
+            {
+              "field": "TargetFilename",
+              "op": "endswith",
+              "values": [
+                "\\Internet Explorer\\iertutil.dll"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "sel",
+        "name": "selection"
+      }
+    },
+    {
+      "id": "b6f91281-20aa-446a-b986-38a92813a18f",
+      "title": "DLL Search Order Hijackig Via Additional Space in Path",
+      "author": "frack113, Nasreddine Bencherchali (Nextron Systems)",
+      "level": "high",
+      "status": "test",
+      "description": "Detects when an attacker create a similar folder structure to windows system folders such as (Windows, Program Files...) but with a space in order to trick DLL load search order and perform a \"DLL Search Order Hijacking\" attack",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/windows/file/file_event/file_event_win_dll_sideloading_space_path.yml",
+      "on": "file_event",
+      "selections": {
+        "selection": [
+          [
+            {
+              "field": "TargetFilename",
+              "op": "startswith",
+              "values": [
+                "C:\\Windows \\",
+                "C:\\Program Files \\",
+                "C:\\Program Files (x86) \\"
+              ],
+              "all": false
+            },
+            {
+              "field": "TargetFilename",
+              "op": "endswith",
+              "values": [
+                ".dll"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "sel",
+        "name": "selection"
+      }
+    },
+    {
+      "id": "736ffa74-5f6f-44ca-94ef-1c0df4f51d2a",
+      "title": "HackTool - CrackMapExec File Indicators",
+      "author": "Nasreddine Bencherchali (Nextron Systems)",
+      "level": "high",
+      "status": "test",
+      "description": "Detects file creation events with filename patterns used by CrackMapExec.",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/windows/file/file_event/file_event_win_hktl_crackmapexec_indicators.yml",
+      "on": "file_event",
+      "selections": {
+        "selection_path": [
+          [
+            {
+              "field": "TargetFilename",
+              "op": "startswith",
+              "values": [
+                "C:\\Windows\\Temp\\"
+              ],
+              "all": false
+            }
+          ]
+        ],
+        "selection_names_str": [
+          [
+            {
+              "field": "TargetFilename",
+              "op": "endswith",
+              "values": [
+                "\\temp.ps1",
+                "\\msol.ps1"
+              ],
+              "all": false
+            }
+          ]
+        ],
+        "selection_names_re": [
+          [
+            {
+              "field": "TargetFilename",
+              "op": "re",
+              "values": [
+                "\\\\[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\.txt$"
+              ],
+              "all": false,
+              "flags": [
+                ""
+              ]
+            }
+          ],
+          [
+            {
+              "field": "TargetFilename",
+              "op": "re",
+              "values": [
+                "\\\\[a-zA-Z]{8}\\.tmp$"
+              ],
+              "all": false,
+              "flags": [
+                ""
+              ]
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "and",
+        "l": {
+          "t": "sel",
+          "name": "selection_path"
+        },
+        "r": {
+          "t": "of",
+          "quant": "one",
+          "pattern": "selection_names_*"
+        }
+      }
+    },
+    {
+      "id": "93d94efc-d7ad-4161-ad7d-1638c4f908d8",
+      "title": "HackTool - Dumpert Process Dumper Default File",
+      "author": "Florian Roth (Nextron Systems)",
+      "level": "critical",
+      "status": "test",
+      "description": "Detects the creation of the default dump file used by Outflank Dumpert tool. A process dumper, which dumps the lsass process memory",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/windows/file/file_event/file_event_win_hktl_dumpert.yml",
+      "on": "file_event",
+      "selections": {
+        "selection": [
+          [
+            {
+              "field": "TargetFilename",
+              "op": "endswith",
+              "values": [
+                "dumpert.dmp"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "sel",
+        "name": "selection"
+      }
+    },
+    {
+      "id": "6ea858a8-ba71-4a12-b2cc-5d83312404c7",
+      "title": "HackTool - Typical HiveNightmare SAM File Export",
+      "author": "Florian Roth (Nextron Systems)",
+      "level": "high",
+      "status": "test",
+      "description": "Detects files written by the different tools that exploit HiveNightmare",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/windows/file/file_event/file_event_win_hktl_hivenightmare_file_exports.yml",
+      "on": "file_event",
+      "selections": {
+        "selection": [
+          [
+            {
+              "field": "TargetFilename",
+              "op": "contains",
+              "values": [
+                "\\hive_sam_",
+                "\\SAM-2021-",
+                "\\SAM-2022-",
+                "\\SAM-2023-",
+                "\\SAM-haxx",
+                "\\Sam.save"
+              ],
+              "all": false
+            }
+          ],
+          [
+            {
+              "field": "TargetFilename",
+              "op": "equals",
+              "values": [
+                "C:\\windows\\temp\\sam"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "sel",
+        "name": "selection"
+      }
+    },
+    {
+      "id": "bb09dd3e-2b78-4819-8e35-a7c1b874e449",
+      "title": "HackTool - Inveigh Execution Artefacts",
+      "author": "Nasreddine Bencherchali (Nextron Systems)",
+      "level": "critical",
+      "status": "test",
+      "description": "Detects the presence and execution of Inveigh via dropped artefacts",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/windows/file/file_event/file_event_win_hktl_inveigh_artefacts.yml",
+      "on": "file_event",
+      "selections": {
+        "selection": [
+          [
+            {
+              "field": "TargetFilename",
+              "op": "endswith",
+              "values": [
+                "\\Inveigh-Log.txt",
+                "\\Inveigh-Cleartext.txt",
+                "\\Inveigh-NTLMv1Users.txt",
+                "\\Inveigh-NTLMv2Users.txt",
+                "\\Inveigh-NTLMv1.txt",
+                "\\Inveigh-NTLMv2.txt",
+                "\\Inveigh-FormInput.txt",
+                "\\Inveigh.dll",
+                "\\Inveigh.exe",
+                "\\Inveigh.ps1",
+                "\\Inveigh-Relay.ps1"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "sel",
+        "name": "selection"
+      }
+    },
+    {
+      "id": "3ab79e90-9fab-4cdf-a7b2-6522bc742adb",
+      "title": "HackTool - RemoteKrbRelay SMB Relay Secrets Dump Module Indicators",
+      "author": "Nasreddine Bencherchali (Nextron Systems)",
+      "level": "high",
+      "status": "test",
+      "description": "Detects the creation of file with specific names used by RemoteKrbRelay SMB Relay attack module.",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/windows/file/file_event/file_event_win_hktl_krbrelay_remote_ioc.yml",
+      "on": "file_event",
+      "selections": {
+        "selection": [
+          [
+            {
+              "field": "TargetFilename",
+              "op": "endswith",
+              "values": [
+                ":\\windows\\temp\\sam.tmp",
+                ":\\windows\\temp\\sec.tmp",
+                ":\\windows\\temp\\sys.tmp"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "sel",
+        "name": "selection"
+      }
+    },
+    {
+      "id": "9e099d99-44c2-42b6-a6d8-54c3545cab29",
+      "title": "HackTool - Mimikatz Kirbi File Creation",
+      "author": "Florian Roth (Nextron Systems), David ANDRE",
+      "level": "critical",
+      "status": "test",
+      "description": "Detects the creation of files created by mimikatz such as \".kirbi\", \"mimilsa.log\", etc.",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/windows/file/file_event/file_event_win_hktl_mimikatz_files.yml",
+      "on": "file_event",
+      "selections": {
+        "selection": [
+          [
+            {
+              "field": "TargetFilename",
+              "op": "endswith",
+              "values": [
+                ".kirbi",
+                "mimilsa.log"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "sel",
+        "name": "selection"
+      }
+    },
+    {
+      "id": "cad1fe90-2406-44dc-bd03-59d0b58fe722",
+      "title": "HackTool - NPPSpy Hacktool Usage",
+      "author": "Florian Roth (Nextron Systems)",
+      "level": "high",
+      "status": "test",
+      "description": "Detects the use of NPPSpy hacktool that stores cleartext passwords of users that logged in to a local file",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/windows/file/file_event/file_event_win_hktl_nppspy.yml",
+      "on": "file_event",
+      "selections": {
+        "selection": [
+          [
+            {
+              "field": "TargetFilename",
+              "op": "endswith",
+              "values": [
+                "\\NPPSpy.txt",
+                "\\NPPSpy.dll"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "sel",
+        "name": "selection"
+      }
+    },
+    {
+      "id": "602a1f13-c640-4d73-b053-be9a2fa58b96",
+      "title": "HackTool - Powerup Write Hijack DLL",
+      "author": "Subhash Popuri (@pbssubhash)",
+      "level": "high",
+      "status": "test",
+      "description": "Powerup tool's Write Hijack DLL exploits DLL hijacking for privilege escalation. In it's default mode, it builds a self deleting .bat file which executes malicious command. The detection rule relies on creation of the malicious bat file (debug.bat by default).",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/windows/file/file_event/file_event_win_hktl_powerup_dllhijacking.yml",
+      "on": "file_event",
+      "selections": {
+        "selection": [
+          [
+            {
+              "field": "Image",
+              "op": "endswith",
+              "values": [
+                "\\powershell.exe",
+                "\\pwsh.exe"
+              ],
+              "all": false
+            },
+            {
+              "field": "TargetFilename",
+              "op": "endswith",
+              "values": [
+                ".bat"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "sel",
+        "name": "selection"
+      }
+    },
+    {
+      "id": "847def9e-924d-4e90-b7c4-5f581395a2b4",
+      "title": "HackTool - QuarksPwDump Dump File",
+      "author": "Florian Roth (Nextron Systems)",
+      "level": "critical",
+      "status": "test",
+      "description": "Detects a dump file written by QuarksPwDump password dumper",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/windows/file/file_event/file_event_win_hktl_quarkspw_filedump.yml",
+      "on": "file_event",
+      "selections": {
+        "selection": [
+          [
+            {
+              "field": "TargetFilename",
+              "op": "contains",
+              "values": [
+                "\\AppData\\Local\\Temp\\SAM-",
+                ".dmp"
+              ],
+              "all": true
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "sel",
+        "name": "selection"
+      }
+    },
+    {
+      "id": "6e2a900a-ced9-4e4a-a9c2-13e706f9518a",
+      "title": "HackTool - Potential Remote Credential Dumping Activity Via CrackMapExec Or Impacket-Secretsdump",
+      "author": "SecurityAura",
+      "level": "high",
+      "status": "test",
+      "description": "Detects default filenames output from the execution of CrackMapExec and Impacket-secretsdump against an endpoint.",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/windows/file/file_event/file_event_win_hktl_remote_cred_dump.yml",
+      "on": "file_event",
+      "selections": {
+        "selection": [
+          [
+            {
+              "field": "Image",
+              "op": "endswith",
+              "values": [
+                "\\svchost.exe"
+              ],
+              "all": false
+            },
+            {
+              "field": "TargetFilename",
+              "op": "re",
+              "values": [
+                "\\\\Windows\\\\System32\\\\[a-zA-Z0-9]{8}\\.tmp$"
+              ],
+              "all": false,
+              "flags": [
+                ""
+              ]
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "sel",
+        "name": "selection"
+      }
+    },
+    {
+      "id": "e074832a-eada-4fd7-94a1-10642b130e16",
+      "title": "HackTool - SafetyKatz Dump Indicator",
+      "author": "Markus Neis",
+      "level": "high",
+      "status": "test",
+      "description": "Detects default lsass dump filename generated by SafetyKatz.",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/windows/file/file_event/file_event_win_hktl_safetykatz.yml",
+      "on": "file_event",
+      "selections": {
+        "selection": [
+          [
+            {
+              "field": "TargetFilename",
+              "op": "endswith",
+              "values": [
+                "\\Temp\\debug.bin"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "sel",
+        "name": "selection"
+      }
+    },
+    {
+      "id": "1908fcc1-1b92-4272-8214-0fbaf2fa5163",
+      "title": "Malicious DLL File Dropped in the Teams or OneDrive Folder",
+      "author": "frack113",
+      "level": "high",
+      "status": "test",
+      "description": "Detects creation of a malicious DLL file in the location where the OneDrive or Team applications Upon execution of the Teams or OneDrive application, the dropped malicious DLL file (\"iphlpapi.dll\") is sideloaded",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/windows/file/file_event/file_event_win_iphlpapi_dll_sideloading.yml",
+      "on": "file_event",
+      "selections": {
+        "selection": [
+          [
+            {
+              "field": "TargetFilename",
+              "op": "contains",
+              "values": [
+                "iphlpapi.dll",
+                "\\AppData\\Local\\Microsoft"
+              ],
+              "all": true
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "sel",
+        "name": "selection"
+      }
+    },
+    {
+      "id": "2f9356ae-bf43-41b8-b858-4496d83b2acb",
+      "title": "ISO File Created Within Temp Folders",
+      "author": "@sam0x90",
+      "level": "high",
+      "status": "test",
+      "description": "Detects the creation of a ISO file in the Outlook temp folder or in the Appdata temp folder. Typical of Qakbot TTP from end-July 2022.",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/windows/file/file_event/file_event_win_iso_file_mount.yml",
+      "on": "file_event",
+      "selections": {
+        "selection_1": [
+          [
+            {
+              "field": "TargetFilename",
+              "op": "contains",
+              "values": [
+                "\\AppData\\Local\\Temp\\",
+                ".zip\\"
+              ],
+              "all": true
+            },
+            {
+              "field": "TargetFilename",
+              "op": "endswith",
+              "values": [
+                ".iso"
+              ],
+              "all": false
+            }
+          ]
+        ],
+        "selection_2": [
+          [
+            {
+              "field": "TargetFilename",
+              "op": "contains",
+              "values": [
+                "\\AppData\\Local\\Microsoft\\Windows\\INetCache\\Content.Outlook\\"
+              ],
+              "all": false
+            },
+            {
+              "field": "TargetFilename",
+              "op": "endswith",
+              "values": [
+                ".iso"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "of",
+        "quant": "one",
+        "pattern": "selection*"
+      }
+    },
+    {
+      "id": "a5a2d357-1ab8-4675-a967-ef9990a59391",
+      "title": "LSASS Process Memory Dump Files",
+      "author": "Florian Roth (Nextron Systems)",
+      "level": "high",
+      "status": "test",
+      "description": "Detects creation of files with names used by different memory dumping tools to create a memory dump of the LSASS process memory, which contains user credentials.",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/windows/file/file_event/file_event_win_lsass_default_dump_file_names.yml",
+      "on": "file_event",
+      "selections": {
+        "selection_1": [
+          [
+            {
+              "field": "TargetFilename",
+              "op": "endswith",
+              "values": [
+                "\\Andrew.dmp",
+                "\\Coredump.dmp",
+                "\\lsass.dmp",
+                "\\lsass.rar",
+                "\\lsass.zip",
+                "\\NotLSASS.zip",
+                "\\PPLBlade.dmp",
+                "\\rustive.dmp"
+              ],
+              "all": false
+            }
+          ]
+        ],
+        "selection_2": [
+          [
+            {
+              "field": "TargetFilename",
+              "op": "contains",
+              "values": [
+                "\\lsass_2",
+                "\\lsassdmp",
+                "\\lsassdump"
+              ],
+              "all": false
+            }
+          ]
+        ],
+        "selection_3": [
+          [
+            {
+              "field": "TargetFilename",
+              "op": "contains",
+              "values": [
+                "\\lsass",
+                ".dmp"
+              ],
+              "all": true
+            }
+          ]
+        ],
+        "selection_4": [
+          [
+            {
+              "field": "TargetFilename",
+              "op": "contains",
+              "values": [
+                "SQLDmpr"
+              ],
+              "all": false
+            },
+            {
+              "field": "TargetFilename",
+              "op": "endswith",
+              "values": [
+                ".mdmp"
+              ],
+              "all": false
+            }
+          ]
+        ],
+        "selection_5": [
+          [
+            {
+              "field": "TargetFilename",
+              "op": "contains",
+              "values": [
+                "\\nanodump",
+                "\\proc_"
+              ],
+              "all": false
+            },
+            {
+              "field": "TargetFilename",
+              "op": "endswith",
+              "values": [
+                ".dmp"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "of",
+        "quant": "one",
+        "pattern": "selection_*"
+      }
+    },
+    {
+      "id": "6902955a-01b7-432c-b32a-6f5f81d8f625",
+      "title": "LSASS Process Dump Artefact In CrashDumps Folder",
+      "author": "@pbssubhash",
+      "level": "high",
+      "status": "test",
+      "description": "Detects the presence of an LSASS dump file in the \"CrashDumps\" folder. This could be a sign of LSASS credential dumping. Techniques such as the LSASS Shtinkering have been seen abusing the Windows Error Reporting to dump said process.",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/windows/file/file_event/file_event_win_lsass_shtinkering.yml",
+      "on": "file_event",
+      "selections": {
+        "selection": [
+          [
+            {
+              "field": "TargetFilename",
+              "op": "startswith",
+              "values": [
+                "C:\\Windows\\System32\\config\\systemprofile\\AppData\\Local\\CrashDumps\\"
+              ],
+              "all": false
+            },
+            {
+              "field": "TargetFilename",
+              "op": "contains",
+              "values": [
+                "lsass.exe."
+              ],
+              "all": false
+            },
+            {
+              "field": "TargetFilename",
+              "op": "endswith",
+              "values": [
+                ".dmp"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "sel",
+        "name": "selection"
+      }
+    },
+    {
+      "id": "c3e76af5-4ce0-4a14-9c9a-25ceb8fda182",
+      "title": "WerFault LSASS Process Memory Dump",
+      "author": "Florian Roth (Nextron Systems)",
+      "level": "high",
+      "status": "test",
+      "description": "Detects WerFault creating a dump file with a name that indicates that the dump file could be an LSASS process memory, which contains user credentials",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/windows/file/file_event/file_event_win_lsass_werfault_dump.yml",
+      "on": "file_event",
+      "selections": {
+        "selection": [
+          [
+            {
+              "field": "Image",
+              "op": "equals",
+              "values": [
+                "C:\\WINDOWS\\system32\\WerFault.exe"
+              ],
+              "all": false
+            },
+            {
+              "field": "TargetFilename",
+              "op": "contains",
+              "values": [
+                "\\lsass",
+                "lsass.exe"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "sel",
+        "name": "selection"
+      }
+    },
+    {
+      "id": "0bcfabcb-7929-47f4-93d6-b33fb67d34d1",
+      "title": "Adwind RAT / JRAT File Artifact",
+      "author": "Florian Roth (Nextron Systems), Tom Ueltschi, Jonhnathan Ribeiro, oscd.community",
+      "level": "high",
+      "status": "test",
+      "description": "Detects javaw.exe in AppData folder as used by Adwind / JRAT",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/windows/file/file_event/file_event_win_mal_adwind.yml",
+      "on": "file_event",
+      "selections": {
+        "selection": [
+          [
+            {
+              "field": "TargetFilename",
+              "op": "contains",
+              "values": [
+                "\\AppData\\Roaming\\Oracle\\bin\\java",
+                ".exe"
+              ],
+              "all": true
+            }
+          ],
+          [
+            {
+              "field": "TargetFilename",
+              "op": "contains",
+              "values": [
+                "\\Retrive",
+                ".vbs"
+              ],
+              "all": true
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "sel",
+        "name": "selection"
+      }
+    },
+    {
+      "id": "805c55d9-31e6-4846-9878-c34c75054fe9",
+      "title": "Octopus Scanner Malware",
+      "author": "NVISO",
+      "level": "high",
+      "status": "test",
+      "description": "Detects Octopus Scanner Malware.",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/windows/file/file_event/file_event_win_mal_octopus_scanner.yml",
+      "on": "file_event",
+      "selections": {
+        "selection": [
+          [
+            {
+              "field": "TargetFilename",
+              "op": "endswith",
+              "values": [
+                "\\AppData\\Local\\Microsoft\\Cache134.dat",
+                "\\AppData\\Local\\Microsoft\\ExplorerSync.db"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "sel",
+        "name": "selection"
+      }
+    },
+    {
+      "id": "318557a5-150c-4c8d-b70e-a9910e199857",
+      "title": "File Creation In Suspicious Directory By Msdt.EXE",
+      "author": "Vadim Varganov, Florian Roth (Nextron Systems)",
+      "level": "high",
+      "status": "test",
+      "description": "Detects msdt.exe creating files in suspicious directories which could be a sign of exploitation of either Follina or Dogwalk vulnerabilities",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/windows/file/file_event/file_event_win_msdt_susp_directories.yml",
+      "on": "file_event",
+      "selections": {
+        "selection": [
+          [
+            {
+              "field": "Image",
+              "op": "endswith",
+              "values": [
+                "\\msdt.exe"
+              ],
+              "all": false
+            },
+            {
+              "field": "TargetFilename",
+              "op": "contains",
+              "values": [
+                "\\Desktop\\",
+                "\\Start Menu\\Programs\\Startup\\",
+                "C:\\PerfLogs\\",
+                "C:\\ProgramData\\",
+                "C:\\Users\\Public\\"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "sel",
+        "name": "selection"
+      }
+    },
+    {
+      "id": "c61daa90-3c1e-4f18-af62-8f288b5c9aaf",
+      "title": "Uncommon File Creation By Mysql Daemon Process",
+      "author": "Joseph Kamau",
+      "level": "high",
+      "status": "test",
+      "description": "Detects the creation of files with scripting or executable extensions by Mysql daemon. Which could be an indicator of \"User Defined Functions\" abuse to download malware.",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/windows/file/file_event/file_event_win_mysqld_uncommon_file_creation.yml",
+      "on": "file_event",
+      "selections": {
+        "selection": [
+          [
+            {
+              "field": "Image",
+              "op": "endswith",
+              "values": [
+                "\\mysqld.exe",
+                "\\mysqld-nt.exe"
+              ],
+              "all": false
+            },
+            {
+              "field": "TargetFilename",
+              "op": "endswith",
+              "values": [
+                ".bat",
+                ".dat",
+                ".dll",
+                ".exe",
+                ".ps1",
+                ".psm1",
+                ".vbe",
+                ".vbs"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "sel",
+        "name": "selection"
+      }
+    },
+    {
+      "id": "d7b50671-d1ad-4871-aa60-5aa5b331fe04",
+      "title": "Suspicious File Creation In Uncommon AppData Folder",
+      "author": "Nasreddine Bencherchali (Nextron Systems)",
+      "level": "high",
+      "status": "test",
+      "description": "Detects the creation of suspicious files and folders inside the user's AppData folder but not inside any of the common and well known directories (Local, Romaing, LocalLow). This method could be used as a method to bypass detection who exclude the AppData folder in fear of FPs",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/windows/file/file_event/file_event_win_new_files_in_uncommon_appdata_folder.yml",
+      "on": "file_event",
+      "selections": {
+        "selection": [
+          [
+            {
+              "field": "TargetFilename",
+              "op": "startswith",
+              "values": [
+                "C:\\Users\\"
+              ],
+              "all": false
+            },
+            {
+              "field": "TargetFilename",
+              "op": "contains",
+              "values": [
+                "\\AppData\\"
+              ],
+              "all": false
+            },
+            {
+              "field": "TargetFilename",
+              "op": "endswith",
+              "values": [
+                ".bat",
+                ".cmd",
+                ".cpl",
+                ".dll",
+                ".exe",
+                ".hta",
+                ".iso",
+                ".lnk",
+                ".msi",
+                ".ps1",
+                ".psm1",
+                ".scr",
+                ".vbe",
+                ".vbs"
+              ],
+              "all": false
+            }
+          ]
+        ],
+        "filter_main": [
+          [
+            {
+              "field": "TargetFilename",
+              "op": "startswith",
+              "values": [
+                "C:\\Users\\"
+              ],
+              "all": false
+            },
+            {
+              "field": "TargetFilename",
+              "op": "contains",
+              "values": [
+                "\\AppData\\Local\\",
+                "\\AppData\\LocalLow\\",
+                "\\AppData\\Roaming\\"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "and",
+        "l": {
+          "t": "sel",
+          "name": "selection"
+        },
+        "r": {
+          "t": "not",
+          "e": {
+            "t": "sel",
+            "name": "filter_main"
+          }
+        }
+      }
+    },
+    {
+      "id": "11b1ed55-154d-4e82-8ad7-83739298f720",
+      "title": "NTDS.DIT Creation By Uncommon Process",
+      "author": "Florian Roth (Nextron Systems), Nasreddine Bencherchali (Nextron Systems)",
+      "level": "high",
+      "status": "test",
+      "description": "Detects creation of a file named \"ntds.dit\" (Active Directory Database) by an uncommon process or a process located in a suspicious directory",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/windows/file/file_event/file_event_win_ntds_dit_uncommon_process.yml",
+      "on": "file_event",
+      "selections": {
+        "selection_ntds": [
+          [
+            {
+              "field": "TargetFilename",
+              "op": "endswith",
+              "values": [
+                "\\ntds.dit"
+              ],
+              "all": false
+            }
+          ]
+        ],
+        "selection_process_img": [
+          [
+            {
+              "field": "Image",
+              "op": "endswith",
+              "values": [
+                "\\cmd.exe",
+                "\\cscript.exe",
+                "\\mshta.exe",
+                "\\powershell.exe",
+                "\\pwsh.exe",
+                "\\regsvr32.exe",
+                "\\rundll32.exe",
+                "\\wscript.exe",
+                "\\wsl.exe",
+                "\\wt.exe"
+              ],
+              "all": false
+            }
+          ]
+        ],
+        "selection_process_paths": [
+          [
+            {
+              "field": "Image",
+              "op": "contains",
+              "values": [
+                "\\AppData\\",
+                "\\Temp\\",
+                "\\Public\\",
+                "\\PerfLogs\\"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "and",
+        "l": {
+          "t": "sel",
+          "name": "selection_ntds"
+        },
+        "r": {
+          "t": "of",
+          "quant": "one",
+          "pattern": "selection_process_*"
+        }
+      }
+    },
+    {
+      "id": "3a8da4e0-36c1-40d2-8b29-b3e890d5172a",
+      "title": "NTDS Exfiltration Filename Patterns",
+      "author": "Florian Roth (Nextron Systems)",
+      "level": "high",
+      "status": "test",
+      "description": "Detects creation of files with specific name patterns seen used in various tools that export the NTDS.DIT for exfiltration.",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/windows/file/file_event/file_event_win_ntds_exfil_tools.yml",
+      "on": "file_event",
+      "selections": {
+        "selection": [
+          [
+            {
+              "field": "TargetFilename",
+              "op": "endswith",
+              "values": [
+                "\\All.cab",
+                ".ntds.cleartext"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "sel",
+        "name": "selection"
+      }
+    },
+    {
+      "id": "8e1cb247-6cf6-42fa-b440-3f27d57e9936",
+      "title": "Potential Persistence Via Microsoft Office Add-In",
+      "author": "NVISO",
+      "level": "high",
+      "status": "test",
+      "description": "Detects potential persistence activity via startup add-ins that load when Microsoft Office starts (.wll/.xll are simply .dll fit for Word or Excel).",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/windows/file/file_event/file_event_win_office_addin_persistence.yml",
+      "on": "file_event",
+      "selections": {
+        "selection_wlldropped": [
+          [
+            {
+              "field": "TargetFilename",
+              "op": "contains",
+              "values": [
+                "\\Microsoft\\Word\\Startup\\"
+              ],
+              "all": false
+            },
+            {
+              "field": "TargetFilename",
+              "op": "endswith",
+              "values": [
+                ".wll"
+              ],
+              "all": false
+            }
+          ]
+        ],
+        "selection_xlldropped": [
+          [
+            {
+              "field": "TargetFilename",
+              "op": "contains",
+              "values": [
+                "\\Microsoft\\Excel\\Startup\\"
+              ],
+              "all": false
+            },
+            {
+              "field": "TargetFilename",
+              "op": "endswith",
+              "values": [
+                ".xll"
+              ],
+              "all": false
+            }
+          ]
+        ],
+        "selection_xladropped": [
+          [
+            {
+              "field": "TargetFilename",
+              "op": "contains",
+              "values": [
+                "Microsoft\\Excel\\XLSTART\\"
+              ],
+              "all": false
+            },
+            {
+              "field": "TargetFilename",
+              "op": "endswith",
+              "values": [
+                ".xlam"
+              ],
+              "all": false
+            }
+          ]
+        ],
+        "selection_generic": [
+          [
+            {
+              "field": "TargetFilename",
+              "op": "contains",
+              "values": [
+                "\\Microsoft\\Addins\\"
+              ],
+              "all": false
+            },
+            {
+              "field": "TargetFilename",
+              "op": "endswith",
+              "values": [
+                ".xlam",
+                ".xla",
+                ".ppam"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "of",
+        "quant": "one",
+        "pattern": "selection_*"
+      }
+    },
+    {
+      "id": "fcc6d700-68d9-4241-9a1a-06874d621b06",
+      "title": "Suspicious File Created Via OneNote Application",
+      "author": "Nasreddine Bencherchali (Nextron Systems)",
+      "level": "high",
+      "status": "test",
+      "description": "Detects suspicious files created via the OneNote application. This could indicate a potential malicious \".one\"/\".onepkg\" file was executed as seen being used in malware activity in the wild",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/windows/file/file_event/file_event_win_office_onenote_susp_dropped_files.yml",
+      "on": "file_event",
+      "selections": {
+        "selection": [
+          [
+            {
+              "field": "Image",
+              "op": "endswith",
+              "values": [
+                "\\onenote.exe",
+                "\\onenotem.exe",
+                "\\onenoteim.exe"
+              ],
+              "all": false
+            },
+            {
+              "field": "TargetFilename",
+              "op": "contains",
+              "values": [
+                "\\AppData\\Local\\Temp\\OneNote\\"
+              ],
+              "all": false
+            },
+            {
+              "field": "TargetFilename",
+              "op": "endswith",
+              "values": [
+                ".bat",
+                ".chm",
+                ".cmd",
+                ".dll",
+                ".exe",
+                ".hta",
+                ".htm",
+                ".html",
+                ".js",
+                ".lnk",
+                ".ps1",
+                ".vbe",
+                ".vbs",
+                ".wsf"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "sel",
+        "name": "selection"
+      }
+    },
+    {
+      "id": "c3edc6a5-d9d4-48d8-930e-aab518390917",
+      "title": "Potential Persistence Via Outlook Form",
+      "author": "Tobias Michalski (Nextron Systems)",
+      "level": "high",
+      "status": "test",
+      "description": "Detects the creation of a new Outlook form which can contain malicious code",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/windows/file/file_event/file_event_win_office_outlook_newform.yml",
+      "on": "file_event",
+      "selections": {
+        "selection": [
+          [
+            {
+              "field": "Image",
+              "op": "endswith",
+              "values": [
+                "\\outlook.exe"
+              ],
+              "all": false
+            },
+            {
+              "field": "TargetFilename",
+              "op": "contains",
+              "values": [
+                "\\AppData\\Local\\Microsoft\\FORMS\\IPM",
+                "\\Local Settings\\Application Data\\Microsoft\\Forms"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "sel",
+        "name": "selection"
+      }
+    },
+    {
+      "id": "117d3d3a-755c-4a61-b23e-9171146d094c",
+      "title": "Suspicious Outlook Macro Created",
+      "author": "Nasreddine Bencherchali (Nextron Systems)",
+      "level": "high",
+      "status": "test",
+      "description": "Detects the creation of a macro file for Outlook.",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/windows/file/file_event/file_event_win_office_outlook_susp_macro_creation.yml",
+      "on": "file_event",
+      "selections": {
+        "selection": [
+          [
+            {
+              "field": "TargetFilename",
+              "op": "endswith",
+              "values": [
+                "\\Microsoft\\Outlook\\VbaProject.OTM"
+              ],
+              "all": false
+            }
+          ]
+        ],
+        "filter": [
+          [
+            {
+              "field": "Image",
+              "op": "endswith",
+              "values": [
+                "\\outlook.exe"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "and",
+        "l": {
+          "t": "sel",
+          "name": "selection"
+        },
+        "r": {
+          "t": "not",
+          "e": {
+            "t": "sel",
+            "name": "filter"
+          }
+        }
+      }
+    },
+    {
+      "id": "0e20c89d-2264-44ae-8238-aeeaba609ece",
+      "title": "Potential Persistence Via Microsoft Office Startup Folder",
+      "author": "Max Altgelt (Nextron Systems), Nasreddine Bencherchali (Nextron Systems)",
+      "level": "high",
+      "status": "test",
+      "description": "Detects creation of Microsoft Office files inside of one of the default startup folders in order to achieve persistence.",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/windows/file/file_event/file_event_win_office_startup_persistence.yml",
+      "on": "file_event",
+      "selections": {
+        "selection_word_paths": [
+          [
+            {
+              "field": "TargetFilename",
+              "op": "contains",
+              "values": [
+                "\\Microsoft\\Word\\STARTUP"
+              ],
+              "all": false
+            }
+          ],
+          [
+            {
+              "field": "TargetFilename",
+              "op": "contains",
+              "values": [
+                "\\Office",
+                "\\Program Files",
+                "\\STARTUP"
+              ],
+              "all": true
+            }
+          ]
+        ],
+        "selection_word_extension": [
+          [
+            {
+              "field": "TargetFilename",
+              "op": "endswith",
+              "values": [
+                ".doc",
+                ".docm",
+                ".docx",
+                ".dot",
+                ".dotm",
+                ".rtf"
+              ],
+              "all": false
+            }
+          ]
+        ],
+        "selection_excel_paths": [
+          [
+            {
+              "field": "TargetFilename",
+              "op": "contains",
+              "values": [
+                "\\Microsoft\\Excel\\XLSTART"
+              ],
+              "all": false
+            }
+          ],
+          [
+            {
+              "field": "TargetFilename",
+              "op": "contains",
+              "values": [
+                "\\Office",
+                "\\Program Files",
+                "\\XLSTART"
+              ],
+              "all": true
+            }
+          ]
+        ],
+        "selection_excel_extension": [
+          [
+            {
+              "field": "TargetFilename",
+              "op": "endswith",
+              "values": [
+                ".xls",
+                ".xlsm",
+                ".xlsx",
+                ".xlt",
+                ".xltm"
+              ],
+              "all": false
+            }
+          ]
+        ],
+        "filter_main_office": [
+          [
+            {
+              "field": "Image",
+              "op": "endswith",
+              "values": [
+                "\\WINWORD.exe",
+                "\\EXCEL.exe"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "and",
+        "l": {
+          "t": "or",
+          "l": {
+            "t": "of",
+            "quant": "all",
+            "pattern": "selection_word_*"
+          },
+          "r": {
+            "t": "of",
+            "quant": "all",
+            "pattern": "selection_excel_*"
+          }
+        },
+        "r": {
+          "t": "not",
+          "e": {
+            "t": "sel",
+            "name": "filter_main_office"
+          }
+        }
+      }
+    },
+    {
+      "id": "c7a74c80-ba5a-486e-9974-ab9e682bc5e4",
+      "title": "File With Uncommon Extension Created By An Office Application",
+      "author": "Vadim Khrykov (ThreatIntel), Cyb3rEng (Rule), Nasreddine Bencherchali (Nextron Systems)",
+      "level": "high",
+      "status": "test",
+      "description": "Detects the creation of files with an executable or script extension by an Office application.",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/windows/file/file_event/file_event_win_office_susp_file_extension.yml",
+      "on": "file_event",
+      "selections": {
+        "selection1": [
+          [
+            {
+              "field": "Image",
+              "op": "endswith",
+              "values": [
+                "\\excel.exe",
+                "\\msaccess.exe",
+                "\\mspub.exe",
+                "\\powerpnt.exe",
+                "\\visio.exe",
+                "\\winword.exe"
+              ],
+              "all": false
+            }
+          ]
+        ],
+        "selection2": [
+          [
+            {
+              "field": "TargetFilename",
+              "op": "endswith",
+              "values": [
+                ".bat",
+                ".cmd",
+                ".com",
+                ".dll",
+                ".exe",
+                ".hta",
+                ".ocx",
+                ".proj",
+                ".ps1",
+                ".scf",
+                ".scr",
+                ".sys",
+                ".vbe",
+                ".vbs",
+                ".wsf",
+                ".wsh"
+              ],
+              "all": false
+            }
+          ]
+        ],
+        "filter_main_localassembly": [
+          [
+            {
+              "field": "TargetFilename",
+              "op": "contains",
+              "values": [
+                "\\AppData\\Local\\assembly\\tmp\\"
+              ],
+              "all": false
+            },
+            {
+              "field": "TargetFilename",
+              "op": "endswith",
+              "values": [
+                ".dll"
+              ],
+              "all": false
+            }
+          ]
+        ],
+        "filter_optional_webservicecache": [
+          [
+            {
+              "field": "TargetFilename",
+              "op": "contains",
+              "values": [
+                "C:\\Users\\",
+                "\\AppData\\Local\\Microsoft\\Office\\",
+                "\\WebServiceCache\\AllUsers"
+              ],
+              "all": true
+            },
+            {
+              "field": "TargetFilename",
+              "op": "endswith",
+              "values": [
+                ".com"
+              ],
+              "all": false
+            }
+          ]
+        ],
+        "filter_optional_webex": [
+          [
+            {
+              "field": "Image",
+              "op": "endswith",
+              "values": [
+                "\\winword.exe"
+              ],
+              "all": false
+            },
+            {
+              "field": "TargetFilename",
+              "op": "contains",
+              "values": [
+                "\\AppData\\Local\\Temp\\webexdelta\\"
+              ],
+              "all": false
+            },
+            {
+              "field": "TargetFilename",
+              "op": "endswith",
+              "values": [
+                ".dll",
+                ".exe"
+              ],
+              "all": false
+            }
+          ]
+        ],
+        "filter_optional_backstageinappnavcache": [
+          [
+            {
+              "field": "TargetFilename",
+              "op": "contains",
+              "values": [
+                "C:\\Users\\",
+                "\\AppData\\Local\\Microsoft\\Office\\",
+                "\\BackstageInAppNavCache\\"
+              ],
+              "all": true
+            },
+            {
+              "field": "TargetFilename",
+              "op": "endswith",
+              "values": [
+                ".com"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "and",
+        "l": {
+          "t": "and",
+          "l": {
+            "t": "of",
+            "quant": "all",
+            "pattern": "selection*"
+          },
+          "r": {
+            "t": "not",
+            "e": {
+              "t": "of",
+              "quant": "one",
+              "pattern": "filter_main_*"
+            }
+          }
+        },
+        "r": {
+          "t": "not",
+          "e": {
+            "t": "of",
+            "quant": "one",
+            "pattern": "filter_optional_*"
+          }
+        }
+      }
+    },
+    {
+      "id": "a10a2c40-2c4d-49f8-b557-1a946bc55d9d",
+      "title": "Uncommon File Created In Office Startup Folder",
+      "author": "frack113, Nasreddine Bencherchali (Nextron Systems)",
+      "level": "high",
+      "status": "test",
+      "description": "Detects the creation of a file with an uncommon extension in an Office application startup folder",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/windows/file/file_event/file_event_win_office_uncommon_file_startup.yml",
+      "on": "file_event",
+      "selections": {
+        "selection_word_paths": [
+          [
+            {
+              "field": "TargetFilename",
+              "op": "contains",
+              "values": [
+                "\\Microsoft\\Word\\STARTUP"
+              ],
+              "all": false
+            }
+          ],
+          [
+            {
+              "field": "TargetFilename",
+              "op": "contains",
+              "values": [
+                "\\Office",
+                "\\Program Files",
+                "\\STARTUP"
+              ],
+              "all": true
+            }
+          ]
+        ],
+        "filter_exclude_word_ext": [
+          [
+            {
+              "field": "TargetFilename",
+              "op": "endswith",
+              "values": [
+                ".docb",
+                ".docm",
+                ".docx",
+                ".dotm",
+                ".mdb",
+                ".mdw",
+                ".pdf",
+                ".wll",
+                ".wwl"
+              ],
+              "all": false
+            }
+          ]
+        ],
+        "selection_excel_paths": [
+          [
+            {
+              "field": "TargetFilename",
+              "op": "contains",
+              "values": [
+                "\\Microsoft\\Excel\\XLSTART"
+              ],
+              "all": false
+            }
+          ],
+          [
+            {
+              "field": "TargetFilename",
+              "op": "contains",
+              "values": [
+                "\\Office",
+                "\\Program Files",
+                "\\XLSTART"
+              ],
+              "all": true
+            }
+          ]
+        ],
+        "filter_exclude_excel_ext": [
+          [
+            {
+              "field": "TargetFilename",
+              "op": "endswith",
+              "values": [
+                ".xll",
+                ".xls",
+                ".xlsm",
+                ".xlsx",
+                ".xlt",
+                ".xltm",
+                ".xlw"
+              ],
+              "all": false
+            }
+          ]
+        ],
+        "filter_main_office_click_to_run": [
+          [
+            {
+              "field": "Image",
+              "op": "contains",
+              "values": [
+                ":\\Program Files\\Common Files\\Microsoft Shared\\ClickToRun\\"
+              ],
+              "all": false
+            },
+            {
+              "field": "Image",
+              "op": "endswith",
+              "values": [
+                "\\OfficeClickToRun.exe"
+              ],
+              "all": false
+            }
+          ]
+        ],
+        "filter_main_office_apps": [
+          [
+            {
+              "field": "Image",
+              "op": "contains",
+              "values": [
+                ":\\Program Files\\Microsoft Office\\",
+                ":\\Program Files (x86)\\Microsoft Office\\"
+              ],
+              "all": false
+            },
+            {
+              "field": "Image",
+              "op": "endswith",
+              "values": [
+                "\\winword.exe",
+                "\\excel.exe"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "and",
+        "l": {
+          "t": "or",
+          "l": {
+            "t": "and",
+            "l": {
+              "t": "sel",
+              "name": "selection_word_paths"
+            },
+            "r": {
+              "t": "not",
+              "e": {
+                "t": "sel",
+                "name": "filter_exclude_word_ext"
+              }
+            }
+          },
+          "r": {
+            "t": "and",
+            "l": {
+              "t": "sel",
+              "name": "selection_excel_paths"
+            },
+            "r": {
+              "t": "not",
+              "e": {
+                "t": "sel",
+                "name": "filter_exclude_excel_ext"
+              }
+            }
+          }
+        },
+        "r": {
+          "t": "not",
+          "e": {
+            "t": "of",
+            "quant": "one",
+            "pattern": "filter_main_*"
+          }
+        }
+      }
+    },
+    {
+      "id": "6e90ae7a-7cd3-473f-a035-4ebb72d961da",
+      "title": "PCRE.NET Package Temp Files",
+      "author": "Roberto Rodriguez (Cyb3rWard0g), OTR (Open Threat Research)",
+      "level": "high",
+      "status": "test",
+      "description": "Detects processes creating temp files related to PCRE.NET package",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/windows/file/file_event/file_event_win_pcre_net_temp_file.yml",
+      "on": "file_event",
+      "selections": {
+        "selection": [
+          [
+            {
+              "field": "TargetFilename",
+              "op": "contains",
+              "values": [
+                "\\AppData\\Local\\Temp\\ba9ea7344a4a5f591d6e5dc32a13494b\\"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "sel",
+        "name": "selection"
+      }
+    },
+    {
+      "id": "f331aa1f-8c53-4fc3-b083-cc159bc971cb",
+      "title": "Malicious PowerShell Scripts - FileCreation",
+      "author": "Markus Neis, Nasreddine Bencherchali (Nextron Systems), Mustafa Kaan Demir, Georg Lauenstein",
+      "level": "high",
+      "status": "test",
+      "description": "Detects the creation of known offensive powershell scripts used for exploitation",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/windows/file/file_event/file_event_win_powershell_exploit_scripts.yml",
+      "on": "file_event",
+      "selections": {
+        "selection_generic": [
+          [
+            {
+              "field": "TargetFilename",
+              "op": "endswith",
+              "values": [
+                "\\Add-ConstrainedDelegationBackdoor.ps1",
+                "\\Add-Exfiltration.ps1",
+                "\\Add-Persistence.ps1",
+                "\\Add-RegBackdoor.ps1",
+                "\\Add-RemoteRegBackdoor.ps1",
+                "\\Add-ScrnSaveBackdoor.ps1",
+                "\\ADRecon.ps1",
+                "\\AzureADRecon.ps1",
+                "\\BadSuccessor.ps1",
+                "\\Check-VM.ps1",
+                "\\ConvertTo-ROT13.ps1",
+                "\\Copy-VSS.ps1",
+                "\\Create-MultipleSessions.ps1",
+                "\\DNS_TXT_Pwnage.ps1",
+                "\\dnscat2.ps1",
+                "\\Do-Exfiltration.ps1",
+                "\\DomainPasswordSpray.ps1",
+                "\\Download_Execute.ps1",
+                "\\Download-Execute-PS.ps1",
+                "\\Enable-DuplicateToken.ps1",
+                "\\Enabled-DuplicateToken.ps1",
+                "\\Execute-Command-MSSQL.ps1",
+                "\\Execute-DNSTXT-Code.ps1",
+                "\\Execute-OnTime.ps1",
+                "\\ExetoText.ps1",
+                "\\Exploit-Jboss.ps1",
+                "\\Find-AVSignature.ps1",
+                "\\Find-Fruit.ps1",
+                "\\Find-GPOLocation.ps1",
+                "\\Find-TrustedDocuments.ps1",
+                "\\FireBuster.ps1",
+                "\\FireListener.ps1",
+                "\\Get-ApplicationHost.ps1",
+                "\\Get-ChromeDump.ps1",
+                "\\Get-ClipboardContents.ps1",
+                "\\Get-ComputerDetail.ps1",
+                "\\Get-FoxDump.ps1",
+                "\\Get-GPPAutologon.ps1",
+                "\\Get-GPPPassword.ps1",
+                "\\Get-IndexedItem.ps1",
+                "\\Get-Keystrokes.ps1",
+                "\\Get-LSASecret.ps1",
+                "\\Get-MicrophoneAudio.ps1",
+                "\\Get-PassHashes.ps1",
+                "\\Get-PassHints.ps1",
+                "\\Get-RegAlwaysInstallElevated.ps1",
+                "\\Get-RegAutoLogon.ps1",
+                "\\Get-RickAstley.ps1",
+                "\\Get-Screenshot.ps1",
+                "\\Get-SecurityPackages.ps1",
+                "\\Get-ServiceFilePermission.ps1",
+                "\\Get-ServicePermission.ps1",
+                "\\Get-ServiceUnquoted.ps1",
+                "\\Get-SiteListPassword.ps1",
+                "\\Get-System.ps1",
+                "\\Get-TimedScreenshot.ps1",
+                "\\Get-UnattendedInstallFile.ps1",
+                "\\Get-Unconstrained.ps1",
+                "\\Get-USBKeystrokes.ps1",
+                "\\Get-VaultCredential.ps1",
+                "\\Get-VulnAutoRun.ps1",
+                "\\Get-VulnSchTask.ps1",
+                "\\Get-WebConfig.ps1",
+                "\\Get-WebCredentials.ps1",
+                "\\Get-WLAN-Keys.ps1",
+                "\\Gupt-Backdoor.ps1",
+                "\\HTTP-Backdoor.ps1",
+                "\\HTTP-Login.ps1",
+                "\\Install-ServiceBinary.ps1",
+                "\\Install-SSP.ps1",
+                "\\Invoke-ACLScanner.ps1",
+                "\\Invoke-ADSBackdoor.ps1",
+                "\\Invoke-AmsiBypass.ps1",
+                "\\Invoke-ARPScan.ps1",
+                "\\Invoke-BackdoorLNK.ps1",
+                "\\Invoke-BadPotato.ps1",
+                "\\Invoke-BetterSafetyKatz.ps1",
+                "\\Invoke-BruteForce.ps1",
+                "\\Invoke-BypassUAC.ps1",
+                "\\Invoke-Carbuncle.ps1",
+                "\\Invoke-Certify.ps1",
+                "\\Invoke-ConPtyShell.ps1",
+                "\\Invoke-CredentialInjection.ps1",
+                "\\Invoke-CredentialsPhish.ps1",
+                "\\Invoke-DAFT.ps1",
+                "\\Invoke-DCSync.ps1",
+                "\\Invoke-Decode.ps1",
+                "\\Invoke-DinvokeKatz.ps1",
+                "\\Invoke-DllInjection.ps1",
+                "\\Invoke-DNSExfiltrator.ps1",
+                "\\Invoke-DNSUpdate.ps1",
+                "\\Invoke-DowngradeAccount.ps1",
+                "\\Invoke-EgressCheck.ps1",
+                "\\Invoke-Encode.ps1",
+                "\\Invoke-EventViewer.ps1",
+                "\\Invoke-Eyewitness.ps1",
+                "\\Invoke-FakeLogonScreen.ps1",
+                "\\Invoke-Farmer.ps1",
+                "\\Invoke-Get-RBCD-Threaded.ps1",
+                "\\Invoke-Gopher.ps1",
+                "\\Invoke-Grouper2.ps1",
+                "\\Invoke-Grouper3.ps1",
+                "\\Invoke-HandleKatz.ps1",
+                "\\Invoke-Interceptor.ps1",
+                "\\Invoke-Internalmonologue.ps1",
+                "\\Invoke-Inveigh.ps1",
+                "\\Invoke-InveighRelay.ps1",
+                "\\Invoke-JSRatRegsvr.ps1",
+                "\\Invoke-JSRatRundll.ps1",
+                "\\Invoke-KrbRelay.ps1",
+                "\\Invoke-KrbRelayUp.ps1",
+                "\\Invoke-LdapSignCheck.ps1",
+                "\\Invoke-Lockless.ps1",
+                "\\Invoke-MalSCCM.ps1",
+                "\\Invoke-Mimikatz.ps1",
+                "\\Invoke-MimikatzWDigestDowngrade.ps1",
+                "\\Invoke-Mimikittenz.ps1",
+                "\\Invoke-MITM6.ps1",
+                "\\Invoke-NanoDump.ps1",
+                "\\Invoke-NetRipper.ps1",
+                "\\Invoke-NetworkRelay.ps1",
+                "\\Invoke-NinjaCopy.ps1",
+                "\\Invoke-OxidResolver.ps1",
+                "\\Invoke-P0wnedshell.ps1",
+                "\\Invoke-P0wnedshellx86.ps1",
+                "\\Invoke-Paranoia.ps1",
+                "\\Invoke-PortScan.ps1",
+                "\\Invoke-PoshRatHttp.ps1",
+                "\\Invoke-PoshRatHttps.ps1",
+                "\\Invoke-PostExfil.ps1",
+                "\\Invoke-PowerDump.ps1",
+                "\\Invoke-PowerDPAPI.ps1",
+                "\\Invoke-PowerShellIcmp.ps1",
+                "\\Invoke-PowerShellTCP.ps1",
+                "\\Invoke-PowerShellTcpOneLine.ps1",
+                "\\Invoke-PowerShellTcpOneLineBind.ps1",
+                "\\Invoke-PowerShellUdp.ps1",
+                "\\Invoke-PowerShellUdpOneLine.ps1",
+                "\\Invoke-PowerShellWMI.ps1",
+                "\\Invoke-PowerThIEf.ps1",
+                "\\Invoke-PPLDump.ps1",
+                "\\Invoke-Prasadhak.ps1",
+                "\\Invoke-PsExec.ps1",
+                "\\Invoke-PsGcat.ps1",
+                "\\Invoke-PsGcatAgent.ps1",
+                "\\Invoke-PSInject.ps1",
+                "\\Invoke-PsUaCme.ps1",
+                "\\Invoke-ReflectivePEInjection.ps1",
+                "\\Invoke-ReverseDNSLookup.ps1",
+                "\\Invoke-Rubeus.ps1",
+                "\\Invoke-RunAs.ps1",
+                "\\Invoke-SafetyKatz.ps1",
+                "\\Invoke-SauronEye.ps1",
+                "\\Invoke-SCShell.ps1",
+                "\\Invoke-Seatbelt.ps1",
+                "\\Invoke-ServiceAbuse.ps1",
+                "\\Invoke-SessionGopher.ps1",
+                "\\Invoke-ShellCode.ps1",
+                "\\Invoke-SMBScanner.ps1",
+                "\\Invoke-Snaffler.ps1",
+                "\\Invoke-Spoolsample.ps1",
+                "\\Invoke-SSHCommand.ps1",
+                "\\Invoke-SSIDExfil.ps1",
+                "\\Invoke-StandIn.ps1",
+                "\\Invoke-StickyNotesExtract.ps1",
+                "\\Invoke-Tater.ps1",
+                "\\Invoke-Thunderfox.ps1",
+                "\\Invoke-ThunderStruck.ps1",
+                "\\Invoke-TokenManipulation.ps1",
+                "\\Invoke-Tokenvator.ps1",
+                "\\Invoke-TotalExec.ps1",
+                "\\Invoke-UrbanBishop.ps1",
+                "\\Invoke-UserHunter.ps1",
+                "\\Invoke-VoiceTroll.ps1",
+                "\\Invoke-Whisker.ps1",
+                "\\Invoke-WinEnum.ps1",
+                "\\Invoke-winPEAS.ps1",
+                "\\Invoke-WireTap.ps1",
+                "\\Invoke-WmiCommand.ps1",
+                "\\Invoke-WScriptBypassUAC.ps1",
+                "\\Invoke-Zerologon.ps1",
+                "\\Keylogger.ps1",
+                "\\MailRaider.ps1",
+                "\\New-HoneyHash.ps1",
+                "\\OfficeMemScraper.ps1",
+                "\\Offline_Winpwn.ps1",
+                "\\Out-CHM.ps1",
+                "\\Out-DnsTxt.ps1",
+                "\\Out-Excel.ps1",
+                "\\Out-HTA.ps1",
+                "\\Out-Java.ps1",
+                "\\Out-JS.ps1",
+                "\\Out-Minidump.ps1",
+                "\\Out-RundllCommand.ps1",
+                "\\Out-SCF.ps1",
+                "\\Out-SCT.ps1",
+                "\\Out-Shortcut.ps1",
+                "\\Out-WebQuery.ps1",
+                "\\Out-Word.ps1",
+                "\\Parse_Keys.ps1",
+                "\\Port-Scan.ps1",
+                "\\PowerBreach.ps1",
+                "\\powercat.ps1",
+                "\\Powermad.ps1",
+                "\\PowerRunAsSystem.psm1",
+                "\\PowerSharpPack.ps1",
+                "\\PowerUp.ps1",
+                "\\PowerUpSQL.ps1",
+                "\\PowerView.ps1",
+                "\\PSAsyncShell.ps1",
+                "\\RemoteHashRetrieval.ps1",
+                "\\Remove-Persistence.ps1",
+                "\\Remove-PoshRat.ps1",
+                "\\Remove-Update.ps1",
+                "\\Run-EXEonRemote.ps1",
+                "\\Schtasks-Backdoor.ps1",
+                "\\Set-DCShadowPermissions.ps1",
+                "\\Set-MacAttribute.ps1",
+                "\\Set-RemotePSRemoting.ps1",
+                "\\Set-RemoteWMI.ps1",
+                "\\Set-Wallpaper.ps1",
+                "\\Show-TargetScreen.ps1",
+                "\\Speak.ps1",
+                "\\Start-CaptureServer.ps1",
+                "\\Start-WebcamRecorder.ps1",
+                "\\StringToBase64.ps1",
+                "\\TexttoExe.ps1",
+                "\\Veeam-Get-Creds.ps1",
+                "\\VolumeShadowCopyTools.ps1",
+                "\\WinPwn.ps1",
+                "\\WSUSpendu.ps1"
+              ],
+              "all": false
+            }
+          ]
+        ],
+        "selection_invoke_sharp": [
+          [
+            {
+              "field": "TargetFilename",
+              "op": "contains",
+              "values": [
+                "Invoke-Sharp"
+              ],
+              "all": false
+            },
+            {
+              "field": "TargetFilename",
+              "op": "endswith",
+              "values": [
+                ".ps1"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "of",
+        "quant": "one",
+        "pattern": "selection_*"
+      }
+    },
+    {
+      "id": "92fa78e7-4d39-45f1-91a3-8b23f3f1088d",
+      "title": "Potential Startup Shortcut Persistence Via PowerShell.EXE",
+      "author": "Christopher Peacock '@securepeacock', SCYTHE",
+      "level": "high",
+      "status": "test",
+      "description": "Detects PowerShell writing startup shortcuts. This procedure was highlighted in Red Canary Intel Insights Oct. 2021, \"We frequently observe adversaries using PowerShell to write malicious .lnk files into the startup directory to establish persistence. Accordingly, this detection opportunity is likely to identify persistence mechanisms in multiple threats. In the context of Yellow Cockatoo, this pe",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/windows/file/file_event/file_event_win_powershell_startup_shortcuts.yml",
+      "on": "file_event",
+      "selections": {
+        "selection": [
+          [
+            {
+              "field": "Image",
+              "op": "endswith",
+              "values": [
+                "\\powershell.exe",
+                "\\pwsh.exe"
+              ],
+              "all": false
+            },
+            {
+              "field": "TargetFilename",
+              "op": "contains",
+              "values": [
+                "\\start menu\\programs\\startup\\"
+              ],
+              "all": false
+            },
+            {
+              "field": "TargetFilename",
+              "op": "endswith",
+              "values": [
+                ".lnk"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "sel",
+        "name": "selection"
+      }
+    },
+    {
+      "id": "fccfb43e-09a7-4bd2-8b37-a5a7df33386d",
+      "title": ".RDP File Created By Uncommon Application",
+      "author": "Nasreddine Bencherchali (Nextron Systems)",
+      "level": "high",
+      "status": "test",
+      "description": "Detects creation of a file with an \".rdp\" extension by an application that doesn't commonly create such files.",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/windows/file/file_event/file_event_win_rdp_file_susp_creation.yml",
+      "on": "file_event",
+      "selections": {
+        "selection": [
+          [
+            {
+              "field": "TargetFilename",
+              "op": "endswith",
+              "values": [
+                ".rdp"
+              ],
+              "all": false
+            },
+            {
+              "field": "Image",
+              "op": "endswith",
+              "values": [
+                "\\brave.exe",
+                "\\CCleaner Browser\\Application\\CCleanerBrowser.exe",
+                "\\chromium.exe",
+                "\\firefox.exe",
+                "\\Google\\Chrome\\Application\\chrome.exe",
+                "\\iexplore.exe",
+                "\\microsoftedge.exe",
+                "\\msedge.exe",
+                "\\Opera.exe",
+                "\\Vivaldi.exe",
+                "\\Whale.exe",
+                "\\olk.exe",
+                "\\Outlook.exe",
+                "\\RuntimeBroker.exe",
+                "\\Thunderbird.exe",
+                "\\Discord.exe",
+                "\\Keybase.exe",
+                "\\msteams.exe",
+                "\\Slack.exe",
+                "\\teams.exe"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "sel",
+        "name": "selection"
+      }
+    },
+    {
+      "id": "130c9e58-28ac-4f83-8574-0a4cc913b97e",
+      "title": "Potential Winnti Dropper Activity",
+      "author": "Alexander Rausch",
+      "level": "high",
+      "status": "test",
+      "description": "Detects files dropped by Winnti as described in RedMimicry Winnti playbook",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/windows/file/file_event/file_event_win_redmimicry_winnti_filedrop.yml",
+      "on": "file_event",
+      "selections": {
+        "selection": [
+          [
+            {
+              "field": "TargetFilename",
+              "op": "endswith",
+              "values": [
+                "\\gthread-3.6.dll",
+                "\\sigcmm-2.4.dll",
+                "\\Windows\\Temp\\tmp.bat"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "sel",
+        "name": "selection"
+      }
+    },
+    {
+      "id": "145095eb-e273-443b-83d0-f9b519b7867b",
+      "title": "PDF File Created By RegEdit.EXE",
+      "author": "Nasreddine Bencherchali (Nextron Systems)",
+      "level": "high",
+      "status": "test",
+      "description": "Detects the creation of a file with the \".pdf\" extension by the \"RegEdit.exe\" process. This indicates that a user is trying to print/save a registry key as a PDF in order to potentially extract sensitive information and bypass defenses.",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/windows/file/file_event/file_event_win_regedit_print_as_pdf.yml",
+      "on": "file_event",
+      "selections": {
+        "selection": [
+          [
+            {
+              "field": "Image",
+              "op": "endswith",
+              "values": [
+                "\\regedit.exe"
+              ],
+              "all": false
+            },
+            {
+              "field": "TargetFilename",
+              "op": "endswith",
+              "values": [
+                ".pdf"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "sel",
+        "name": "selection"
+      }
+    },
+    {
+      "id": "a6976974-ea6f-4e97-818e-ea08625c52cb",
+      "title": "Potential RipZip Attack on Startup Folder",
+      "author": "Greg (rule)",
+      "level": "high",
+      "status": "test",
+      "description": "Detects a phishing attack which expands a ZIP file containing a malicious shortcut. If the victim expands the ZIP file via the explorer process, then the explorer process expands the malicious ZIP file and drops a malicious shortcut redirected to a backdoor into the Startup folder. Additionally, the file name of the malicious shortcut in Startup folder contains {0AFACED1-E828-11D1-9187-B532F1E9575",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/windows/file/file_event/file_event_win_ripzip_attack.yml",
+      "on": "file_event",
+      "selections": {
+        "selection": [
+          [
+            {
+              "field": "TargetFilename",
+              "op": "contains",
+              "values": [
+                "\\Microsoft\\Windows\\Start Menu\\Programs\\Startup",
+                ".lnk.{0AFACED1-E828-11D1-9187-B532F1E9575D}"
+              ],
+              "all": true
+            },
+            {
+              "field": "Image",
+              "op": "endswith",
+              "values": [
+                "\\explorer.exe"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "sel",
+        "name": "selection"
+      }
+    },
+    {
+      "id": "4e87b8e2-2ee9-4b2a-a715-4727d297ece0",
+      "title": "Potential SAM Database Dump",
+      "author": "Florian Roth (Nextron Systems)",
+      "level": "high",
+      "status": "test",
+      "description": "Detects the creation of files that look like exports of the local SAM (Security Account Manager)",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/windows/file/file_event/file_event_win_sam_dump.yml",
+      "on": "file_event",
+      "selections": {
+        "selection": [
+          [
+            {
+              "field": "TargetFilename",
+              "op": "endswith",
+              "values": [
+                "\\Temp\\sam",
+                "\\sam.sav",
+                "\\Intel\\sam",
+                "\\sam.hive",
+                "\\Perflogs\\sam",
+                "\\ProgramData\\sam",
+                "\\Users\\Public\\sam",
+                "\\AppData\\Local\\sam",
+                "\\AppData\\Roaming\\sam",
+                "_ShadowSteal.zip",
+                "\\Documents\\SAM.export",
+                ":\\sam"
+              ],
+              "all": false
+            }
+          ],
+          [
+            {
+              "field": "TargetFilename",
+              "op": "contains",
+              "values": [
+                "\\hive_sam_",
+                "\\sam.save",
+                "\\sam.export",
+                "\\~reg_sam.save",
+                "\\sam_backup",
+                "\\sam.bck",
+                "\\sam.backup"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "sel",
+        "name": "selection"
+      }
+    },
+    {
+      "id": "1277f594-a7d1-4f28-a2d3-73af5cbeab43",
+      "title": "Windows Shell/Scripting Application File Write to Suspicious Folder",
+      "author": "Florian Roth (Nextron Systems)",
+      "level": "high",
+      "status": "test",
+      "description": "Detects Windows shells and scripting applications that write files to suspicious folders",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/windows/file/file_event/file_event_win_shell_write_susp_directory.yml",
+      "on": "file_event",
+      "selections": {
+        "selection_1": [
+          [
+            {
+              "field": "Image",
+              "op": "endswith",
+              "values": [
+                "\\bash.exe",
+                "\\cmd.exe",
+                "\\cscript.exe",
+                "\\msbuild.exe",
+                "\\powershell.exe",
+                "\\pwsh.exe",
+                "\\sh.exe",
+                "\\wscript.exe"
+              ],
+              "all": false
+            },
+            {
+              "field": "TargetFilename",
+              "op": "startswith",
+              "values": [
+                "C:\\PerfLogs\\",
+                "C:\\Users\\Public\\"
+              ],
+              "all": false
+            }
+          ]
+        ],
+        "selection_2": [
+          [
+            {
+              "field": "Image",
+              "op": "endswith",
+              "values": [
+                "\\certutil.exe",
+                "\\forfiles.exe",
+                "\\mshta.exe",
+                "\\schtasks.exe",
+                "\\scriptrunner.exe",
+                "\\wmic.exe"
+              ],
+              "all": false
+            },
+            {
+              "field": "TargetFilename",
+              "op": "contains",
+              "values": [
+                "C:\\PerfLogs\\",
+                "C:\\Users\\Public\\",
+                "C:\\Windows\\Temp\\"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "of",
+        "quant": "one",
+        "pattern": "selection_*"
+      }
+    },
+    {
+      "id": "b8fd0e93-ff58-4cbd-8f48-1c114e342e62",
+      "title": "Windows Binaries Write Suspicious Extensions",
+      "author": "Nasreddine Bencherchali (Nextron Systems)",
+      "level": "high",
+      "status": "test",
+      "description": "Detects Windows executables that write files with suspicious extensions",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/windows/file/file_event/file_event_win_shell_write_susp_files_extensions.yml",
+      "on": "file_event",
+      "selections": {
+        "selection_generic": [
+          [
+            {
+              "field": "Image",
+              "op": "endswith",
+              "values": [
+                "\\csrss.exe",
+                "\\lsass.exe",
+                "\\RuntimeBroker.exe",
+                "\\sihost.exe",
+                "\\smss.exe",
+                "\\wininit.exe",
+                "\\winlogon.exe"
+              ],
+              "all": false
+            },
+            {
+              "field": "TargetFilename",
+              "op": "endswith",
+              "values": [
+                ".bat",
+                ".dll",
+                ".exe",
+                ".hta",
+                ".iso",
+                ".ps1",
+                ".txt",
+                ".vbe",
+                ".vbs"
+              ],
+              "all": false
+            }
+          ]
+        ],
+        "selection_special": [
+          [
+            {
+              "field": "Image",
+              "op": "endswith",
+              "values": [
+                "\\dllhost.exe",
+                "\\rundll32.exe",
+                "\\svchost.exe"
+              ],
+              "all": false
+            },
+            {
+              "field": "TargetFilename",
+              "op": "endswith",
+              "values": [
+                ".bat",
+                ".hta",
+                ".iso",
+                ".ps1",
+                ".vbe",
+                ".vbs"
+              ],
+              "all": false
+            }
+          ]
+        ],
+        "filter_main_AppLockerPolicyTest": [
+          [
+            {
+              "field": "Image",
+              "op": "equals",
+              "values": [
+                "C:\\Windows\\System32\\dllhost.exe"
+              ],
+              "all": false
+            },
+            {
+              "field": "TargetFilename",
+              "op": "contains",
+              "values": [
+                ":\\Users\\",
+                "\\AppData\\Local\\Temp\\__PSScriptPolicyTest_"
+              ],
+              "all": true
+            },
+            {
+              "field": "TargetFilename",
+              "op": "endswith",
+              "values": [
+                ".ps1"
+              ],
+              "all": false
+            }
+          ]
+        ],
+        "filter_main_script_gpo_machine": [
+          [
+            {
+              "field": "Image",
+              "op": "equals",
+              "values": [
+                "C:\\Windows\\system32\\svchost.exe"
+              ],
+              "all": false
+            },
+            {
+              "field": "TargetFilename",
+              "op": "contains",
+              "values": [
+                "C:\\Windows\\System32\\GroupPolicy\\DataStore\\",
+                "\\sysvol\\",
+                "\\Policies\\",
+                "\\Machine\\Scripts\\Startup\\"
+              ],
+              "all": true
+            },
+            {
+              "field": "TargetFilename",
+              "op": "endswith",
+              "values": [
+                ".ps1",
+                ".bat"
+              ],
+              "all": false
+            }
+          ]
+        ],
+        "filter_main_clipchamp": [
+          [
+            {
+              "field": "Image",
+              "op": "equals",
+              "values": [
+                "C:\\Windows\\system32\\svchost.exe"
+              ],
+              "all": false
+            },
+            {
+              "field": "TargetFilename",
+              "op": "contains",
+              "values": [
+                "C:\\Program Files\\WindowsApps\\Clipchamp",
+                ".ps1"
+              ],
+              "all": true
+            }
+          ]
+        ],
+        "filter_main_powershell_preview": [
+          [
+            {
+              "field": "Image",
+              "op": "equals",
+              "values": [
+                "C:\\Windows\\system32\\svchost.exe",
+                "C:\\Windows\\SysWOW64\\svchost.exe"
+              ],
+              "all": false
+            },
+            {
+              "field": "TargetFilename",
+              "op": "startswith",
+              "values": [
+                "C:\\Program Files\\WindowsApps\\Microsoft.PowerShellPreview",
+                "C:\\Program Files (x86)\\WindowsApps\\Microsoft.PowerShellPreview"
+              ],
+              "all": false
+            },
+            {
+              "field": "TargetFilename",
+              "op": "endswith",
+              "values": [
+                ".ps1"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "and",
+        "l": {
+          "t": "of",
+          "quant": "one",
+          "pattern": "selection_*"
+        },
+        "r": {
+          "t": "not",
+          "e": {
+            "t": "of",
+            "quant": "one",
+            "pattern": "filter_main_*"
+          }
+        }
+      }
+    },
+    {
+      "id": "e15b518d-b4ce-4410-a9cd-501f23ce4a18",
+      "title": "Suspicious Creation with Colorcpl",
+      "author": "frack113",
+      "level": "high",
+      "status": "test",
+      "description": "Once executed, colorcpl.exe will copy the arbitrary file to c:\\windows\\system32\\spool\\drivers\\color\\",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/windows/file/file_event/file_event_win_susp_colorcpl.yml",
+      "on": "file_event",
+      "selections": {
+        "selection": [
+          [
+            {
+              "field": "Image",
+              "op": "endswith",
+              "values": [
+                "\\colorcpl.exe"
+              ],
+              "all": false
+            }
+          ]
+        ],
+        "filter_ext": [
+          [
+            {
+              "field": "TargetFilename",
+              "op": "endswith",
+              "values": [
+                ".icm",
+                ".gmmp",
+                ".cdmp",
+                ".camp"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "and",
+        "l": {
+          "t": "sel",
+          "name": "selection"
+        },
+        "r": {
+          "t": "not",
+          "e": {
+            "t": "of",
+            "quant": "one",
+            "pattern": "filter_*"
+          }
+        }
+      }
+    },
+    {
+      "id": "fc4f4817-0c53-4683-a4ee-b17a64bc1039",
+      "title": "Suspicious Desktopimgdownldr Target File",
+      "author": "Florian Roth (Nextron Systems)",
+      "level": "high",
+      "status": "test",
+      "description": "Detects a suspicious Microsoft desktopimgdownldr file creation that stores a file to a suspicious location or contains a file with a suspicious extension",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/windows/file/file_event/file_event_win_susp_desktopimgdownldr_file.yml",
+      "on": "file_event",
+      "selections": {
+        "selection": [
+          [
+            {
+              "field": "Image",
+              "op": "endswith",
+              "values": [
+                "\\svchost.exe"
+              ],
+              "all": false
+            },
+            {
+              "field": "TargetFilename",
+              "op": "contains",
+              "values": [
+                "\\Personalization\\LockScreenImage\\"
+              ],
+              "all": false
+            }
+          ]
+        ],
+        "filter1": [
+          [
+            {
+              "field": "TargetFilename",
+              "op": "contains",
+              "values": [
+                "C:\\Windows\\"
+              ],
+              "all": false
+            }
+          ]
+        ],
+        "filter2": [
+          [
+            {
+              "field": "TargetFilename",
+              "op": "contains",
+              "values": [
+                ".jpg",
+                ".jpeg",
+                ".png"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "and",
+        "l": {
+          "t": "and",
+          "l": {
+            "t": "sel",
+            "name": "selection"
+          },
+          "r": {
+            "t": "not",
+            "e": {
+              "t": "sel",
+              "name": "filter1"
+            }
+          }
+        },
+        "r": {
+          "t": "not",
+          "e": {
+            "t": "sel",
+            "name": "filter2"
+          }
+        }
+      }
+    },
+    {
+      "id": "b4926b47-a9d7-434c-b3a0-adc3fa0bd13e",
+      "title": "Suspicious Double Extension Files",
+      "author": "Nasreddine Bencherchali (Nextron Systems), frack113",
+      "level": "high",
+      "status": "test",
+      "description": "Detects dropped files with double extensions, which is often used by malware as a method to abuse the fact that Windows hide default extensions by default.",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/windows/file/file_event/file_event_win_susp_double_extension.yml",
+      "on": "file_event",
+      "selections": {
+        "selection_gen": [
+          [
+            {
+              "field": "TargetFilename",
+              "op": "endswith",
+              "values": [
+                ".exe",
+                ".iso",
+                ".rar",
+                ".svg",
+                ".zip"
+              ],
+              "all": false
+            },
+            {
+              "field": "TargetFilename",
+              "op": "contains",
+              "values": [
+                ".doc.",
+                ".docx.",
+                ".gif.",
+                ".jpeg.",
+                ".jpg.",
+                ".mp3.",
+                ".mp4.",
+                ".pdf.",
+                ".png.",
+                ".ppt.",
+                ".pptx.",
+                ".rtf.",
+                ".svg.",
+                ".txt.",
+                ".xls.",
+                ".xlsx."
+              ],
+              "all": false
+            }
+          ]
+        ],
+        "selection_exe": [
+          [
+            {
+              "field": "TargetFilename",
+              "op": "endswith",
+              "values": [
+                ".rar.exe",
+                ".zip.exe"
+              ],
+              "all": false
+            }
+          ]
+        ],
+        "filter_icons_linux": [
+          [
+            {
+              "field": "TargetFilename",
+              "op": "startswith",
+              "values": [
+                "/usr/share/icons/"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "and",
+        "l": {
+          "t": "of",
+          "quant": "one",
+          "pattern": "selection_*"
+        },
+        "r": {
+          "t": "not",
+          "e": {
+            "t": "of",
+            "quant": "one",
+            "pattern": "filter_*"
+          }
+        }
+      }
+    },
+    {
+      "id": "7892ec59-c5bb-496d-8968-e5d210ca3ac4",
+      "title": "DPAPI Backup Keys And Certificate Export Activity IOC",
+      "author": "Nounou Mbeiri, Nasreddine Bencherchali (Nextron Systems)",
+      "level": "high",
+      "status": "test",
+      "description": "Detects file names with specific patterns seen generated and used by tools such as Mimikatz and DSInternals related to exported or stolen DPAPI backup keys and certificates.",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/windows/file/file_event/file_event_win_susp_dpapi_backup_and_cert_export_ioc.yml",
+      "on": "file_event",
+      "selections": {
+        "selection": [
+          [
+            {
+              "field": "TargetFilename",
+              "op": "contains",
+              "values": [
+                "ntds_capi_",
+                "ntds_legacy_",
+                "ntds_unknown_"
+              ],
+              "all": false
+            },
+            {
+              "field": "TargetFilename",
+              "op": "endswith",
+              "values": [
+                ".cer",
+                ".key",
+                ".pfx",
+                ".pvk"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "sel",
+        "name": "selection"
+      }
+    },
+    {
+      "id": "7280c9f3-a5af-45d0-916a-bc01cb4151c9",
+      "title": "Suspicious MSExchangeMailboxReplication ASPX Write",
+      "author": "Florian Roth (Nextron Systems)",
+      "level": "high",
+      "status": "test",
+      "description": "Detects suspicious activity in which the MSExchangeMailboxReplication process writes .asp and .apsx files to disk, which could be a sign of ProxyShell exploitation",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/windows/file/file_event/file_event_win_susp_exchange_aspx_write.yml",
+      "on": "file_event",
+      "selections": {
+        "selection": [
+          [
+            {
+              "field": "Image",
+              "op": "endswith",
+              "values": [
+                "\\MSExchangeMailboxReplication.exe"
+              ],
+              "all": false
+            },
+            {
+              "field": "TargetFilename",
+              "op": "endswith",
+              "values": [
+                ".aspx",
+                ".asp"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "sel",
+        "name": "selection"
+      }
+    },
+    {
+      "id": "74babdd6-a758-4549-9632-26535279e654",
+      "title": "Suspicious Executable File Creation",
+      "author": "frack113",
+      "level": "high",
+      "status": "test",
+      "description": "Detect creation of suspicious executable file names. Some strings look for suspicious file extensions, others look for filenames that exploit unquoted service paths.",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/windows/file/file_event/file_event_win_susp_executable_creation.yml",
+      "on": "file_event",
+      "selections": {
+        "selection": [
+          [
+            {
+              "field": "TargetFilename",
+              "op": "endswith",
+              "values": [
+                ":\\$Recycle.Bin.exe",
+                ":\\Documents and Settings.exe",
+                ":\\MSOCache.exe",
+                ":\\PerfLogs.exe",
+                ":\\Recovery.exe",
+                ".bat.exe",
+                ".sys.exe"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "sel",
+        "name": "selection"
+      }
+    },
+    {
+      "id": "0c3fac91-5627-46e8-a6a8-a0d7b9b8ae1b",
+      "title": "Suspicious Get-Variable.exe Creation",
+      "author": "frack113",
+      "level": "high",
+      "status": "test",
+      "description": "Get-Variable is a valid PowerShell cmdlet WindowsApps is by default in the path where PowerShell is executed. So when the Get-Variable command is issued on PowerShell execution, the system first looks for the Get-Variable executable in the path and executes the malicious binary instead of looking for the PowerShell cmdlet.",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/windows/file/file_event/file_event_win_susp_get_variable.yml",
+      "on": "file_event",
+      "selections": {
+        "selection": [
+          [
+            {
+              "field": "TargetFilename",
+              "op": "endswith",
+              "values": [
+                "Local\\Microsoft\\WindowsApps\\Get-Variable.exe"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "sel",
+        "name": "selection"
+      }
+    },
+    {
+      "id": "654fcc6d-840d-4844-9b07-2c3300e54a26",
+      "title": "Legitimate Application Dropped Archive",
+      "author": "frack113, Florian Roth",
+      "level": "high",
+      "status": "test",
+      "description": "Detects programs on a Windows system that should not write an archive to disk",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/windows/file/file_event/file_event_win_susp_legitimate_app_dropping_archive.yml",
+      "on": "file_event",
+      "selections": {
+        "selection": [
+          [
+            {
+              "field": "Image",
+              "op": "endswith",
+              "values": [
+                "\\winword.exe",
+                "\\excel.exe",
+                "\\powerpnt.exe",
+                "\\msaccess.exe",
+                "\\mspub.exe",
+                "\\eqnedt32.exe",
+                "\\visio.exe",
+                "\\wordpad.exe",
+                "\\wordview.exe",
+                "\\certutil.exe",
+                "\\certoc.exe",
+                "\\CertReq.exe",
+                "\\Desktopimgdownldr.exe",
+                "\\esentutl.exe",
+                "\\finger.exe",
+                "\\notepad.exe",
+                "\\AcroRd32.exe",
+                "\\RdrCEF.exe",
+                "\\mshta.exe",
+                "\\hh.exe"
+              ],
+              "all": false
+            },
+            {
+              "field": "TargetFilename",
+              "op": "endswith",
+              "values": [
+                ".zip",
+                ".rar",
+                ".7z",
+                ".diagcab",
+                ".appx"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "sel",
+        "name": "selection"
+      }
+    },
+    {
+      "id": "f0540f7e-2db3-4432-b9e0-3965486744bc",
+      "title": "Legitimate Application Dropped Executable",
+      "author": "frack113, Florian Roth (Nextron Systems)",
+      "level": "high",
+      "status": "test",
+      "description": "Detects LOLBINs and applications that should not legitimately drop executable or executable-equivalent files to disk. This may indicate malware staging, process injection, or abuse of a trusted binary for payload delivery.",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/windows/file/file_event/file_event_win_susp_legitimate_app_dropping_exe.yml",
+      "on": "file_event",
+      "selections": {
+        "selection": [
+          [
+            {
+              "field": "Image",
+              "op": "endswith",
+              "values": [
+                "\\eqnedt32.exe",
+                "\\wordpad.exe",
+                "\\wordview.exe",
+                "\\certutil.exe",
+                "\\certoc.exe",
+                "\\CertReq.exe",
+                "\\Desktopimgdownldr.exe",
+                "\\esentutl.exe",
+                "\\mshta.exe",
+                "\\AcroRd32.exe",
+                "\\RdrCEF.exe",
+                "\\hh.exe",
+                "\\finger.exe"
+              ],
+              "all": false
+            },
+            {
+              "field": "TargetFilename",
+              "op": "endswith",
+              "values": [
+                ".com",
+                ".dll",
+                ".exe",
+                ".jar",
+                ".ocx",
+                ".pyc"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "sel",
+        "name": "selection"
+      }
+    },
+    {
+      "id": "7d604714-e071-49ff-8726-edeb95a70679",
+      "title": "Legitimate Application Dropped Script",
+      "author": "frack113, Florian Roth (Nextron Systems)",
+      "level": "high",
+      "status": "test",
+      "description": "Detects LOLBINs and applications that should not legitimately drop script files to disk. This may indicate malware staging or abuse of a trusted binary for script-based code execution.",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/windows/file/file_event/file_event_win_susp_legitimate_app_dropping_script.yml",
+      "on": "file_event",
+      "selections": {
+        "selection": [
+          [
+            {
+              "field": "Image",
+              "op": "endswith",
+              "values": [
+                "\\eqnedt32.exe",
+                "\\wordpad.exe",
+                "\\wordview.exe",
+                "\\certutil.exe",
+                "\\certoc.exe",
+                "\\CertReq.exe",
+                "\\Desktopimgdownldr.exe",
+                "\\esentutl.exe",
+                "\\mshta.exe",
+                "\\AcroRd32.exe",
+                "\\RdrCEF.exe",
+                "\\hh.exe",
+                "\\finger.exe"
+              ],
+              "all": false
+            },
+            {
+              "field": "TargetFilename",
+              "op": "endswith",
+              "values": [
+                ".bat",
+                ".chm",
+                ".csproj",
+                ".hta",
+                ".js",
+                ".jse",
+                ".proj",
+                ".ps1",
+                ".py",
+                ".scf",
+                ".vbe",
+                ".vbs",
+                ".wsf",
+                ".wsh"
+              ],
+              "all": false
+            }
+          ]
+        ],
+        "filter_main_mshta": [
+          [
+            {
+              "field": "Image",
+              "op": "endswith",
+              "values": [
+                "\\mshta.exe"
+              ],
+              "all": false
+            },
+            {
+              "field": "TargetFilename",
+              "op": "endswith",
+              "values": [
+                ".hta"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "and",
+        "l": {
+          "t": "sel",
+          "name": "selection"
+        },
+        "r": {
+          "t": "not",
+          "e": {
+            "t": "of",
+            "quant": "one",
+            "pattern": "filter_main_*"
+          }
+        }
+      }
+    },
+    {
+      "id": "cd8b36ac-8e4a-4c2f-a402-a29b8fbd5bca",
+      "title": "Suspicious File Creation Activity From Fake Recycle.Bin Folder",
+      "author": "X__Junior (Nextron Systems)",
+      "level": "high",
+      "status": "test",
+      "description": "Detects file write event from/to a fake recycle bin folder that is often used as a staging directory for malware",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/windows/file/file_event/file_event_win_susp_recycle_bin_fake_exec.yml",
+      "on": "file_event",
+      "selections": {
+        "selection": [
+          [
+            {
+              "field": "Image",
+              "op": "contains",
+              "values": [
+                "RECYCLERS.BIN\\",
+                "RECYCLER.BIN\\"
+              ],
+              "all": false
+            }
+          ],
+          [
+            {
+              "field": "TargetFilename",
+              "op": "contains",
+              "values": [
+                "RECYCLERS.BIN\\",
+                "RECYCLER.BIN\\"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "sel",
+        "name": "selection"
+      }
+    },
+    {
+      "id": "979baf41-ca44-4540-9d0c-4fcef3b5a3a4",
+      "title": "Potential File Extension Spoofing Using Right-to-Left Override",
+      "author": "Jonathan Peters (Nextron Systems), Florian Roth (Nextron Systems), Swachchhanda Shrawan Poudel (Nextron Systems)",
+      "level": "high",
+      "status": "test",
+      "description": "Detects suspicious filenames that contain a right-to-left override character and a potentially spoofed file extensions.",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/windows/file/file_event/file_event_win_susp_right_to_left_override_extension_spoofing.yml",
+      "on": "file_event",
+      "selections": {
+        "selection_rtlo_unicode": [
+          [
+            {
+              "field": "TargetFilename",
+              "op": "contains",
+              "values": [
+                "\\u202e",
+                "[U+202E]",
+                "‮"
+              ],
+              "all": false
+            }
+          ]
+        ],
+        "selection_extensions": [
+          [
+            {
+              "field": "TargetFilename",
+              "op": "contains",
+              "values": [
+                "3pm.",
+                "4pm.",
+                "cod.",
+                "fdp.",
+                "ftr.",
+                "gepj.",
+                "gnp.",
+                "gpj.",
+                "ism.",
+                "lmth.",
+                "nls.",
+                "piz.",
+                "slx.",
+                "tdo.",
+                "vsc.",
+                "vwm.",
+                "xcod.",
+                "xslx.",
+                "xtpp."
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "of",
+        "quant": "all",
+        "pattern": "selection_*"
+      }
+    },
+    {
+      "id": "28208707-fe31-437f-9a7f-4b1108b94d2e",
+      "title": "Suspicious Startup Folder Persistence",
+      "author": "Nasreddine Bencherchali (Nextron Systems), Swachchhanda Shrawan Poudel (Nextron Systems)",
+      "level": "high",
+      "status": "test",
+      "description": "Detects the creation of potentially malicious script and executable files in Windows startup folders, which is a common persistence technique used by threat actors. These files (.ps1, .vbs, .js, .bat, etc.) are automatically executed when a user logs in, making the Startup folder an attractive target for attackers. This technique is frequently observed in malvertising campaigns and malware distrib",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/windows/file/file_event/file_event_win_susp_startup_folder_persistence.yml",
+      "on": "file_event",
+      "selections": {
+        "selection": [
+          [
+            {
+              "field": "TargetFilename",
+              "op": "contains",
+              "values": [
+                "\\Windows\\Start Menu\\Programs\\Startup\\"
+              ],
+              "all": false
+            },
+            {
+              "field": "TargetFilename",
+              "op": "endswith",
+              "values": [
+                ".bat",
+                ".cmd",
+                ".dll",
+                ".hta",
+                ".jar",
+                ".js",
+                ".jse",
+                ".msi",
+                ".ps1",
+                ".psd1",
+                ".psm1",
+                ".scr",
+                ".url",
+                ".vba",
+                ".vbe",
+                ".vbs",
+                ".wsf"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "sel",
+        "name": "selection"
+      }
+    },
+    {
+      "id": "5b40a734-99b6-4b98-a1d0-1cea51a08ab2",
+      "title": "Suspicious Interactive PowerShell as SYSTEM",
+      "author": "Florian Roth (Nextron Systems)",
+      "level": "high",
+      "status": "test",
+      "description": "Detects the creation of files that indicator an interactive use of PowerShell in the SYSTEM user context",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/windows/file/file_event/file_event_win_susp_system_interactive_powershell.yml",
+      "on": "file_event",
+      "selections": {
+        "selection": [
+          [
+            {
+              "field": "TargetFilename",
+              "op": "equals",
+              "values": [
+                "C:\\Windows\\System32\\config\\systemprofile\\AppData\\Roaming\\Microsoft\\Windows\\PowerShell\\PSReadLine\\ConsoleHost_history.txt",
+                "C:\\Windows\\System32\\config\\systemprofile\\AppData\\Local\\Microsoft\\Windows\\PowerShell\\StartupProfileData-Interactive"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "sel",
+        "name": "selection"
+      }
+    },
+    {
+      "id": "80e1f67a-4596-4351-98f5-a9c3efabac95",
+      "title": "Suspicious Scheduled Task Write to System32 Tasks",
+      "author": "Florian Roth (Nextron Systems)",
+      "level": "high",
+      "status": "test",
+      "description": "Detects the creation of tasks from processes executed from suspicious locations",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/windows/file/file_event/file_event_win_susp_task_write.yml",
+      "on": "file_event",
+      "selections": {
+        "selection": [
+          [
+            {
+              "field": "TargetFilename",
+              "op": "contains",
+              "values": [
+                "\\Windows\\System32\\Tasks"
+              ],
+              "all": false
+            },
+            {
+              "field": "Image",
+              "op": "contains",
+              "values": [
+                "\\AppData\\",
+                "C:\\PerfLogs",
+                "\\Windows\\System32\\config\\systemprofile"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "sel",
+        "name": "selection"
+      }
+    },
+    {
+      "id": "814ddeca-3d31-4265-8e07-8cc54fb44903",
+      "title": "LiveKD Kernel Memory Dump File Created",
+      "author": "Nasreddine Bencherchali (Nextron Systems)",
+      "level": "high",
+      "status": "test",
+      "description": "Detects the creation of a file that has the same name as the default LiveKD kernel memory dump.",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/windows/file/file_event/file_event_win_sysinternals_livekd_default_dump_name.yml",
+      "on": "file_event",
+      "selections": {
+        "selection": [
+          [
+            {
+              "field": "TargetFilename",
+              "op": "equals",
+              "values": [
+                "C:\\Windows\\livekd.dmp"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "sel",
+        "name": "selection"
+      }
+    },
+    {
+      "id": "059c5af9-5131-4d8d-92b2-de4ad6146712",
+      "title": "LiveKD Driver Creation By Uncommon Process",
+      "author": "Nasreddine Bencherchali (Nextron Systems)",
+      "level": "high",
+      "status": "test",
+      "description": "Detects the creation of the LiveKD driver by a process image other than \"livekd.exe\".",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/windows/file/file_event/file_event_win_sysinternals_livekd_driver_susp_creation.yml",
+      "on": "file_event",
+      "selections": {
+        "selection": [
+          [
+            {
+              "field": "TargetFilename",
+              "op": "equals",
+              "values": [
+                "C:\\Windows\\System32\\drivers\\LiveKdD.SYS"
+              ],
+              "all": false
+            }
+          ]
+        ],
+        "filter_main_legit_name": [
+          [
+            {
+              "field": "Image",
+              "op": "endswith",
+              "values": [
+                "\\livekd.exe",
+                "\\livek64.exe"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "and",
+        "l": {
+          "t": "sel",
+          "name": "selection"
+        },
+        "r": {
+          "t": "not",
+          "e": {
+            "t": "of",
+            "quant": "one",
+            "pattern": "filter_main_*"
+          }
+        }
+      }
+    },
+    {
+      "id": "de46c52b-0bf8-4936-a327-aace94f94ac6",
+      "title": "Process Explorer Driver Creation By Non-Sysinternals Binary",
+      "author": "Florian Roth (Nextron Systems)",
+      "level": "high",
+      "status": "test",
+      "description": "Detects creation of the Process Explorer drivers by processes other than Process Explorer (procexp) itself. Hack tools or malware may use the Process Explorer driver to elevate privileges, drops it to disk for a few moments, runs a service using that driver and removes it afterwards.",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/windows/file/file_event/file_event_win_sysinternals_procexp_driver_susp_creation.yml",
+      "on": "file_event",
+      "selections": {
+        "selection": [
+          [
+            {
+              "field": "TargetFilename",
+              "op": "contains",
+              "values": [
+                "\\PROCEXP"
+              ],
+              "all": false
+            },
+            {
+              "field": "TargetFilename",
+              "op": "endswith",
+              "values": [
+                ".sys"
+              ],
+              "all": false
+            }
+          ]
+        ],
+        "filter_main_process_explorer": [
+          [
+            {
+              "field": "Image",
+              "op": "endswith",
+              "values": [
+                "\\procexp.exe",
+                "\\procexp64.exe",
+                "\\procexp64a.exe"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "and",
+        "l": {
+          "t": "sel",
+          "name": "selection"
+        },
+        "r": {
+          "t": "not",
+          "e": {
+            "t": "of",
+            "quant": "one",
+            "pattern": "filter_main_*"
+          }
+        }
+      }
+    },
+    {
+      "id": "304afd73-55a5-4bb9-8c21-0b1fc84ea9e4",
+      "title": "PSEXEC Remote Execution File Artefact",
+      "author": "Nasreddine Bencherchali (Nextron Systems)",
+      "level": "high",
+      "status": "test",
+      "description": "Detects creation of the PSEXEC key file. Which is created anytime a PsExec command is executed. It gets written to the file system and will be recorded in the USN Journal on the target system",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/windows/file/file_event/file_event_win_sysinternals_psexec_service_key.yml",
+      "on": "file_event",
+      "selections": {
+        "selection": [
+          [
+            {
+              "field": "TargetFilename",
+              "op": "startswith",
+              "values": [
+                "C:\\Windows\\PSEXEC-"
+              ],
+              "all": false
+            },
+            {
+              "field": "TargetFilename",
+              "op": "endswith",
+              "values": [
+                ".key"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "sel",
+        "name": "selection"
+      }
+    },
+    {
+      "id": "07a99744-56ac-40d2-97b7-2095967b0e03",
+      "title": "Potential Privilege Escalation Attempt Via .Exe.Local Technique",
+      "author": "Nasreddine Bencherchali (Nextron Systems), Subhash P (@pbssubhash)",
+      "level": "high",
+      "status": "test",
+      "description": "Detects potential privilege escalation attempt via the creation of the \"*.Exe.Local\" folder inside the \"System32\" directory in order to sideload \"comctl32.dll\"",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/windows/file/file_event/file_event_win_system32_local_folder_privilege_escalation.yml",
+      "on": "file_event",
+      "selections": {
+        "selection": [
+          [
+            {
+              "field": "TargetFilename",
+              "op": "startswith",
+              "values": [
+                "C:\\Windows\\System32\\logonUI.exe.local",
+                "C:\\Windows\\System32\\werFault.exe.local",
+                "C:\\Windows\\System32\\consent.exe.local",
+                "C:\\Windows\\System32\\narrator.exe.local",
+                "C:\\Windows\\System32\\wermgr.exe.local"
+              ],
+              "all": false
+            },
+            {
+              "field": "TargetFilename",
+              "op": "endswith",
+              "values": [
+                "\\comctl32.dll"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "sel",
+        "name": "selection"
+      }
+    },
+    {
+      "id": "69ca12af-119d-44ed-b50f-a47af0ebc364",
+      "title": "LSASS Process Memory Dump Creation Via Taskmgr.EXE",
+      "author": "Swachchhanda Shrawan Poudel",
+      "level": "high",
+      "status": "test",
+      "description": "Detects the creation of an \"lsass.dmp\" file by the taskmgr process. This indicates a manual dumping of the LSASS.exe process memory using Windows Task Manager.",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/windows/file/file_event/file_event_win_taskmgr_lsass_dump.yml",
+      "on": "file_event",
+      "selections": {
+        "selection": [
+          [
+            {
+              "field": "Image",
+              "op": "endswith",
+              "values": [
+                ":\\Windows\\system32\\taskmgr.exe",
+                ":\\Windows\\SysWOW64\\taskmgr.exe"
+              ],
+              "all": false
+            },
+            {
+              "field": "TargetFilename",
+              "op": "contains",
+              "values": [
+                "\\AppData\\Local\\Temp\\",
+                "\\lsass",
+                ".DMP"
+              ],
+              "all": true
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "sel",
+        "name": "selection"
+      }
+    },
+    {
+      "id": "52753ea4-b3a0-4365-910d-36cff487b789",
+      "title": "Hijack Legit RDP Session to Move Laterally",
+      "author": "Samir Bousseaden",
+      "level": "high",
+      "status": "test",
+      "description": "Detects the usage of tsclient share to place a backdoor on the RDP source machine's startup folder",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/windows/file/file_event/file_event_win_tsclient_filewrite_startup.yml",
+      "on": "file_event",
+      "selections": {
+        "selection": [
+          [
+            {
+              "field": "Image",
+              "op": "endswith",
+              "values": [
+                "\\mstsc.exe"
+              ],
+              "all": false
+            },
+            {
+              "field": "TargetFilename",
+              "op": "contains",
+              "values": [
+                "\\Microsoft\\Windows\\Start Menu\\Programs\\Startup\\"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "sel",
+        "name": "selection"
+      }
+    },
+    {
+      "id": "62ed5b55-f991-406a-85d9-e8e8fdf18789",
+      "title": "UAC Bypass Using Consent and Comctl32 - File",
+      "author": "Christian Burkard (Nextron Systems)",
+      "level": "high",
+      "status": "test",
+      "description": "Detects the pattern of UAC Bypass using consent.exe and comctl32.dll (UACMe 22)",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/windows/file/file_event/file_event_win_uac_bypass_consent_comctl32.yml",
+      "on": "file_event",
+      "selections": {
+        "selection": [
+          [
+            {
+              "field": "TargetFilename",
+              "op": "startswith",
+              "values": [
+                "C:\\Windows\\System32\\consent.exe.@"
+              ],
+              "all": false
+            },
+            {
+              "field": "TargetFilename",
+              "op": "endswith",
+              "values": [
+                "\\comctl32.dll"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "sel",
+        "name": "selection"
+      }
+    },
+    {
+      "id": "93a19907-d4f9-4deb-9f91-aac4692776a6",
+      "title": "UAC Bypass Using .NET Code Profiler on MMC",
+      "author": "Christian Burkard (Nextron Systems)",
+      "level": "high",
+      "status": "test",
+      "description": "Detects the pattern of UAC Bypass using .NET Code Profiler and mmc.exe DLL hijacking (UACMe 39)",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/windows/file/file_event/file_event_win_uac_bypass_dotnet_profiler.yml",
+      "on": "file_event",
+      "selections": {
+        "selection": [
+          [
+            {
+              "field": "TargetFilename",
+              "op": "startswith",
+              "values": [
+                "C:\\Users\\"
+              ],
+              "all": false
+            },
+            {
+              "field": "TargetFilename",
+              "op": "endswith",
+              "values": [
+                "\\AppData\\Local\\Temp\\pe386.dll"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "sel",
+        "name": "selection"
+      }
+    },
+    {
+      "id": "63e4f530-65dc-49cc-8f80-ccfa95c69d43",
+      "title": "UAC Bypass Using EventVwr",
+      "author": "Antonio Cocomazzi (idea), Florian Roth (Nextron Systems)",
+      "level": "high",
+      "status": "test",
+      "description": "Detects the pattern of a UAC bypass using Windows Event Viewer",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/windows/file/file_event/file_event_win_uac_bypass_eventvwr.yml",
+      "on": "file_event",
+      "selections": {
+        "selection": [
+          [
+            {
+              "field": "TargetFilename",
+              "op": "endswith",
+              "values": [
+                "\\Microsoft\\Event Viewer\\RecentViews",
+                "\\Microsoft\\EventV~1\\RecentViews"
+              ],
+              "all": false
+            }
+          ]
+        ],
+        "filter": [
+          [
+            {
+              "field": "Image",
+              "op": "startswith",
+              "values": [
+                "C:\\Windows\\System32\\",
+                "C:\\Windows\\SysWOW64\\"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "and",
+        "l": {
+          "t": "sel",
+          "name": "selection"
+        },
+        "r": {
+          "t": "not",
+          "e": {
+            "t": "sel",
+            "name": "filter"
+          }
+        }
+      }
+    },
+    {
+      "id": "48ea844d-19b1-4642-944e-fe39c2cc1fec",
+      "title": "UAC Bypass Using IDiagnostic Profile - File",
+      "author": "Nasreddine Bencherchali (Nextron Systems)",
+      "level": "high",
+      "status": "test",
+      "description": "Detects the creation of a file by \"dllhost.exe\" in System32 directory part of \"IDiagnosticProfileUAC\" UAC bypass technique",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/windows/file/file_event/file_event_win_uac_bypass_idiagnostic_profile.yml",
+      "on": "file_event",
+      "selections": {
+        "selection": [
+          [
+            {
+              "field": "Image",
+              "op": "endswith",
+              "values": [
+                "\\DllHost.exe"
+              ],
+              "all": false
+            },
+            {
+              "field": "TargetFilename",
+              "op": "startswith",
+              "values": [
+                "C:\\Windows\\System32\\"
+              ],
+              "all": false
+            },
+            {
+              "field": "TargetFilename",
+              "op": "endswith",
+              "values": [
+                ".dll"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "sel",
+        "name": "selection"
+      }
+    },
+    {
+      "id": "bdd8157d-8e85-4397-bb82-f06cc9c71dbb",
+      "title": "UAC Bypass Using IEInstal - File",
+      "author": "Christian Burkard (Nextron Systems)",
+      "level": "high",
+      "status": "test",
+      "description": "Detects the pattern of UAC Bypass using IEInstal.exe (UACMe 64)",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/windows/file/file_event/file_event_win_uac_bypass_ieinstal.yml",
+      "on": "file_event",
+      "selections": {
+        "selection": [
+          [
+            {
+              "field": "Image",
+              "op": "equals",
+              "values": [
+                "C:\\Program Files\\Internet Explorer\\IEInstal.exe"
+              ],
+              "all": false
+            },
+            {
+              "field": "TargetFilename",
+              "op": "startswith",
+              "values": [
+                "C:\\Users\\"
+              ],
+              "all": false
+            },
+            {
+              "field": "TargetFilename",
+              "op": "contains",
+              "values": [
+                "\\AppData\\Local\\Temp\\"
+              ],
+              "all": false
+            },
+            {
+              "field": "TargetFilename",
+              "op": "endswith",
+              "values": [
+                "consent.exe"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "sel",
+        "name": "selection"
+      }
+    },
+    {
+      "id": "41bb431f-56d8-4691-bb56-ed34e390906f",
+      "title": "UAC Bypass Using MSConfig Token Modification - File",
+      "author": "Christian Burkard (Nextron Systems)",
+      "level": "high",
+      "status": "test",
+      "description": "Detects the pattern of UAC Bypass using a msconfig GUI hack (UACMe 55)",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/windows/file/file_event/file_event_win_uac_bypass_msconfig_gui.yml",
+      "on": "file_event",
+      "selections": {
+        "selection": [
+          [
+            {
+              "field": "TargetFilename",
+              "op": "startswith",
+              "values": [
+                "C:\\Users\\"
+              ],
+              "all": false
+            },
+            {
+              "field": "TargetFilename",
+              "op": "endswith",
+              "values": [
+                "\\AppData\\Local\\Temp\\pkgmgr.exe"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "sel",
+        "name": "selection"
+      }
+    },
+    {
+      "id": "7fff6773-2baa-46de-a24a-b6eec1aba2d1",
+      "title": "UAC Bypass Using NTFS Reparse Point - File",
+      "author": "Christian Burkard (Nextron Systems)",
+      "level": "high",
+      "status": "test",
+      "description": "Detects the pattern of UAC Bypass using NTFS reparse point and wusa.exe DLL hijacking (UACMe 36)",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/windows/file/file_event/file_event_win_uac_bypass_ntfs_reparse_point.yml",
+      "on": "file_event",
+      "selections": {
+        "selection": [
+          [
+            {
+              "field": "TargetFilename",
+              "op": "startswith",
+              "values": [
+                "C:\\Users\\"
+              ],
+              "all": false
+            },
+            {
+              "field": "TargetFilename",
+              "op": "endswith",
+              "values": [
+                "\\AppData\\Local\\Temp\\api-ms-win-core-kernel32-legacy-l1.DLL"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "sel",
+        "name": "selection"
+      }
+    },
+    {
+      "id": "155dbf56-e0a4-4dd0-8905-8a98705045e8",
+      "title": "UAC Bypass Abusing Winsat Path Parsing - File",
+      "author": "Christian Burkard (Nextron Systems)",
+      "level": "high",
+      "status": "test",
+      "description": "Detects the pattern of UAC Bypass using a path parsing issue in winsat.exe (UACMe 52)",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/windows/file/file_event/file_event_win_uac_bypass_winsat.yml",
+      "on": "file_event",
+      "selections": {
+        "selection": [
+          [
+            {
+              "field": "TargetFilename",
+              "op": "startswith",
+              "values": [
+                "C:\\Users\\"
+              ],
+              "all": false
+            },
+            {
+              "field": "TargetFilename",
+              "op": "endswith",
+              "values": [
+                "\\AppData\\Local\\Temp\\system32\\winsat.exe",
+                "\\AppData\\Local\\Temp\\system32\\winmm.dll"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "sel",
+        "name": "selection"
+      }
+    },
+    {
+      "id": "68578b43-65df-4f81-9a9b-92f32711a951",
+      "title": "UAC Bypass Using Windows Media Player - File",
+      "author": "Christian Burkard (Nextron Systems)",
+      "level": "high",
+      "status": "test",
+      "description": "Detects the pattern of UAC Bypass using Windows Media Player osksupport.dll (UACMe 32)",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/windows/file/file_event/file_event_win_uac_bypass_wmp.yml",
+      "on": "file_event",
+      "selections": {
+        "selection1": [
+          [
+            {
+              "field": "TargetFilename",
+              "op": "startswith",
+              "values": [
+                "C:\\Users\\"
+              ],
+              "all": false
+            },
+            {
+              "field": "TargetFilename",
+              "op": "endswith",
+              "values": [
+                "\\AppData\\Local\\Temp\\OskSupport.dll"
+              ],
+              "all": false
+            }
+          ]
+        ],
+        "selection2": [
+          [
+            {
+              "field": "Image",
+              "op": "equals",
+              "values": [
+                "C:\\Windows\\system32\\DllHost.exe"
+              ],
+              "all": false
+            },
+            {
+              "field": "TargetFilename",
+              "op": "equals",
+              "values": [
+                "C:\\Program Files\\Windows Media Player\\osk.exe"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "of",
+        "quant": "one",
+        "pattern": "selection*"
+      }
+    },
+    {
+      "id": "d102b8f5-61dc-4e68-bd83-9a3187c67377",
+      "title": "Renamed VsCode Code Tunnel Execution - File Indicator",
+      "author": "Nasreddine Bencherchali (Nextron Systems)",
+      "level": "high",
+      "status": "test",
+      "description": "Detects the creation of a file with the name \"code_tunnel.json\" which indicate execution and usage of VsCode tunneling utility by an \"Image\" or \"Process\" other than VsCode.",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/windows/file/file_event/file_event_win_vscode_tunnel_renamed_execution.yml",
+      "on": "file_event",
+      "selections": {
+        "selection": [
+          [
+            {
+              "field": "TargetFilename",
+              "op": "endswith",
+              "values": [
+                "\\code_tunnel.json"
+              ],
+              "all": false
+            }
+          ]
+        ],
+        "filter_main_legit_name": [
+          [
+            {
+              "field": "Image",
+              "op": "endswith",
+              "values": [
+                "\\code-tunnel.exe",
+                "\\code.exe"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "and",
+        "l": {
+          "t": "sel",
+          "name": "selection"
+        },
+        "r": {
+          "t": "not",
+          "e": {
+            "t": "of",
+            "quant": "one",
+            "pattern": "filter_main_*"
+          }
+        }
+      }
+    },
+    {
+      "id": "33f41cdd-35ac-4ba8-814b-c6a4244a1ad4",
+      "title": "WMI Persistence - Script Event Consumer File Write",
+      "author": "Thomas Patzke",
+      "level": "high",
+      "status": "test",
+      "description": "Detects file writes of WMI script event consumer",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/windows/file/file_event/file_event_win_wmi_persistence_script_event_consumer_write.yml",
+      "on": "file_event",
+      "selections": {
+        "selection": [
+          [
+            {
+              "field": "Image",
+              "op": "equals",
+              "values": [
+                "C:\\WINDOWS\\system32\\wbem\\scrcons.exe"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "sel",
+        "name": "selection"
+      }
+    },
+    {
+      "id": "8d5aca11-22b3-4f22-b7ba-90e60533e1fb",
+      "title": "Wmiexec Default Output File",
+      "author": "Nasreddine Bencherchali (Nextron Systems)",
+      "level": "critical",
+      "status": "test",
+      "description": "Detects the creation of the default output filename used by the wmiexec tool",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/windows/file/file_event/file_event_win_wmiexec_default_filename.yml",
+      "on": "file_event",
+      "selections": {
+        "selection": [
+          [
+            {
+              "field": "TargetFilename",
+              "op": "re",
+              "values": [
+                "\\\\Windows\\\\__1\\d{9}\\.\\d{1,7}$"
+              ],
+              "all": false,
+              "flags": [
+                ""
+              ]
+            }
+          ],
+          [
+            {
+              "field": "TargetFilename",
+              "op": "re",
+              "values": [
+                "C:\\\\__1\\d{9}\\.\\d{1,7}$"
+              ],
+              "all": false,
+              "flags": [
+                ""
+              ]
+            }
+          ],
+          [
+            {
+              "field": "TargetFilename",
+              "op": "re",
+              "values": [
+                "D:\\\\__1\\d{9}\\.\\d{1,7}$"
+              ],
+              "all": false,
+              "flags": [
+                ""
+              ]
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "sel",
+        "name": "selection"
+      }
+    },
+    {
+      "id": "614a7e17-5643-4d89-b6fe-f9df1a79641c",
+      "title": "Wmiprvse Wbemcomn DLL Hijack - File",
+      "author": "Roberto Rodriguez (Cyb3rWard0g), OTR (Open Threat Research)",
+      "level": "critical",
+      "status": "test",
+      "description": "Detects a threat actor creating a file named `wbemcomn.dll` in the `C:\\Windows\\System32\\wbem\\` directory over the network and loading it for a WMI DLL Hijack scenario.",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/windows/file/file_event/file_event_win_wmiprvse_wbemcomn_dll_hijack.yml",
+      "on": "file_event",
+      "selections": {
+        "selection": [
+          [
+            {
+              "field": "Image",
+              "op": "equals",
+              "values": [
+                "System"
+              ],
+              "all": false
+            },
+            {
+              "field": "TargetFilename",
+              "op": "endswith",
+              "values": [
+                "\\wbem\\wbemcomn.dll"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "sel",
+        "name": "selection"
+      }
+    },
+    {
+      "id": "e94b9ddc-eec5-4bb8-8a58-b9dc5f4e185f",
+      "title": "UEFI Persistence Via Wpbbin - FileCreation",
+      "author": "Nasreddine Bencherchali (Nextron Systems)",
+      "level": "high",
+      "status": "test",
+      "description": "Detects creation of a file named \"wpbbin\" in the \"%systemroot%\\system32\\\" directory. Which could be indicative of UEFI based persistence method",
+      "link": "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/windows/file/file_event/file_event_win_wpbbin_persistence.yml",
+      "on": "file_event",
+      "selections": {
+        "selection": [
+          [
+            {
+              "field": "TargetFilename",
+              "op": "equals",
+              "values": [
+                "C:\\Windows\\System32\\wpbbin.exe"
+              ],
+              "all": false
+            }
+          ]
+        ]
+      },
+      "condition": {
+        "t": "sel",
+        "name": "selection"
+      }
+    }
+  ]
+}

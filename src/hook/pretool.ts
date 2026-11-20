@@ -6,7 +6,7 @@ import type { GuardDecision, GuardVerdict, ToolCall } from '../host/types.js';
 import { scanBashCommand } from './bash-rules.js';
 import { findProtectedWrite } from './shell-paths.js';
 import { checkSecretsWithRulesets, logRulesetWarnings } from '../rulesets/gate.js';
-import { checkCommandsWithRulesets } from '../rulesets/command-gate.js';
+import { checkCommandsWithRulesets, checkFileWriteWithRulesets } from '../rulesets/command-gate.js';
 
 /**
  * The gates as an interceptor. A host that supports tool hooks (Claude Code's PreToolUse) calls
@@ -83,6 +83,7 @@ export async function evaluateToolCall(call: ToolCall, projectDir: string, cwd: 
         reasons.push(err.code === 'OUTSIDE' ? 'the path is outside the project directory' : `the path is refused (${err.message})`);
       }
     }
+    if (call.path) for (const r of await checkFileWriteWithRulesets(call.path, cwd)) add(r);
     for (const text of call.texts) {
       add(checkSecrets(text));
       for (const r of await checkSecretsWithRulesets(text)) add(r);

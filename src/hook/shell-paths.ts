@@ -135,7 +135,7 @@ function toolName(word: string): string {
 }
 
 /** Targets of redirections in a list of words: `> f`, `>> f`, `>f`, `2>f`, `&>f`. */
-function redirectTargets(ws: string[]): string[] {
+export function redirectTargets(ws: string[]): string[] {
   const targets: string[] = [];
   for (let i = 0; i < ws.length; i++) {
     const m = ws[i].match(/^(?:\d|&)?>>?\|?(.*)$/);

@@ -303,7 +303,25 @@ Az átállásról mérés dönt, nem a készlet jó híre:
 
 **Bekötés.** Ugyanaz, mint a többi parancs-készleté: `command-rulesets` kapu, **csak figyelmeztet**, a `.colony/ruleset-warnings.jsonl` rögzíti. A blokkolás feltétele változatlan.
 
-**Hátra van.** A fájl-szabályok (`file_event`, más eseménytípus); a `reg import` és a szkriptfájlok tartalma.
+**Hátra van.** A `reg import` és a szkriptfájlok tartalma. (A fájl-szabályok a 6/j-ben.)
+
+## 6/j. A fájl-szabályok (2026-11-20)
+
+**Átvett anyag.** Ugyanaz a csomag (`sigma_core.zip` `r2026-07-01`, `sha256:45ccbd62…`): a `rules/windows/file` mappa **91** fájlja (87 `file_event`, 3 `file_delete`, 1 `file_change`) bájtra azonosan a `rulesets/sigma-file/` alatt, külön készletként (DRL 1.1, saját `PROVENANCE.json` és `NOTICE`). A Linux `file_event` mappa (2 szabály) nincs benne: ahhoz nincs Linux-oldali eseményépítő.
+
+**Átalakítás.** 91-ből **86 jött át**, 5 kimaradt indokkal (`User`, `CommandLine` vagy `ParentImage` kell hozzá, ami egy fájlírásnál nincs). Egy fájl-esemény mezői közül kettőt adunk: `TargetFilename` és `Image`. Minden szabály megjegyzi a saját eseménytípusát (`on`: `file_event`, `file_delete`, `file_change`); egy létrehozás-szabály törlésre nem illik. A `ruleset.json`-ban `category: "file"`. A matcher nem változott: az `on` ellenőrzés a rendszerleíró-szabályoké volt.
+
+**Esemény** (`src/rulesets/file-events.ts`). Amit a sor láthatóan fájlba ír: átirányítás (`>`, `>>`), `Out-File`, `Set-Content`, `Add-Content`, `New-Item`, `Copy-Item`/`Move-Item`, `copy`, `move`, `xcopy`, `robocopy`, `ren`, `expand`, `tee`, letöltés `-OutFile` vagy `-o` kapcsolóval (`Invoke-WebRequest`, `curl`, `wget`), `certutil -urlcache`/`-decode`, `bitsadmin /transfer`; törlés (`del`, `erase`, `rm`, `Remove-Item`) `file_delete` eseményként; a `cmd /c` és `powershell -c` utáni parancs is. A Write/Edit eszköz egy fájlja egy `file_event`, **`Image` nélkül** (a gazdaprogramot a szabályok nem ismerik). **Feltevések:** a relatív útvonal a munkakönyvtárból indul; a `%TEMP%`, `$env:APPDATA` és társai egy `user` nevű felhasználó mappáivá bővülnek (a valódi profilt az őr nem ismeri); az `Image` átirányításnál `cmd.exe`, parancsmagnál `powershell.exe`; a `file_change` eseményt (fájlidő-változás) az őr sosem építi, így az ilyen szabály itt nem egyezik. **Nem látja:** az írt adatot, a szkriptfájlokat, a futáskor épülő útvonalakat. Egy hívásból legfeljebb 100 esemény.
+
+**Mérés.**
+
+- 26 szokásos parancs (átirányítás a munkamappába, `Set-Content`, `copy`, `xcopy`, `del`, `Remove-Item`, `curl -o`, írás a `%TEMP%`-be, ...): **0 találat** (20-ból lett fájl-esemény). 10 szokásos Write-útvonalon (`src/a.ts`, `package.json`, `.github/workflows/ci.yml`, `a.ps1`, `run.bat`, ...) **0 találat**. A repó saját parancsain nincs új találat.
+- 18 támadó-szerű parancs (írás a `C:\Users\Public`, `C:\PerfLogs` mappába, `certutil` letöltés és dekódolás, SAM másolása, `.hta` írása, ...): **6-ot** jelzett. A 12 hiány (Startup-mappa, `bitsadmin`, `Invoke-WebRequest`, webshell az `inetpub`-ba, `ntds.dit`) nagyrészt azért marad el, mert a szabály egy meghatározott írót vár (`Image`: Office, `w3wp.exe`, ...), mi pedig `cmd.exe`-t vagy `powershell.exe`-t adunk; szabályonként nem ellenőriztem.
+- Hostile bemenet: 50 000 karakteres útvonal, 1000 összefűzött átirányítás, ismétlődő útvonal mind a 86 szabályon **~0,4 s** alatt lefutott.
+
+**Bekötés.** A `command-rulesets` kapu, **csak figyelmeztet**, a `.colony/ruleset-warnings.jsonl` rögzíti. Új: a pretool kapu a Write/Edit eszköz útvonalát is átadja a fájl-szabályoknak (`checkFileWriteWithRulesets`); az írt szöveg a titokszabályoké marad. A blokkolás feltétele változatlan.
+
+**Hátra van.** A fájl-szabályok Linux oldala (2 szabály), a `file_change`, az írt tartalom és a szkriptfájlok.
 
 ## 7. Szeletek
 
