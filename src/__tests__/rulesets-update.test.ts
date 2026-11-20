@@ -1,4 +1,4 @@
-import { test, before, after, beforeEach } from 'node:test';
+import { test, before, after, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { spawn } from 'node:child_process';
@@ -225,9 +225,21 @@ beforeEach(async () => {
   await freshUpstream();
 });
 
-async function workCopy(): Promise<string> {
+/** The folders that were made for the case that is running; they are removed when it ends, not at the end of the file (audit D01). */
+let copies: string[] = [];
+afterEach(async () => {
+  await Promise.all(copies.map((d) => fs.rm(d, { recursive: true, force: true })));
+  copies = [];
+});
+
+/** A working copy of sources.json and the NAMED sets only: the one under update and the controls the case really looks at. */
+async function workCopy(...sets: string[]): Promise<string> {
+  assert.ok(sets.length > 0, 'a case names the sets it needs');
   const dest = path.join(root, `rulesets${n++}`);
-  await fs.cp(vendored, dest, { recursive: true });
+  copies.push(dest);
+  await fs.mkdir(dest);
+  await fs.copyFile(path.join(vendored, 'sources.json'), path.join(dest, 'sources.json'));
+  for (const name of sets) await fs.cp(path.join(vendored, name), path.join(dest, name), { recursive: true });
   return dest;
 }
 
@@ -256,7 +268,7 @@ function run(rulesetsDir: string, args: string[], env: Record<string, string | u
 }
 
 test('nothing is fetched or changed without --yes, and a dry run only prints the plan', async () => {
-  const dir = await workCopy();
+  const dir = await workCopy('gitleaks');
   const before = await snapshot(dir);
   const noYes = await run(dir, ['--set', 'gitleaks', '--tag', 'v9.9.9']);
   assert.equal(noYes.code, 2);
@@ -272,7 +284,7 @@ test('nothing is fetched or changed without --yes, and a dry run only prints the
 });
 
 test('an update downloads the tag, proves the files, converts, checks the result, and says what changed', async () => {
-  const dir = await workCopy();
+  const dir = await workCopy('gitleaks');
   const release = await gitleaksRelease();
   upstream['gitleaks/gitleaks'].files[gitleaksTomlPath] = release;
   const before = await loadRuleset(path.join(dir, 'gitleaks'));
@@ -325,7 +337,7 @@ test('a tag that moves while the release is downloaded is refused, and the set a
 
 test('a leftover lock stops an update before anything is changed; a failed update leaves no staging folder', async () => {
   await freshUpstream();
-  const dir = await workCopy();
+  const dir = await workCopy('gitleaks');
   await fs.mkdir(path.join(dir, '.update.lock'));
   const before = await snapshot(dir);
   const r = await run(dir, update);
@@ -340,7 +352,7 @@ test('a leftover lock stops an update before anything is changed; a failed updat
 });
 
 test('a set with several files (presidio) updates the same way; identical content changes no rule', async () => {
-  const dir = await workCopy();
+  const dir = await workCopy('presidio');
   const r = await run(dir, ['--set', 'presidio', '--tag', 'v9.9.9', '--yes']);
   assert.equal(r.code, 0, r.stderr);
   const out = JSON.parse(r.stdout);
@@ -352,7 +364,7 @@ test('a set with several files (presidio) updates the same way; identical conten
 });
 
 test('a changed license text is reported loudly', async () => {
-  const dir = await workCopy();
+  const dir = await workCopy('gitleaks');
   upstream['gitleaks/gitleaks'].files['LICENSE'] = Buffer.from('MIT License\n\nCopyright (c) someone else\n');
   const r = await run(dir, ['--set', 'gitleaks', '--tag', 'v9.9.9', '--yes']);
   assert.equal(r.code, 0, r.stderr);
@@ -364,7 +376,8 @@ test('a changed license text is reported loudly', async () => {
 async function refused(args: string[], expect: RegExp, setup?: () => void, code = 1): Promise<string> {
   await freshUpstream();
   requests = [];
-  const dir = await workCopy();
+  const set = args[args.indexOf('--set') + 1];
+  const dir = await workCopy(set);
   const before = await snapshot(dir);
   setup?.();
   const r = await run(dir, args);
@@ -409,7 +422,7 @@ test('when the converter cannot read the new release, the vendored rule set was 
 const updateSigma = ['--set', 'sigma', '--tag', SIGMA_TAG, '--yes'];
 
 test('an archive set: the plan names the release and the asset, and a dry run fetches nothing', async () => {
-  const dir = await workCopy();
+  const dir = await workCopy('sigma');
   const dry = await run(dir, ['--set', 'sigma', '--tag', SIGMA_TAG, '--dry-run']);
   assert.equal(dry.code, 0, dry.stderr);
   const plan = JSON.parse(dry.stdout).plan;
@@ -420,7 +433,7 @@ test('an archive set: the plan names the release and the asset, and a dry run fe
 });
 
 test('an archive set is updated: the asset is proved by its digest, converted, checked, and the changes are named by title', async () => {
-  const dir = await workCopy();
+  const dir = await workCopy('sigma');
   const before = await loadRuleset(path.join(dir, 'sigma'));
   const r = await run(dir, updateSigma);
   assert.equal(r.code, 0, r.stderr);
@@ -461,7 +474,7 @@ test('an archive set is updated: the asset is proved by its digest, converted, c
 });
 
 test('the Windows set is updated from the same package: its folder, its platform, its own name', async () => {
-  const dir = await workCopy();
+  const dir = await workCopy('sigma-windows', 'sigma');
   const r = await run(dir, ['--set', 'sigma-windows', '--tag', SIGMA_TAG, '--yes']);
   assert.equal(r.code, 0, r.stderr);
   const out = JSON.parse(r.stdout);
@@ -478,7 +491,7 @@ test('the Windows set is updated from the same package: its folder, its platform
 });
 
 test('the PowerShell script set is updated from the same package, with its category', async () => {
-  const dir = await workCopy();
+  const dir = await workCopy('sigma-powershell', 'sigma-windows');
   const r = await run(dir, ['--set', 'sigma-powershell', '--tag', SIGMA_TAG, '--yes']);
   assert.equal(r.code, 0, r.stderr);
   const out = JSON.parse(r.stdout);
@@ -494,7 +507,7 @@ test('the PowerShell script set is updated from the same package, with its categ
 });
 
 test('the registry set is updated from the same package, with its category and the kind of event of each rule', async () => {
-  const dir = await workCopy();
+  const dir = await workCopy('sigma-registry');
   const r = await run(dir, ['--set', 'sigma-registry', '--tag', SIGMA_TAG, '--yes']);
   assert.equal(r.code, 0, r.stderr);
   const out = JSON.parse(r.stdout);
@@ -507,7 +520,7 @@ test('the registry set is updated from the same package, with its category and t
 });
 
 test('the file set is updated from the same package, with its category and the kind of event of each rule', async () => {
-  const dir = await workCopy();
+  const dir = await workCopy('sigma-file');
   const r = await run(dir, ['--set', 'sigma-file', '--tag', SIGMA_TAG, '--yes']);
   assert.equal(r.code, 0, r.stderr);
   const out = JSON.parse(r.stdout);
@@ -560,7 +573,7 @@ test('when the package holds no rules of the folder, or the converter cannot rea
 });
 
 test('bad names, an unknown set, a non-loopback API base and a path that leaves the folder are refused before anything happens', async () => {
-  const dir = await workCopy();
+  const dir = await workCopy('gitleaks');
   assert.equal((await run(dir, ['--set', 'nope', '--tag', 'v1', '--yes'])).code, 2);
   assert.equal((await run(dir, ['--set', 'gitleaks', '--tag', '../evil', '--yes'])).code, 2);
   assert.equal((await run(dir, ['--set', '../gitleaks', '--tag', 'v1', '--yes'])).code, 2);

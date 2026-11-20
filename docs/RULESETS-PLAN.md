@@ -100,7 +100,7 @@ Az átállásról mérés dönt, nem a készlet jó híre:
 - **Egy titok, két szabály:** ha egy szolgáltatói és egy általános szabály ugyanazt a helyet jelzi, az egy lehetséges titok.
 - **Napló a számoláshoz:** minden figyelmeztetés a `.colony/ruleset-warnings.jsonl` fájlba kerül (idő, eszköz, szabályok, darabszám; nincs érték, és ha nincs `.colony` mappa, a hook nem hoz létre). Összesítés: `node scripts/rulesets-measure.mjs --log .colony/ruleset-warnings.jsonl`. Ebből derül ki, mely szabályok adnak hamis pozitívot, mielőtt bármi blokkolna rajtuk.
 - **Hibás készlet:** ha egy készlet nem tölti be a hash-ellenőrzést, **minden hívásnál** figyelmeztetés jön róla, és a saját minták tovább védenek.
-- **Korlát:** a hook hívásonként legfeljebb 200 000 karaktert vizsgál egy szövegből, legfeljebb 1,5 másodpercig (egy-két átalakított szabály hosszú, betű-számjegy sorozaton ~60 µs/karakter: egy 200 KB-os kellemetlen szöveg ~7 másodperc lett volna). A keresés 16 384 karakteres, 4096-tal átfedő ablakokban fut, az időkeretet az ablakok között ellenőrzi, és ha lejár, a figyelmeztetés kimondja, hogy a szöveget csak részben vizsgálta. A találat jelzi, ha csonkolt. A betöltés hívásonként kb. 25 ms. A hook stderr-jét a host nem feltétlenül mutatja meg a modellnek vagy neked: ezért van a napló.
+- **Korlát:** a hook hívásonként legfeljebb 200 000 karaktert vizsgál egy szövegből, legfeljebb 1,5 másodpercig (a teljes gitleaks-készlet egy 20 000 karakteres, betű-számjegy sorozaton ~1,5 másodperc, vagyis ~75 µs/karakter, egy 200 KB-os kellemetlen szöveg ablakolás és időkeret nélkül ~15 másodperc lenne; a korábban itt közölt „~60 µs/karakter, ~7 másodperc" számot a mai mérés nem ismételte meg, a mérés mintáját nem őriztük meg. Mérés: Windows 11, i7-8565U, Node 24.13.1, 2026-11-20, két futás; a legnagyobb egyetlen szabály 20 000 karakteren ~225 ms). A keresés 16 384 karakteres, 4096-tal átfedő ablakokban fut, az időkeretet az ablakok között ellenőrzi, és ha lejár, a figyelmeztetés kimondja, hogy a szöveget csak részben vizsgálta. A találat jelzi, ha csonkolt. A betöltés hívásonként kb. 25 ms. A hook stderr-jét a host nem feltétlenül mutatja meg a modellnek vagy neked: ezért van a napló.
 - **A blokkolás feltétele** (előre rögzítve, hogy a mérés után ne alakuljon az eredményhez): a napló legalább két hétnyi használatot fedjen, a szabályonkénti hamis pozitívokat átnézzük, és csak azok a szabályok kapcsolnak blokkolásra, amelyeknek a fejlesztő által átnézett mintán nincs hamis pozitívjuk. Az átállást külön jóváhagyás nyitja meg.
 
 ## 6/c. A presidio-szelet (2026-11-19)
@@ -128,7 +128,7 @@ Az átállásról mérés dönt, nem a készlet jó híre:
 
 **A repó saját fájljain** (153 fájl): a készlet 62 találatot adott, ebből 46-ot a saját minták is megtalálnak. A maradék 16 majdnem mind a most írt teszt kitalált példája. Két valódi, új találat van: a `::1` (IPv6 loopback) a `scripts/lib/groq.mjs` és a `scripts/radar-fetch.mjs` egy-egy sorában. A loopback nem személyes adat: ezt a bekötésnél kezelni kell (például a `::1` és a `127.0.0.1` kivétele), különben a kitakarás a kódban talált loopback-címet is eltüntetné.
 
-**Sebesség:** mind a 83 regex lefut 20 000 karakteres, ismétlődő és kellemetlen bemeneteken 1,5 másodpercen belül (a teszt őrzi).
+**Sebesség.** A teszt egysége: **egy szabály egy bemeneten** (9 kellemetlen, 20 000 karakteres bemenet), küszöbe 1500 ms; ez egy katasztrofális visszalépést fog meg, a sebességet nem méri. Mért (Windows 11, i7-8565U, Node 24.13.1, 2026-11-20, két futás): egy szabály egy bemeneten legfeljebb 1 ms, a teljes 83 szabályos készlet egy bemeneten legfeljebb 6 ms, vagyis a tényleges érték a küszöb ezredrésze.
 
 **Bekötés előtt** a `redactText` a saját mintákat használta (a bekötés a 6/d szakaszban). A bekötés után a kitakarás IPv6-ot, MAC-et, 13 és 15 jegyű kártyát és kisbetűs IBAN-t is eltüntet, ami a kimenetet megváltoztatja (több redaktálás, nem kevesebb), ezért külön jóváhagyás és a loopback-kivétel kell hozzá.
 
@@ -170,7 +170,7 @@ Az átállásról mérés dönt, nem a készlet jó híre:
 
 **Amit ebből nem szabad kiolvasni:** hogy a gitleaks mindent megtalál. A mérés a mi példáinkra és a mi fájljainkra vonatkozik. A szavas (alacsony entrópiájú) értékadásokat a gitleaks szándékosan nem jelzi; ha ilyen jelzést is akarunk, az saját szabály lesz a `rulesets/own/`-ban.
 
-**Sebesség:** mind a 221 regex lefut 20 000 karakteres, ismétlődő és kellemetlen bemeneteken 1,5 másodpercen belül (a teszt ezt őrzi); ez egy gyors próba, nem garancia.
+**Sebesség.** A teszt egysége: **egy szabály egy bemeneten** (8 kellemetlen, 20 000 karakteres bemenet), küszöbe **8000 ms**, szándékosan laza (egy terhelt gépen is át kell mennie): egy katasztrofális visszalépést fog meg, nem egy lassú szabályt; ez **nem** állítja, hogy a készlet 1,5 másodpercen belül fut. Az 1,5 másodperc a hook időkerete (`GUARD_BUDGET_MS`), amelyet az ablakok között ellenőriz. Mért (Windows 11, i7-8565U, Node 24.13.1, 2026-11-20, két futás): egy szabály egy bemeneten legfeljebb ~225 ms; a teljes 221 szabályos készlet egy 20 000 karakteres bemeneten a 8 kellemetlen szövegen 9 és 1540 ms között (a betű-számjegy sorozatokon ~1,5 s, a szóközön és az egyenlőségjeleken ~10 ms). Egy gyors próba, nem garancia.
 
 ## 6/e. A Sigma-szelet (2026-11-19)
 
