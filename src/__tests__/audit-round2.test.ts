@@ -67,6 +67,35 @@ test('a symlink or junction that points into .colony or .git is that directory f
   assert.equal(await verdict('echo x > docs/a.txt'), 'allow');
 });
 
+// ---- audit A02: one rule for the failures of a path, in the file tools and in the shell check
+
+test('a link that points nowhere (dangling) is followed to where it points: out of the project, or into .colony (audit A02)', async () => {
+  const proj = await project();
+  const outside = path.join(await dir('outside'), 'not-yet');
+  await fs.symlink(outside, path.join(proj, 'out'), 'junction'); // points at a path that does not exist
+  await fs.symlink(path.join(proj, '.colony', 'missing'), path.join(proj, 'dang'), 'junction');
+  const write = (file: string) => evaluatePreToolUse({ tool_name: 'Write', tool_input: { file_path: path.join(proj, file), content: 'x' } }, proj);
+  assert.equal((await write('out/new.txt')).decision, 'deny', 'a write through it would create a file outside the project');
+  assert.equal((await write('dang/f.json')).decision, 'deny', 'and this one inside .colony');
+  assert.equal((await write('docs/ok.txt')).decision, 'allow');
+  const shell = async (command: string) => (await evaluatePreToolUse({ tool_name: 'Bash', tool_input: { command } }, proj)).decision;
+  assert.equal(await shell('echo x > dang/f.json'), 'deny');
+  assert.equal(await shell('echo x > docs/ok.txt'), 'allow');
+});
+
+test('a path whose state cannot be told (a loop of links) is not judged by its name: the file tools refuse, the shell check asks (audit A02)', async () => {
+  const proj = await project();
+  await fs.symlink('loopb', path.join(proj, 'loopa'), 'file');
+  await fs.symlink('loopa', path.join(proj, 'loopb'), 'file');
+  const w = await evaluatePreToolUse({ tool_name: 'Write', tool_input: { file_path: path.join(proj, 'loopa'), content: 'x' } }, proj);
+  assert.equal(w.decision, 'deny');
+  assert.match(w.reason, /cannot resolve 'loopa'/);
+  const s = await evaluatePreToolUse({ tool_name: 'Bash', tool_input: { command: 'echo x > loopa' } }, proj);
+  assert.equal(s.decision, 'ask');
+  assert.match(s.reason, /state the guard cannot tell/);
+  assert.equal((await evaluatePreToolUse({ tool_name: 'Bash', tool_input: { command: 'echo x > docs/ok.txt' } }, proj)).decision, 'allow', 'other paths are not affected');
+});
+
 // ---- D-3: a memory file that was not read cleanly is never written over
 
 const doc = (id: string) => ({ id, text: id, vector: [1, 0], namespace: 'x', createdAt: 1 });

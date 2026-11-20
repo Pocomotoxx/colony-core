@@ -10,28 +10,72 @@
  * ban, which also rejects honest names like `a..b`. Containment is decided by the resolved path.
  */
 
+import { lstatSync, readlinkSync, realpathSync } from 'node:fs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { errorCode } from './errors.js';
 
 export class SafePathError extends Error {
-  constructor(public readonly code: 'EMPTY' | 'NUL' | 'TOO_LONG' | 'OUTSIDE', message: string) {
+  constructor(public readonly code: 'EMPTY' | 'NUL' | 'TOO_LONG' | 'OUTSIDE' | 'UNRESOLVABLE', message: string) {
     super(message);
   }
 }
 
 const MAX_PATH = 4096;
 
-/** realpath of the longest existing ancestor, with the missing remainder re-attached. */
-export async function canonicalize(target: string): Promise<string> {
+const MAX_LINKS = 40;
+
+const unresolvable = (target: string, code: string | undefined): SafePathError =>
+  new SafePathError('UNRESOLVABLE', `cannot resolve '${path.basename(target)}' (${code ?? 'error'}): its state is unknown, so it is not judged by its name`);
+
+/** Only a path that is really missing (ENOENT, ENOTDIR) is handled by name; any other failure is an unknown state and is refused. */
+const isMissing = (err: unknown): boolean => errorCode(err) === 'ENOENT' || errorCode(err) === 'ENOTDIR';
+
+/**
+ * realpath of the longest existing ancestor, with the missing remainder re-attached.
+ * One rule for every failure, here and in canonicalizeSync: a path that does not exist is resolved through its parent;
+ * a link that points nowhere (dangling) is followed to where it points, because a write through it creates that file;
+ * every other error (no permission, a loop of links, ...) throws SafePathError('UNRESOLVABLE') instead of falling back to the text of the name.
+ */
+export async function canonicalize(target: string, links = 0): Promise<string> {
   try {
     return await fs.realpath(target);
   } catch (err) {
-    if (errorCode(err) !== 'ENOENT' && errorCode(err) !== 'ENOTDIR') return target;
+    if (!isMissing(err)) throw unresolvable(target, errorCode(err));
   }
   const parent = path.dirname(target);
   if (parent === target) return target;
-  return path.join(await canonicalize(parent), path.basename(target));
+  const real = path.join(await canonicalize(parent, links), path.basename(target));
+  let isLink = false;
+  try {
+    isLink = (await fs.lstat(real)).isSymbolicLink();
+  } catch (err) {
+    if (!isMissing(err)) throw unresolvable(target, errorCode(err));
+  }
+  if (!isLink) return real;
+  if (links >= MAX_LINKS) throw unresolvable(target, 'ELOOP');
+  return canonicalize(path.resolve(path.dirname(real), await fs.readlink(real)), links + 1);
+}
+
+/** The same, synchronously (the shell check cannot wait). */
+export function canonicalizeSync(target: string, links = 0): string {
+  try {
+    return realpathSync(target);
+  } catch (err) {
+    if (!isMissing(err)) throw unresolvable(target, errorCode(err));
+  }
+  const parent = path.dirname(target);
+  if (parent === target) return target;
+  const real = path.join(canonicalizeSync(parent, links), path.basename(target));
+  let isLink = false;
+  try {
+    isLink = lstatSync(real).isSymbolicLink();
+  } catch (err) {
+    if (!isMissing(err)) throw unresolvable(target, errorCode(err));
+  }
+  if (!isLink) return real;
+  if (links >= MAX_LINKS) throw unresolvable(target, 'ELOOP');
+  return canonicalizeSync(path.resolve(path.dirname(real), readlinkSync(real)), links + 1);
 }
 
 const fold = (p: string): string => (process.platform === 'win32' ? p.toLowerCase() : p);

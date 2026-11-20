@@ -136,6 +136,8 @@ export interface CompiledClause {
   values: string[]; // lower case (not for re)
   all: boolean;
   res?: RegExp[];
+  /** Parallel to res: which end of the field the pattern is tied to (^ and $), so a window of a long field is not mistaken for the field. */
+  anchors?: Array<'start' | 'end' | 'both' | null>;
   cs?: boolean;
   /** Parallel to values: the pattern of a value that has a wildcard (null for a plain value, which is in values). */
   globs?: Array<Glob | null>;
@@ -247,6 +249,19 @@ export interface CompiledCommandRule {
   patterns: Map<string, RegExp>;
 }
 
+/**
+ * Which end of a field a pattern is tied to. Escaped characters and character classes are not anchors. A pattern with the
+ * m flag ties to lines, which a window of a long field cannot tell from the field: it is not treated as anchored (its
+ * windows are tried as before; that is the one case that stays approximate).
+ */
+export function anchorOf(source: string, flags: string): 'start' | 'end' | 'both' | null {
+  if (flags.includes('m')) return null;
+  const body = source.replace(/\\./g, '').replace(/\[(?:\\.|[^\]\\])*\]/g, '');
+  const start = body.includes('^');
+  const end = body.includes('$');
+  return start && end ? 'both' : start ? 'start' : end ? 'end' : null;
+}
+
 function compilePlain(c: FieldClause): CompiledClause {
   const parsed = c.values.map((v) => parseSigmaValue(c.cs ? v : v.toLowerCase()));
   const globs = parsed.map((g) => (hasWildcard(g) ? g : null));
@@ -268,7 +283,7 @@ export function compileCommandRule(rule: CommandRule): CompiledCommandRule {
       sel.map((alt) =>
         alt.map((c) =>
           c.op === 're'
-            ? { field: c.field, op: c.op, values: c.values, all: c.all, res: c.values.map((v, i) => new RegExp(v, c.flags?.[i] ?? '')) }
+            ? { field: c.field, op: c.op, values: c.values, all: c.all, res: c.values.map((v, i) => new RegExp(v, c.flags?.[i] ?? '')), anchors: c.values.map((v, i) => anchorOf(v, c.flags?.[i] ?? '')) }
             : compilePlain(c),
         ),
       ),
@@ -292,14 +307,23 @@ function clauseMatches(c: CompiledClause, event: CommandEvent): boolean {
   if (raw === undefined) return false;
   if (c.op === 're') {
     const text = raw.length > RE_TOTAL_MAX ? raw.slice(0, RE_TOTAL_MAX) : raw;
-    const hit = (re: RegExp): boolean => {
+    const hit = (re: RegExp, i: number): boolean => {
+      // a long field is tried in windows, but ^ and $ are about the field, not about a window: a pattern tied to the start is
+      // tried on the first window only, one tied to the end on the last window of the real field, one tied to both cannot be
+      // judged on a field longer than a window and does not match
+      const anchor = c.anchors?.[i] ?? null;
+      if (anchor && raw.length > RE_INPUT_MAX) {
+        re.lastIndex = 0;
+        if (anchor === 'both') return false;
+        return re.test(anchor === 'start' ? raw.slice(0, RE_INPUT_MAX) : raw.slice(-RE_INPUT_MAX));
+      }
       for (let at = 0; ; at += RE_STEP) {
         re.lastIndex = 0;
         if (re.test(at === 0 && text.length <= RE_INPUT_MAX ? text : text.slice(at, at + RE_INPUT_MAX))) return true;
         if (at + RE_INPUT_MAX >= text.length) return false;
       }
     };
-    return c.all ? c.res!.every(hit) : c.res!.some(hit);
+    return c.all ? c.res!.every((re, i) => hit(re, i)) : c.res!.some((re, i) => hit(re, i));
   }
   const v = c.cs ? raw : raw.toLowerCase();
   const one = (want: string, i: number): boolean => {

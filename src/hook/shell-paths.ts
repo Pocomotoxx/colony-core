@@ -1,5 +1,5 @@
-import fs from 'node:fs';
 import path from 'node:path';
+import { canonicalizeSync, SafePathError } from '../safe-path.js';
 
 /**
  * Does a shell command write to, move or delete anything inside the colony's protected
@@ -107,18 +107,20 @@ function protectedHit(target: string, cwd: string, projectDir: string): string |
   const resolved = path.resolve(cwd, target.replace(/\\/g, '/'));
   // The path as written, and the path once the symlinks and junctions that exist are followed: a link that points
   // into .colony/ is that directory.
-  return hitIn(projectDir, resolved) ?? hitIn(realPath(projectDir), realPath(resolved));
-}
-
-/** realpath of the longest existing ancestor, with the missing rest re-attached (as in safe-path.ts, but synchronous). */
-function realPath(p: string): string {
+  const asWritten = hitIn(projectDir, resolved);
+  if (asWritten) return asWritten;
   try {
-    return fs.realpathSync(p);
-  } catch {
-    const parent = path.dirname(p);
-    return parent === p ? p : path.join(realPath(parent), path.basename(p));
+    return hitIn(canonicalizeSync(projectDir), canonicalizeSync(resolved));
+  } catch (err) {
+    if (!(err instanceof SafePathError)) throw err;
+    // the state of a path inside the project cannot be told (no permission, a loop of links): it is not judged by its name
+    const rel = path.relative(projectDir, resolved);
+    return rel.startsWith('..') || path.isAbsolute(rel) ? null : UNRESOLVED;
   }
 }
+
+/** The marker of a path inside the project whose state is unknown. */
+const UNRESOLVED = 'unresolved';
 
 function hitIn(root: string, abs: string): string | null {
   const rel = path.relative(root, abs);
@@ -162,6 +164,7 @@ export function findProtectedWrite(command: string, projectDirInput: string, cwd
     const hit = (target: string): ShellWrite | null => {
       const top = protectedHit(target, cwd, projectDir);
       if (!top) return null;
+      if (top === UNRESOLVED) return { decision: 'ask', reason: 'the command changes a path inside the project whose state the guard cannot tell (no permission to look, or a loop of links); the user decides' };
       if (top === 'settings') return { decision: 'ask', reason: "the command changes the host's settings file (.claude/settings*.json), which holds the guard's hooks" };
       return { decision: 'deny', reason: top === '.colony' ? "the command changes something inside .colony/; the colony's state and rule files change only through colony commands" : 'the command changes something inside .git/' };
     };
