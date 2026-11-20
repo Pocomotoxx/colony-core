@@ -1,7 +1,6 @@
 import { createHash } from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { checkSecrets } from '../gates.js';
 import { errorCode } from '../errors.js';
 import type { TaskVerification } from '../types.js';
 
@@ -102,6 +101,28 @@ export function classifyCommand(command: string): CheckCommand {
   return { check: isCheck, reliable: !piped && !masked };
 }
 
+/**
+ * What is kept of a check command: the program and at most two plain words after it (the first may be a flag, as in `node --test`) (`pnpm test`, `npm run build`), for
+ * each part of the line that is a check. Arguments, option values, environment assignments and the parts that are not
+ * checks are NOT kept: a command line can carry a key in a format no pattern knows, and the evidence log is a durable file.
+ */
+export function summarizeCheck(command: string): string {
+  const out: string[] = [];
+  for (const part of chain(command).parts) {
+    const body = part.replace(/^(?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+)+/, '').replace(/^cd\s+\S+\s*&?/, '').trim();
+    if (!CHECK_PATTERNS.some((re) => re.test(body))) continue;
+    const kept: string[] = [];
+    for (const word of body.split(/\s+/)) {
+      const flag = kept.length === 1 && /^--?[A-Za-z][A-Za-z-]*$/.test(word); // `node --test`: a flag right after the program, never a later one
+      if (kept.length >= 3 || !/^[A-Za-z0-9_.:@/-]{1,32}$/.test(word) || (word.startsWith('-') && !flag)) break;
+      if (word.length >= 20 && /\d/.test(word) && /[A-Za-z]/.test(word)) break;
+      kept.push(word);
+    }
+    if (kept.length > 0) out.push(kept.join(' '));
+  }
+  return out.join(' && ').slice(0, 300);
+}
+
 const hash = (text: string) => createHash('sha256').update(text).digest('hex').slice(0, 16);
 
 export interface ToolOutcome {
@@ -121,7 +142,7 @@ export function toEvidence(outcome: ToolOutcome, now: number = Date.now()): Evid
   const kind = classifyCommand(outcome.command);
   if (!kind.check || !kind.reliable) return null;
   const exit = outcome.succeeded ? 0 : Number(outcome.outputText.match(/^Exit code (\d+)/)?.[1] ?? NaN);
-  const command = checkSecrets(outcome.command) ? '[command withheld: it contains a secret]' : outcome.command.slice(0, 300);
+  const command = summarizeCheck(outcome.command) || '[check]';
   return {
     v: 1,
     at: now,

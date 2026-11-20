@@ -52,12 +52,17 @@ test('a pass and a failure become records; exit code, duration and a hash of the
   assert.deepEqual([interrupted.outcome, interrupted.exitCode, interrupted.interrupted], ['failed', null, true]);
 });
 
-test('not-a-check and unreliable commands produce no evidence; a command with a secret is withheld', () => {
+test('not-a-check and unreliable commands produce no evidence; the record keeps the program, never the arguments', () => {
   assert.equal(toEvidence(outcome({ command: 'ls' })), null);
   assert.equal(toEvidence(outcome({ command: 'pnpm test | tail' })), null);
-  const withSecret = toEvidence(outcome({ command: 'API_KEY="abcdef123456" pnpm test' }))!;
-  assert.match(withSecret.command, /withheld/);
-  assert.ok(!JSON.stringify(withSecret).includes('abcdef123456'));
+  assert.equal(toEvidence(outcome({ command: 'npm run build' }))!.command, 'npm run build');
+  assert.equal(toEvidence(outcome({ command: 'cd app && pnpm test' }))!.command, 'pnpm test');
+  // a key the colony has no pattern for must not reach the durable log, in any position
+  const fake = 'zq9XkT4mV7pLw2Rn8Bd5HsYc3JfAe6Ug1';
+  for (const command of [`API_KEY="${fake}" pnpm test`, `pnpm test --token ${fake}`, `pnpm test ${fake}`, `curl -H "Authorization: ${fake}" x && pnpm test`, `pnpm test --reporter=${fake}`, `TOKEN=${fake} npm run build -- --key ${fake}`]) {
+    const rec = toEvidence(outcome({ command }))!;
+    assert.ok(!JSON.stringify(rec).includes(fake), command);
+  }
 });
 
 test('records are appended, filtered by time and session, and a damaged line is skipped', async () => {
