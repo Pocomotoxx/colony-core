@@ -283,7 +283,9 @@ Az átállásról mérés dönt, nem a készlet jó híre:
 
 **Bekötés.** Ugyanaz, mint a többi parancs-készleté: `command-rulesets` kapu, **csak figyelmeztet**, a `.colony/ruleset-warnings.jsonl` rögzíti, a `rulesets-measure.mjs --commands` méri. A blokkolás feltétele változatlan.
 
-**Hátra van.** A `powershell_module` és `powershell_classic` mappa (más mezőket használnak; ezeket nem néztem meg); a rendszerleíró- és fájl-szabályok; a szkriptfájlok tartalma (egy `powershell -File x.ps1` fájlját nem olvassuk).
+**A másik két PowerShell-mappa, és miért maradt ki (2026-11-20, a csomagot megnéztem, nem vettem át).** A `powershell_module` 18 szabálya (`ps_module`) a modul-naplózás `Payload` és `ContextInfo` mezőjére épül; 13-nak a `powershell_script` mappában azonos című megfelelője van, és már átvettük (a címek egyeztek, a tartalmat nem hasonlítottam össze). A `Payload` a modulnapló formázott bejegyzése (parancsmeghívás paraméter-kötésekkel), a `ContextInfo` a gazdaalkalmazás és a felhasználó adatai: ezek egy futtatás előtti parancsnál nincsenek meg, a nyers szkript szövege pedig más szöveg, mint a `Payload`, ezért a leképezés megbízhatatlan lenne. A `powershell_classic` 4 szabálya (`Data` mező) a PowerShell-motor állapotsorait olvassa (`HostApplication=...`), ez sem létezik egy parancs előtt. Egyiket sem érdemes átvenni, amíg nem lesz valódi napló-forrás.
+
+**Hátra van.** A rendszerleíró- és fájl-szabályok (más eseménytípus); a szkriptfájlok tartalma (egy `powershell -File x.ps1` fájlját nem olvassuk).
 
 ## 7. Szeletek
 
