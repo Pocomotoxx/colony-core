@@ -8,6 +8,7 @@ import { evaluatePreToolUse } from '../hook/pretool.js';
 import { scriptEventsOf, windowsEventsOf } from '../rulesets/command-gate.js';
 import { convertSigma } from '../rulesets/convert-sigma.js';
 import { loadRuleset } from '../rulesets/loader.js';
+import { normalizeKey, registryEventsOf } from '../rulesets/registry-events.js';
 import { compileCommandRule, ruleMatches } from '../rulesets/sigma.js';
 
 // The Windows process creation rules of the Sigma core package: the converter's new reading (re, windash, a Windows
@@ -17,6 +18,7 @@ const repo = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..')
 const vendoredWin = path.join(repo, 'rulesets', 'sigma-windows');
 const vendoredLinux = path.join(repo, 'rulesets', 'sigma');
 const vendoredPs = path.join(repo, 'rulesets', 'sigma-powershell');
+const vendoredReg = path.join(repo, 'rulesets', 'sigma-registry');
 
 let root: string;
 before(async () => {
@@ -213,6 +215,71 @@ test('a pattern is tried on windows of the text, up to 24000 characters', () => 
   assert.equal(at(25000, 26000), false, 'past the 24000 characters that are read');
 });
 
+// ---- registry
+
+const REG = (detection: string, category = 'registry_set'): string => SAMPLE(detection).replace('category: process_creation', `category: ${category}`);
+const regMeta = { name: 'sigma-registry', version: 'v1', repoUrl: 'https://example.test/blob/v1', platform: 'windows' as const, category: 'registry' as const };
+
+test('a registry rule is converted for the fields of a registry event; it remembers which kind of event it is about', () => {
+  const files = {
+    'rules/set.yml': REG("selection:\n    TargetObject|endswith: '\\\\DisableAntiSpyware'\n    Details: 'DWORD (0x00000001)'\ncondition: selection"),
+    'rules/del.yml': REG("selection:\n    TargetObject|contains: 'Policies'\n    EventType: 'DeleteValue'\ncondition: selection", 'registry_delete'),
+    'rules/any.yml': REG("selection:\n    TargetObject|contains: 'Run'\n    EventType: 'CreateKey'\ncondition: selection", 'registry_event'),
+    'rules/rename.yml': REG("selection:\n    NewName|contains: 'x'\ncondition: selection"),
+    'rules/add.yml': REG("selection:\n    TargetObject|contains: 'x'\ncondition: selection", 'registry_add'),
+    'rules/proc.yml': SAMPLE("selection:\n    TargetObject|contains: 'x'\ncondition: selection"),
+  };
+  const { ruleset, report } = convertSigma(files, regMeta);
+  assert.equal(ruleset.category, 'registry');
+  assert.deepEqual(ruleset.rules.map((r) => r.on), ['registry_event', 'registry_delete', 'registry_set']);
+  const why = Object.fromEntries(report.skipped.map((s) => [s.id, s.reason]));
+  assert.match(why.rename, /needs NewName/);
+  assert.match(why.add, /not a Windows registry rule/);
+  assert.match(why.proc, /not a Windows registry rule/);
+  assert.equal(convertSigma({ 'rules/set.yml': files['rules/set.yml'] }, meta).report.skipped[0].reason.startsWith('not a Windows process creation'), true, 'a registry rule is no process rule');
+  const [any, del, set] = ruleset.rules.map(compileCommandRule);
+  const delEvent = { LogsourceCategory: 'registry_delete', TargetObject: 'HKLM\\Policies\\x', EventType: 'DeleteValue' };
+  assert.equal(ruleMatches(del, delEvent), true);
+  assert.equal(ruleMatches(del, { ...delEvent, LogsourceCategory: 'registry_set' }), false, 'a delete rule is about deletes');
+  assert.equal(ruleMatches(set, { LogsourceCategory: 'registry_set', TargetObject: 'HKLM\\X\\DisableAntiSpyware', Details: 'DWORD (0x00000001)' }), true);
+  assert.equal(ruleMatches(set, { LogsourceCategory: 'registry_delete', TargetObject: 'HKLM\\X\\DisableAntiSpyware', Details: 'DWORD (0x00000001)' }), false);
+  assert.equal(ruleMatches(any, { LogsourceCategory: 'registry_event', TargetObject: 'HKLM\\Run', EventType: 'CreateKey' }), true);
+  assert.equal(ruleMatches(any, { LogsourceCategory: 'registry_delete', TargetObject: 'HKLM\\Run', EventType: 'CreateKey' }), true, 'registry_event is any registry event');
+});
+
+test('the registry events of a command: reg add and delete, the item-property cmdlets; keys as the rules write them, data as Sysmon prints it', () => {
+  assert.equal(normalizeKey('HKEY_LOCAL_MACHINE\\SOFTWARE\\X\\'), 'HKLM\\SOFTWARE\\X');
+  assert.equal(normalizeKey('HKLM:\\SOFTWARE'), 'HKLM\\SOFTWARE');
+  assert.equal(normalizeKey('Registry::HKEY_CURRENT_USER\\Software'), 'HKU\\S-1-5-21-0-0-0-1000\\Software');
+  assert.equal(normalizeKey('C:\\Users'), null);
+  const one = (command: string) => registryEventsOf(command);
+  assert.deepEqual(one('reg add "HKLM\\SOFTWARE\\Policies\\X" /v Off /t REG_DWORD /d 1 /f'), [
+    { Image: 'C:\\Windows\\System32\\reg.exe', TargetObject: 'HKLM\\SOFTWARE\\Policies\\X\\Off', Details: 'DWORD (0x00000001)', EventType: 'SetValue', LogsourceCategory: 'registry_set' },
+  ]);
+  assert.equal(one('reg add HKLM\\X /v a /t REG_DWORD /d 0x10 /f')[0].Details, 'DWORD (0x00000010)');
+  assert.equal(one('reg add HKLM\\X /v a /t REG_QWORD /d 5 /f')[0].Details, 'QWORD (0x0000000000000005)');
+  assert.equal(one('reg add HKLM\\X /v a /t REG_BINARY /d 0102 /f')[0].Details, 'Binary Data');
+  assert.equal(one('reg add HKLM\\X /v a /d text /f')[0].Details, 'text');
+  assert.equal(one('reg add HKLM\\X /v a /f')[0].Details, '(Empty)');
+  assert.equal(one('reg add HKCU\\X /ve /d y /f')[0].TargetObject, 'HKU\\S-1-5-21-0-0-0-1000\\X\\(Default)');
+  assert.deepEqual(one('reg add HKLM\\X\\New /f').map((e) => [e.EventType, e.LogsourceCategory, e.TargetObject]), [['CreateKey', 'registry_event', 'HKLM\\X\\New']]);
+  assert.deepEqual(one('reg delete HKLM\\X /v a /f').map((e) => [e.EventType, e.LogsourceCategory, e.TargetObject]), [['DeleteValue', 'registry_delete', 'HKLM\\X\\a']]);
+  assert.equal(one('reg delete HKLM\\X /f')[0].EventType, 'DeleteKey');
+  assert.deepEqual(one('reg query HKLM\\X'), []);
+  assert.deepEqual(one('reg add notakey /v a /f'), []);
+  const ps = one('Set-ItemProperty -Path HKLM:\\SOFTWARE\\X -Name Off -Value 1; Set-ItemProperty HKCU:\\A B 7; Remove-ItemProperty HKLM:\\X -Name Gone');
+  assert.deepEqual(ps.map((e) => [e.TargetObject, e.Details, e.EventType]), [
+    ['HKLM\\SOFTWARE\\X\\Off', 'DWORD (0x00000001)', 'SetValue'],
+    ['HKU\\S-1-5-21-0-0-0-1000\\A\\B', 'DWORD (0x00000007)', 'SetValue'],
+    ['HKLM\\X\\Gone', undefined, 'DeleteValue'],
+  ]);
+  assert.equal(one('New-ItemProperty -Path HKLM:\\X -Name n -Value v -PropertyType String -Force')[0].Details, 'v');
+  assert.deepEqual(one('Set-ItemProperty -Path C:\\file.txt -Name a -Value 1'), [], 'not a registry path');
+  assert.deepEqual(one('powershell -c "reg add HKLM\\X /v a /d b"').map((e) => e.TargetObject), ['HKLM\\X\\a'], 'what powershell -c runs');
+  assert.deepEqual(one('cmd /c reg delete HKLM\\X /v a').map((e) => e.EventType), ['DeleteValue'], 'what cmd /c runs');
+  assert.ok(registryEventsOf('reg add HKLM\\X /v a /d b;'.repeat(500)).length <= 50, 'bounded');
+});
+
 // ---- the vendored set
 
 test('the vendored Windows set loads with its hashes verified: the same archive as the Linux set, 558 files, 350 rules, 208 skipped with a reason', async () => {
@@ -268,6 +335,30 @@ test('PowerShell scripts: attack-like ones match the rule that describes them, o
   assert.ok(Date.now() - t0 < 5000, 'every rule on four hostile scripts');
 });
 
+test('the vendored registry set loads: the same archive, 125 files, 117 rules, written for registry events', async () => {
+  const set = await loadRuleset(vendoredReg);
+  const win = await loadRuleset(vendoredWin);
+  assert.equal(set.category, 'registry');
+  assert.equal(set.platform, 'windows');
+  assert.equal(set.name, 'sigma-registry');
+  assert.equal(set.provenance.archive?.digest, win.provenance.archive?.digest);
+  assert.equal(set.provenance.sources?.length, 125);
+  assert.equal(set.commands.length, 117);
+  assert.equal(set.provenance.report.skipped.length, 8);
+  assert.ok(set.commands.every((r) => r.author && r.title && ['registry_set', 'registry_delete', 'registry_event'].includes(r.on ?? '')));
+});
+
+test('registry commands: attack-like ones match the rule that describes them, ordinary ones none', async () => {
+  const set = await loadRuleset(vendoredReg);
+  const titles = (command: string) => set.commands.filter((r) => registryEventsOf(command).some((e) => ruleMatches(r, e))).map((r) => r.title);
+  assert.ok(titles('reg add "HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows Defender" /v DisableAntiSpyware /t REG_DWORD /d 1 /f').includes('Disable Windows Defender Functionalities Via Registry Keys'));
+  assert.ok(titles('reg add "HKLM\\SYSTEM\\CurrentControlSet\\Control\\SecurityProviders\\WDigest" /v UseLogonCredential /t REG_DWORD /d 1 /f').includes('Wdigest Enable UseLogonCredential'));
+  assert.ok(titles('Set-ItemProperty -Path "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows Defender" -Name DisableAntiSpyware -Value 1').includes('Disable Windows Defender Functionalities Via Registry Keys'));
+  for (const ordinary of ['reg query HKLM\\Software\\Microsoft\\Windows\\CurrentVersion', 'reg add HKCU\\Console /v VirtualTerminalLevel /t REG_DWORD /d 1 /f', 'reg add "HKCU\\Software\\MyApp" /v Theme /d dark /f', 'Set-ItemProperty -Path HKCU:\\Software\\MyApp -Name Count -Value 3', 'reg delete HKCU\\Software\\MyApp /v Theme /f', 'reg add HKLM\\SYSTEM\\CurrentControlSet\\Control\\FileSystem /v LongPathsEnabled /t REG_DWORD /d 1 /f', 'git status']) {
+    assert.deepEqual(titles(ordinary), [], ordinary);
+  }
+});
+
 test('attack-like Windows commands match the rule that describes them; ordinary development commands match none; hostile input is bounded', async () => {
   const set = await loadRuleset(vendoredWin);
   const titles = (command: string) => set.commands.filter((r) => windowsEventsOf(command, 'C:\\work', 'PowerShell').some((e) => ruleMatches(r, e))).map((r) => r.title);
@@ -298,6 +389,8 @@ test('in the guard a PowerShell command that matches a Windows rule is a warning
   assert.match(v.notes.join('\n'), /"PowerShell Download and Execution Cradles" \(author: /);
   const plain = await evaluatePreToolUse({ tool_name: 'PowerShell', tool_input: { command: 'Get-ChildItem -Recurse | Measure-Object' } }, dir);
   assert.deepEqual(plain.notes, []);
+  const registry = await evaluatePreToolUse({ tool_name: 'Bash', tool_input: { command: 'reg add "HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows Defender" /v DisableAntiSpyware /t REG_DWORD /d 1 /f' } }, dir);
+  assert.match(registry.notes.join('\n'), /"Disable Windows Defender Functionalities Via Registry Keys" \(author: /);
   const script = await evaluatePreToolUse({ tool_name: 'PowerShell', tool_input: { command: 'Invoke-Mimikatz -DumpCreds' } }, dir);
   assert.match(script.notes.join('\n'), /sigma-powershell r2026-07-01 rule/);
   assert.match(script.notes.join('\n'), /"Malicious PowerShell Commandlets - ScriptBlock" \(author: /);

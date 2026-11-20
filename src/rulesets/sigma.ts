@@ -39,6 +39,8 @@ export interface CommandRule {
   description: string;
   /** Where the rule is in the upstream repository. */
   link: string;
+  /** A registry rule: the kind of event it is written for (registry_set, registry_delete or registry_event, which is any). */
+  on?: string;
   selections: Record<string, Selection>;
   condition: Cond;
 }
@@ -239,6 +241,7 @@ export interface CompiledCommandRule {
   status: string;
   description: string;
   link: string;
+  on?: string;
   selections: Map<string, CompiledClause[][]>;
   condition: Cond;
   patterns: Map<string, RegExp>;
@@ -281,7 +284,7 @@ export function compileCommandRule(rule: CommandRule): CompiledCommandRule {
     }
   };
   collect(rule.condition);
-  return { id: rule.id, title: rule.title, author: rule.author, level: rule.level, status: rule.status, description: rule.description, link: rule.link, selections, condition: rule.condition, patterns };
+  return { id: rule.id, title: rule.title, author: rule.author, level: rule.level, status: rule.status, description: rule.description, link: rule.link, ...(rule.on ? { on: rule.on } : {}), selections, condition: rule.condition, patterns };
 }
 
 function clauseMatches(c: CompiledClause, event: CommandEvent): boolean {
@@ -309,6 +312,7 @@ function clauseMatches(c: CompiledClause, event: CommandEvent): boolean {
 
 /** Does the rule match this event? */
 export function ruleMatches(rule: CompiledCommandRule, event: CommandEvent): boolean {
+  if (rule.on && rule.on !== 'registry_event' && event.LogsourceCategory !== rule.on) return false;
   const cache = new Map<string, boolean>();
   const selection = (name: string): boolean => {
     let r = cache.get(name);

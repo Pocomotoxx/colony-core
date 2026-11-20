@@ -178,6 +178,10 @@ async function sigmaPackage(): Promise<Buffer> {
   });
   entries.push({ name: 'rules/windows/process_creation/win_other.yml', data: 'title: not read\n' });
   entries.push({
+    name: 'rules/windows/registry/registry_set/registry_set_new_rule.yml',
+    data: ['title: A registry rule that is new in this release', 'id: 12121212-3434-4565-8787-909090909090', 'author: Someone Else', 'status: test', 'level: high', 'logsource:', '    product: windows', '    category: registry_set', 'detection:', '    selection:', "        TargetObject|endswith: '\\\\ZzNewValue'", '    condition: selection', ''].join('\n'),
+  });
+  entries.push({
     name: 'rules/windows/powershell/powershell_script/posh_ps_new_rule.yml',
     data: ['title: A PowerShell script rule that is new in this release', 'id: 99999999-aaaa-4bbb-8ccc-dddddddddddd', 'author: Someone Else', 'status: test', 'level: high', 'logsource:', '    product: windows', '    category: ps_script', 'detection:', '    selection:', "        ScriptBlockText|contains: 'Invoke-ZzNew'", '    condition: selection', ''].join('\n'),
   });
@@ -451,6 +455,19 @@ test('the PowerShell script set is updated from the same package, with its categ
   assert.equal(set.version, SIGMA_TAG);
   assert.equal(set.provenance.report.total, 1, 'only the folder of this set is read');
   assert.equal((await loadRuleset(path.join(dir, 'sigma-windows'))).category, 'process_creation', 'the Windows process set is not touched');
+});
+
+test('the registry set is updated from the same package, with its category and the kind of event of each rule', async () => {
+  const dir = await workCopy();
+  const r = await run(dir, ['--set', 'sigma-registry', '--tag', SIGMA_TAG, '--yes']);
+  assert.equal(r.code, 0, r.stderr);
+  const out = JSON.parse(r.stdout);
+  assert.deepEqual(out.rules.added.ids, ['A registry rule that is new in this release']);
+  assert.equal(out.rules.after, 1);
+  const set = await loadRuleset(path.join(dir, 'sigma-registry'));
+  assert.equal(set.category, 'registry');
+  assert.equal(set.commands[0].on, 'registry_set');
+  assert.equal(set.provenance.report.total, 1, 'only the folder of this set is read');
 });
 
 test('an archive that cannot be proved, or a release that is not what it should be, is refused with the vendored set untouched', async () => {

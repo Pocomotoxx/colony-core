@@ -285,7 +285,25 @@ Az átállásról mérés dönt, nem a készlet jó híre:
 
 **A másik két PowerShell-mappa, és miért maradt ki (2026-11-20, a csomagot megnéztem, nem vettem át).** A `powershell_module` 18 szabálya (`ps_module`) a modul-naplózás `Payload` és `ContextInfo` mezőjére épül; 13-nak a `powershell_script` mappában azonos című megfelelője van, és már átvettük (a címek egyeztek, a tartalmat nem hasonlítottam össze). A `Payload` a modulnapló formázott bejegyzése (parancsmeghívás paraméter-kötésekkel), a `ContextInfo` a gazdaalkalmazás és a felhasználó adatai: ezek egy futtatás előtti parancsnál nincsenek meg, a nyers szkript szövege pedig más szöveg, mint a `Payload`, ezért a leképezés megbízhatatlan lenne. A `powershell_classic` 4 szabálya (`Data` mező) a PowerShell-motor állapotsorait olvassa (`HostApplication=...`), ez sem létezik egy parancs előtt. Egyiket sem érdemes átvenni, amíg nem lesz valódi napló-forrás.
 
-**Hátra van.** A rendszerleíró- és fájl-szabályok (más eseménytípus); a szkriptfájlok tartalma (egy `powershell -File x.ps1` fájlját nem olvassuk).
+**Hátra van.** A fájl-szabályok (más eseménytípus); a szkriptfájlok tartalma (egy `powershell -File x.ps1` fájlját nem olvassuk).
+
+## 6/i. A rendszerleíró-szabályok (2026-11-20)
+
+**Átvett anyag.** Ugyanaz a csomag (`sigma_core.zip` `r2026-07-01`, `sha256:45ccbd62…`, a korábban letöltött és ellenőrzött példány): a `rules/windows/registry` mappa **125** fájlja (100 `registry_set`, 3 `registry_delete`, 22 `registry_event`) bájtra azonosan a `rulesets/sigma-registry/` alatt, külön készletként (DRL 1.1, saját `PROVENANCE.json` és `NOTICE`). Ebben a mappában más típusú szabály nincs.
+
+**Átalakítás.** 125-ből **117 jött át**, 8 kimaradt indokkal (3 olyan mezőt kér, amely egy parancsnál nincs, 5 üres vagy nem szöveges értéket tartalmaz). Egy rendszerleíró-esemény mezői közül négyet adunk: `TargetObject`, `Details`, `Image`, `EventType`; az `NewName` (átnevezés) nincs, az ilyet kérő szabály kimarad. Minden szabály megjegyzi, milyen eseményre készült (`on`: `registry_set`, `registry_delete` vagy `registry_event`, ez utóbbi bármelyikre); egy törlés-szabály egy beállítás-eseményre nem illik. A készlet `ruleset.json`-jában `category: "registry"`.
+
+**Esemény.** Csak azokból a parancsokból, amelyek a sorból láthatóan a rendszerleírót írják: `reg add` és `reg delete`, és a `Set-ItemProperty`, `New-ItemProperty`, `Remove-ItemProperty` (alias: `sp`, `rp`) rendszerleíró-útvonalon, a `cmd /c` és `powershell -c` utáni parancsban is. Egy `reg add` érték-írás (`SetValue`), kulcs-létrehozás (`CreateKey`, ha nincs `/v` és `/ve`), a `reg delete` érték- vagy kulcstörlés. **Feltevések:** a `TargetObject` a kulcs és az érték neve (`HKLM\...\Név`); a `HKCU` helyén `HKU\S-1-5-21-0-0-0-1000` áll (a Sysmon a felhasználó SID-jét naplózza, ezt az őr nem ismeri); a DWORD és QWORD adat úgy van írva, ahogy a Sysmon kiírja (`DWORD (0x00000001)`), a bináris `Binary Data`, hiányzó adat `(Empty)`; egy számjegyes PowerShell-érték típus nélkül DWORD. **Nem látja:** a `reg import` fájlját, a szkriptfájlokat, a futáskor épülő útvonalakat, a `New-Item` kulcs-létrehozást és a `.reg` fájl megnyitását. Egy hívásból legfeljebb 50 esemény.
+
+**Mérés.**
+
+- 15 szokásos parancs (`reg query`, HKCU-beállítások, `Set-ItemProperty` a témára és a háttérre, `reg delete`, `LongPathsEnabled`, `git status`, ...): **0 találat** (ebből 10-ből lett rendszerleíró-esemény). A repó saját 112 parancsán nincs új találat.
+- 14 támadó-szerű parancs (Defender kikapcsolása, WDigest, RestrictedAdmin, Sticky Keys hátsó ajtó, `ms-settings` UAC-kerülés, Run-kulcs, `EnableLUA`, RDP bekapcsolása, tűzfal kikapcsolása, ...): **6-ot** jelzett. A 8 hiány okát nem néztem meg; a core csomag általános Run-kulcs- vagy `EnableLUA`-szabályát nem találtam, de ezt nem ellenőriztem szabályonként.
+- Hostile bemenet: három szándékosan rossz parancs (50 000 karakteres, 1000 összefűzött `reg add`, ismétlődő útvonal) mind a 117 szabályon **~0,5 s** alatt lefutott.
+
+**Bekötés.** Ugyanaz, mint a többi parancs-készleté: `command-rulesets` kapu, **csak figyelmeztet**, a `.colony/ruleset-warnings.jsonl` rögzíti. A blokkolás feltétele változatlan.
+
+**Hátra van.** A fájl-szabályok (`file_event`, más eseménytípus); a `reg import` és a szkriptfájlok tartalma.
 
 ## 7. Szeletek
 
