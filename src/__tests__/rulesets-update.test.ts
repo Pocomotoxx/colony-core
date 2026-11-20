@@ -21,6 +21,8 @@ interface Upstream {
   license: string | null;
   tags: Set<string>;
   commit: string;
+  /** A commit the tag points to from the second question on: the tag moved while the release was downloaded. */
+  moved?: string;
   files: Record<string, Buffer>;
   /** A blob hash the server reports in place of the true one, per path. */
   lie: Record<string, string>;
@@ -60,7 +62,7 @@ before(async () => {
     if (rest === '') return send(200, { license: up.license === null ? null : { spdx_id: up.license } });
     const tagRef = /^\/git\/ref\/tags\/(.+)$/.exec(rest);
     if (tagRef) return up.tags.has(tagRef[1]) ? send(200, { ref: `refs/tags/${tagRef[1]}` }) : send(404);
-    if (/^\/commits\/.+$/.test(rest)) return send(200, { sha: up.commit });
+    if (/^\/commits\/.+$/.test(rest)) return send(200, { sha: up.moved && requests.filter((q) => q.url.includes('/commits/')).length > 1 ? up.moved : up.commit });
     if (/^\/releases\/tags\/.+$/.test(rest)) {
       const rel = up.release;
       if (!rel) return send(404);
@@ -262,7 +264,7 @@ test('nothing is fetched or changed without --yes, and a dry run only prints the
   const plan = JSON.parse(noYes.stdout).plan;
   assert.equal(plan.from, 'v8.30.1');
   assert.equal(plan.to, 'v9.9.9');
-  assert.ok(plan.requests.some((r: string) => r.includes('contents/config/gitleaks.toml?ref=v9.9.9')));
+  assert.ok(plan.requests.some((r: string) => r.includes('contents/config/gitleaks.toml?ref=<the commit of v9.9.9>')));
   const dry = await run(dir, ['--set', 'gitleaks', '--tag', 'v9.9.9', '--dry-run']);
   assert.equal(dry.code, 0);
   assert.equal(requests.length, 0, 'no request was made');
@@ -305,7 +307,36 @@ test('an update downloads the tag, proves the files, converts, checks the result
     '/repos/gitleaks/gitleaks/commits/v9.9.9',
     `/repos/gitleaks/gitleaks/contents/${gitleaksTomlPath}`,
     '/repos/gitleaks/gitleaks/contents/LICENSE',
+    '/repos/gitleaks/gitleaks/commits/v9.9.9', // asked again at the end: the tag must not have moved
   ]);
+  // every file is asked for by the commit the tag was resolved to, never by the tag
+  const fileRequests = requests.filter((q) => q.url.includes('/contents/'));
+  assert.equal(fileRequests.length, 2);
+  assert.ok(fileRequests.every((q) => q.url.endsWith(`?ref=${COMMIT}`)), 'by commit');
+  // nothing is left behind: no staging folder, no lock
+  assert.deepEqual((await fs.readdir(dir)).filter((f) => f.startsWith('.')), []);
+});
+
+test('a tag that moves while the release is downloaded is refused, and the set and the folder are untouched', async () => {
+  await refused(update, /points to 1111111111111111111111111111111111111111 now, not to 0123456789abcdef0123456789abcdef01234567/, () => {
+    upstream['gitleaks/gitleaks'].moved = '1111111111111111111111111111111111111111';
+  });
+});
+
+test('a leftover lock stops an update before anything is changed; a failed update leaves no staging folder', async () => {
+  await freshUpstream();
+  const dir = await workCopy();
+  await fs.mkdir(path.join(dir, '.update.lock'));
+  const before = await snapshot(dir);
+  const r = await run(dir, update);
+  assert.equal(r.code, 1);
+  assert.match(r.stderr, /another update is running, or one was cut off/);
+  assert.equal(await snapshot(dir), before);
+  await fs.rm(path.join(dir, '.update.lock'), { recursive: true });
+  upstream['gitleaks/gitleaks'].files[gitleaksTomlPath] = Buffer.from('title = "x"\nrules.a = 1\n');
+  const bad = await run(dir, update);
+  assert.equal(bad.code, 1);
+  assert.deepEqual((await fs.readdir(dir)).filter((f) => f.startsWith('.')), [], 'no .stage-* and no lock');
 });
 
 test('a set with several files (presidio) updates the same way; identical content changes no rule', async () => {
@@ -366,8 +397,8 @@ test('a branch or an unknown name is not a tag; a changed license; a missing fil
   });
 });
 
-test('when the converter cannot read the new release, the previous rule set is put back', async () => {
-  const dir = await refused(update, /converter failed[\s\S]*previous rule set was put back/, () => {
+test('when the converter cannot read the new release, the vendored rule set was never touched', async () => {
+  const dir = await refused(update, /converter failed[\s\S]*vendored rule set was not touched/, () => {
     upstream['gitleaks/gitleaks'].files[gitleaksTomlPath] = Buffer.from('title = "x"\nrules.a = 1\n');
   });
   assert.equal((await loadRuleset(path.join(dir, 'gitleaks'))).version, 'v8.30.1', 'and it still loads');
@@ -384,7 +415,7 @@ test('an archive set: the plan names the release and the asset, and a dry run fe
   const plan = JSON.parse(dry.stdout).plan;
   assert.ok(plan.requests.some((r: string) => /releases\/tags\/r2099-01-01/.test(r)));
   assert.ok(plan.requests.some((r: string) => /releases\/assets\/.*one redirect/.test(r)));
-  assert.ok(plan.requests.some((r: string) => /contents\/LICENSE\?ref=r2099-01-01/.test(r)), 'the license statement is checked');
+  assert.ok(plan.requests.some((r: string) => /contents\/LICENSE\?ref=<the commit of r2099-01-01>/.test(r)), 'the license statement is checked');
   assert.equal(requests.length, 0);
 });
 
@@ -425,6 +456,7 @@ test('an archive set is updated: the asset is proved by its digest, converted, c
     '/repos/SigmaHQ/sigma/releases/assets/4242',
     '/__download/4242',
     '/repos/SigmaHQ/sigma/contents/LICENSE',
+    '/repos/SigmaHQ/sigma/commits/r2099-01-01',
   ]);
 });
 
@@ -519,8 +551,8 @@ test('an archive that cannot be proved, or a release that is not what it should 
   await refused(['--set', 'sigma', '--tag', 'main', '--yes'], /not a tag/);
 });
 
-test('when the package holds no rules of the folder, or the converter cannot read it, the previous rule set is put back', async () => {
-  const dir = await refused(updateSigma, /converter failed[\s\S]*previous rule set was put back/, () => {
+test('when the package holds no rules of the folder, or the converter cannot read it, the vendored rule set was never touched', async () => {
+  const dir = await refused(updateSigma, /converter failed[\s\S]*vendored rule set was not touched/, () => {
     const zip = makeZip([{ name: 'rules/windows/process_creation/win_other.yml', data: 'title: x\n' }]);
     upstream['SigmaHQ/sigma'].release = { id: 4242, assetName: 'sigma_core.zip', zip };
   });

@@ -14,15 +14,14 @@
 //        - a release archive (sigma): the release must list the asset with a SHA-256 digest, and the downloaded bytes must have
 //          exactly that digest (the API sends the asset through ONE redirect to a signed address on githubusercontent.com,
 //          which is followed and nothing else);
-//   5. replaces the set's source files, runs the converter, loads the result with the loader's own checks;
-//      if any of that fails, the previous files are put back;
+//   5. builds the new set in a staging folder (a copy of the set, the converter, the loader's own checks) and only then swaps
+//      it in, with two renames; if anything fails, the vendored set was never touched;
 //   6. prints what changed: rules added, removed and changed.
 //
 // Only https://api.github.com is contacted (a loopback address for the tests), without credentials, and the one redirect of
 // an asset download is the only redirect that is ever followed.
 import { createHash } from 'node:crypto';
-import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve, sep } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { Buffer } from 'node:buffer';
@@ -139,9 +138,9 @@ async function main() {
           `GET ${repoPath}/commits/${tag}`,
           `GET ${repoPath}/releases/tags/${tag}`,
           `GET ${repoPath}/releases/assets/<the id of ${archive.asset}> (one redirect, to a signed address on githubusercontent.com)`,
-          ...(entry.licenseCheck ? [`GET ${repoPath}/contents/${entry.licenseCheck.path}?ref=${tag}`] : []),
+          ...(entry.licenseCheck ? [`GET ${repoPath}/contents/${entry.licenseCheck.path}?ref=<the commit of ${tag}>`] : []),
         ]
-      : [`GET ${repoPath}`, `GET ${repoPath}/git/ref/tags/${tag}`, `GET ${repoPath}/commits/${tag}`, ...[...files.map(([r]) => r), entry.licenseFile].map((p) => `GET ${repoPath}/contents/${p}?ref=${tag}`)],
+      : [`GET ${repoPath}`, `GET ${repoPath}/git/ref/tags/${tag}`, `GET ${repoPath}/commits/${tag}`, ...[...files.map(([r]) => r), entry.licenseFile].map((p) => `GET ${repoPath}/contents/${p}?ref=<the commit of ${tag}>`)],
   };
   if (dryRun || !yes) {
     console.log(JSON.stringify({ plan, note: 'Nothing was fetched or changed.' }, null, 2));
@@ -187,7 +186,8 @@ async function main() {
   }
 
   async function download(remotePath) {
-    const { status, body } = await getJson(`${repoPath}/contents/${remotePath}?ref=${encodeURIComponent(tag)}`);
+    // by the commit, not by the tag: a tag that moves between two requests cannot mix two releases
+    const { status, body } = await getJson(`${repoPath}/contents/${remotePath}?ref=${commit}`);
     if (status === 404) fail(`${remotePath} does not exist at the tag ${tag}: the upstream may have moved or renamed it. Nothing was changed.`);
     if (body.type !== 'file' || body.encoding !== 'base64' || typeof body.content !== 'string') fail(`${remotePath} is not a plain file the API can hand over (too large, or not a file). Nothing was changed.`);
     if (typeof body.size !== 'number' || body.size > MAX_FILE_BYTES) fail(`${remotePath} is larger than ${MAX_FILE_BYTES} bytes. Nothing was changed.`);
@@ -263,44 +263,51 @@ async function main() {
       for (const [remote] of files) fetched.set(remote, await download(remote));
       licenseBytes = await download(entry.licenseFile);
     }
+    const again = (await getJson(`${repoPath}/commits/${tag}`)).body?.sha;
+    if (again !== commit) fail(`the tag ${tag} points to ${again ?? 'nothing'} now, not to ${commit} as at the start: the release moved while it was downloaded. Nothing was changed.`);
   } catch (err) {
     if (err instanceof Stop) throw err;
     const cause = err.cause?.code ?? err.cause?.message;
     fail(`the download failed (${err.name === 'AbortError' ? 'timeout' : [err.message, cause].filter(Boolean).join(': ')}). Nothing was changed.`);
   }
 
-  // ---- replace, convert, check; put everything back on any failure
+  // ---- build in a staging folder, check, swap in
 
-  const oldRules = (() => {
-    try {
-      return JSON.parse(readFileSync(join(setDir, before.normalized.file), 'utf-8')).rules ?? [];
-    } catch {
-      return [];
-    }
-  })();
-  const backup = mkdtempSync(join(tmpdir(), 'colony-rulesets-backup-'));
-  cpSync(setDir, join(backup, 'set'), { recursive: true });
-  const restore = (why) => {
-    rmSync(setDir, { recursive: true, force: true });
-    cpSync(join(backup, 'set'), setDir, { recursive: true });
-    rmSync(backup, { recursive: true, force: true });
-    fail(`${why}\nThe previous rule set was put back; nothing was changed.`);
+  // The new set is built and checked in a staging folder next to the set (same disk, so the swap is a rename); the vendored
+  // set is not touched until the new one has passed the loader. One update at a time: a lock folder keeps two apart.
+  const lockDir = join(rulesetsDir, '.update.lock');
+  try {
+    mkdirSync(lockDir);
+  } catch {
+    fail('another update is running, or one was cut off: if none is running, remove rulesets/.update.lock and start again. Nothing was changed.');
+  }
+  const stageRoot = mkdtempSync(join(rulesetsDir, '.stage-'));
+  const stage = join(stageRoot, 'new');
+  const cleanUp = () => {
+    rmSync(stageRoot, { recursive: true, force: true });
+    rmSync(lockDir, { recursive: true, force: true });
   };
+  process.once('exit', cleanUp); // whatever ends the process, no lock and no staging folder is left behind
+  const restore = (why) => {
+    cleanUp();
+    fail(`${why}\nThe vendored rule set was not touched; nothing was changed.`);
+  };
+  cpSync(setDir, stage, { recursive: true });
 
   const today = new Date().toISOString().slice(0, 10);
   let converterArgs;
   if (archive) {
-    const archivePath = join(backup, 'archive.zip');
+    const archivePath = join(stageRoot, 'archive.zip');
     writeFileSync(archivePath, archiveDownload.bytes);
-    converterArgs = ['--archive', archivePath, '--dir', setDir, '--version', tag, '--commit', commit, '--digest', archiveDownload.digest, '--url', archiveDownload.url, '--retrieved', today, '--name', setName, '--include', archive.include, '--asset', archive.asset, ...(entry.platform ? ['--platform', entry.platform] : []), ...(entry.category ? ['--category', entry.category] : [])];
+    converterArgs = ['--archive', archivePath, '--dir', stage, '--version', tag, '--commit', commit, '--digest', archiveDownload.digest, '--url', archiveDownload.url, '--retrieved', today, '--name', setName, '--include', archive.include, '--asset', archive.asset, ...(entry.platform ? ['--platform', entry.platform] : []), ...(entry.category ? ['--category', entry.category] : [])];
   } else {
-    rmSync(join(setDir, 'source'), { recursive: true, force: true });
+    rmSync(join(stage, 'source'), { recursive: true, force: true });
     for (const [remote, local] of files) {
-      mkdirSync(dirname(join(setDir, local)), { recursive: true });
-      writeFileSync(join(setDir, local), fetched.get(remote));
+      mkdirSync(dirname(join(stage, local)), { recursive: true });
+      writeFileSync(join(stage, local), fetched.get(remote));
     }
-    writeFileSync(join(setDir, 'LICENSE'), licenseBytes);
-    converterArgs = ['--dir', setDir, '--name', setName, '--version', tag, '--commit', commit, '--source-url', entry.sourceUrl.split('{tag}').join(tag), '--license', entry.license, '--retrieved', today];
+    writeFileSync(join(stage, 'LICENSE'), licenseBytes);
+    converterArgs = ['--dir', stage, '--name', setName, '--version', tag, '--commit', commit, '--source-url', entry.sourceUrl.split('{tag}').join(tag), '--license', entry.license, '--retrieved', today];
   }
   const converted = spawnSync(process.execPath, [join(root, 'scripts', entry.converter), ...converterArgs], { encoding: 'utf-8' });
   if (converted.status !== 0) restore(`the converter failed (the new release may use something this version of the converter does not know):\n${(converted.stderr || converted.stdout).slice(0, 600)}`);
@@ -308,26 +315,44 @@ async function main() {
   let loaded;
   try {
     const { loadRulesetSync } = await import(pathToFileURL(join(root, 'dist', 'rulesets', 'loader.js')).href);
-    loaded = loadRulesetSync(setDir);
+    loaded = loadRulesetSync(stage);
   } catch (err) {
     restore(`the converted set does not pass the loader's checks (${err.message})`);
   }
 
+  // what the set was, read before it is replaced
+  const oldRules = (() => {
+    try {
+      return JSON.parse(readFileSync(join(setDir, before.normalized.file), 'utf-8')).rules ?? [];
+    } catch {
+      return [];
+    }
+  })();
+  const newRules = JSON.parse(readFileSync(join(stage, 'ruleset.json'), 'utf-8')).rules;
+  const after = JSON.parse(readFileSync(join(stage, 'PROVENANCE.json'), 'utf-8'));
+
+  // the swap: two renames; if the second fails, the first is undone
+  const old = join(stageRoot, 'old');
+  renameSync(setDir, old);
+  try {
+    renameSync(stage, setDir);
+  } catch (err) {
+    renameSync(old, setDir);
+    restore(`the new set could not be put in place (${err.message})`);
+  }
+  cleanUp();
   // ---- what changed
 
   const keyed = (rules) => new Map(rules.map((r) => [r.id, JSON.stringify(r)]));
-  const newRules = JSON.parse(readFileSync(join(setDir, 'ruleset.json'), 'utf-8')).rules;
   const label = new Map([...oldRules, ...newRules].map((r) => [r.id, r.title ?? r.id]));
   const a = keyed(oldRules);
   const b = keyed(newRules);
   const added = [...b.keys()].filter((id) => !a.has(id));
   const removed = [...a.keys()].filter((id) => !b.has(id));
   const changed = [...b.keys()].filter((id) => a.has(id) && a.get(id) !== b.get(id));
-  const after = JSON.parse(readFileSync(join(setDir, 'PROVENANCE.json'), 'utf-8'));
   const list = (ids) => ({ count: ids.length, ids: ids.slice(0, 30).map((id) => label.get(id)), ...(ids.length > 30 ? { more: ids.length - 30 } : {}) });
   const licenseChanged = archive ? false : sha256(licenseBytes) !== before.licenseFile?.sha256;
 
-  rmSync(backup, { recursive: true, force: true });
   console.log(
     JSON.stringify(
       {
