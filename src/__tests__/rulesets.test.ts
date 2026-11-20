@@ -177,7 +177,9 @@ test('loading a folder of rule sets returns the good ones and names the failed o
   assert.equal(result.failed.length, 1);
   assert.equal(result.failed[0].name, 'tampered');
   assert.match(result.failed[0].error, /changed after the conversion/);
-  assert.deepEqual((await loadRulesets(path.join(root, 'does-not-exist'))).loaded, []);
+  const gone = await loadRulesets(path.join(root, 'does-not-exist'));
+  assert.deepEqual(gone.loaded, []);
+  assert.equal(gone.failed.length, 1, 'a folder that cannot be read is a failure, not an empty success');
 });
 
 // ---- finding secrets

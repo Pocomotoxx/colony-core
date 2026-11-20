@@ -231,13 +231,28 @@ export interface LoadResult {
   failed: Array<{ name: string; error: string }>;
 }
 
-/** Load every rule set folder under `root` (a folder with a PROVENANCE.json). A missing root is an empty result. */
+/** The names of the rule sets this checkout is meant to have: the keys of `sets` in sources.json, which is reviewed like code. */
+function expectedSets(root: string): string[] {
+  try {
+    const sets = (JSON.parse(readFileSync(path.join(root, 'sources.json'), 'utf-8')) as { sets?: unknown }).sets;
+    return sets && typeof sets === 'object' ? Object.keys(sets) : [];
+  } catch {
+    return []; // no list (a test folder, or a folder that is no checkout): nothing is expected
+  }
+}
+
+/**
+ * Load every rule set folder under `root` (a folder with a PROVENANCE.json).
+ * A set that sources.json lists but that is not there (its folder or PROVENANCE.json is gone), and a root that cannot be
+ * read, are reported in `failed` like a set that fails its hashes: less coverage is never silent.
+ */
 export function loadRulesetsSync(root: string = defaultRulesetsDir()): LoadResult {
   const result: LoadResult = { loaded: [], failed: [] };
   let names: string[];
   try {
     names = readdirSync(root, { withFileTypes: true }).filter((e) => e.isDirectory()).map((e) => e.name).sort();
-  } catch {
+  } catch (err) {
+    result.failed.push({ name: '(rule set folder)', error: `the folder cannot be read (${err instanceof Error ? err.message : String(err)})` });
     return result;
   }
   for (const name of names) {
@@ -248,6 +263,9 @@ export function loadRulesetsSync(root: string = defaultRulesetsDir()): LoadResul
     } catch (err) {
       result.failed.push({ name, error: err instanceof Error ? err.message : String(err) });
     }
+  }
+  for (const name of expectedSets(root)) {
+    if (!result.loaded.some((s) => s.name === name) && !result.failed.some((f) => f.name === name)) result.failed.push({ name, error: 'the rule set is listed in sources.json but its folder or its PROVENANCE.json is missing' });
   }
   return result;
 }
