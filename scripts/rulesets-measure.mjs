@@ -4,7 +4,10 @@
 //   node scripts/rulesets-measure.mjs [--max-list 60] <file-or-folder>...
 //   node scripts/rulesets-measure.mjs --log .colony/ruleset-warnings.jsonl     (what the guard's warnings have been so far)
 //   node scripts/rulesets-measure.mjs --pii [--max-list 60] <file-or-folder>...  (personal data: the presidio set against the own patterns)
-//   node scripts/rulesets-measure.mjs --commands [--max-list 60] <file-or-folder>...  (command rules: which of the commands in these files do they match)
+//   node scripts/rulesets-measure.mjs --commands [--max-list 60] [--all-code] [--ratings <file.json>] [--sample-out <file.json>] <file-or-folder>...
+//        (command rules: which of the commands in these files do they match; --all-code also judges the lines of code blocks that are not labelled as a shell;
+//         --ratings is [{file, line, rule, verdict: 'false-positive'|'true-positive'}], what a person decided about earlier matches;
+//         --sample-out writes the commands that were judged, so that the same sample can be judged again)
 //
 // Folders are walked for text files (node_modules, .git, dist and rulesets are skipped, files over 1 MB are skipped).
 import { readdirSync, readFileSync, statSync } from 'node:fs';
@@ -21,12 +24,18 @@ let maxList = 60;
 let logFile;
 let piiMode = false;
 let commandsMode = false;
+let allCode = false;
+let ratingsFile;
+let sampleOut;
 const targets = [];
 for (let i = 0; i < args.length; i++) {
   if (args[i] === '--max-list') maxList = Number(args[++i]);
   else if (args[i] === '--log') logFile = args[++i];
   else if (args[i] === '--pii') piiMode = true;
   else if (args[i] === '--commands') commandsMode = true;
+  else if (args[i] === '--all-code') allCode = true;
+  else if (args[i] === '--ratings') ratingsFile = args[++i];
+  else if (args[i] === '--sample-out') sampleOut = args[++i];
   else targets.push(args[i]);
 }
 
@@ -65,36 +74,60 @@ if (failed.length > 0) console.error('rule sets that FAILED their checks and are
 
 const lineOf = (text, offset) => text.slice(0, offset).split('\n').length;
 
+/** What each mode of this script measures. Quote it with the numbers: a number without it cannot be compared with another. */
+const MEASUREMENT = {
+  pii: 'pii-compare v2: baseline = the built-in patterns only; a finding is "same" when kind and exact characters agree',
+  commands: 'commands v2: only commands (lines of fenced blocks labelled as a shell, run: lines of workflows, scripts of package.json); other code lines are counted apart; the sample is identified by a hash',
+};
+
 if (commandsMode) {
-  // The commands that the files contain (the lines of fenced code blocks in Markdown, run: lines of workflows, the scripts of
-  // package.json) judged by the command rule sets. For a set of files that are known to hold ordinary commands, every match
-  // is a false positive: this is how the false positive rate is counted before a rule may block.
+  // The commands that the files contain, judged by the command rule sets. A command is: a line of a fenced Markdown block that is
+  // labelled as a shell (sh, bash, powershell, console, ...), a run: line of a workflow, a script of package.json. The lines of
+  // other code blocks (no label, text, json, diagrams) are NOT commands: they are counted apart (--all-code judges them too).
+  // For a set of files that are known to hold ordinary commands, a match is a false positive, but only a person can say so:
+  // the matches that nobody rated (--ratings) are counted as unrated, never as false or true.
   const { eventsOf, windowsEventsOf, scriptEventsOf } = await mod('rulesets/command-gate.js');
-const { registryEventsOf } = await mod('rulesets/registry-events.js');
-const { fileEventsOf } = await mod('rulesets/file-events.js');
+  const { registryEventsOf } = await mod('rulesets/registry-events.js');
+  const { fileEventsOf } = await mod('rulesets/file-events.js');
   const { ruleMatches } = await mod('rulesets/sigma.js');
+  const { createHash } = await import('node:crypto');
+  const { writeFileSync } = await import('node:fs');
   const sets = loaded.filter((s) => s.kind === 'commands');
+  const SHELL_LANGS = new Set(['sh', 'bash', 'shell', 'zsh', 'console', 'shell-session', 'sh-session', 'powershell', 'pwsh', 'ps1', 'posh', 'cmd', 'bat', 'batch']);
   const commands = [];
+  let otherCodeLines = 0;
   for (const file of files) {
     const text = readFileSync(file, 'utf-8');
     const rel = relative(root, file).replace(/\\/g, '/');
     const ext = extname(file).toLowerCase();
-    const lines = text.split('\n');
+    const lines = text.split(/\r?\n/); // a Windows checkout has CRLF: a trailing CR would hide the run: lines of a workflow
     if (ext === '.md') {
       let inside = false;
+      let shell = false;
       lines.forEach((l, n) => {
-        if (/^\s*```/.test(l)) inside = !inside;
-        else if (inside && l.trim() && !l.trim().startsWith('#')) commands.push({ file: rel, line: n + 1, text: l.trim().replace(/^\$ /, '') });
+        const fence = /^\s*```\s*([^\s{]*)/.exec(l);
+        if (fence) {
+          inside = !inside;
+          shell = inside && SHELL_LANGS.has(fence[1].toLowerCase());
+        } else if (inside && l.trim() && !l.trim().startsWith('#')) {
+          const text1 = l.trim().replace(/^(?:\$|PS>|>) /, '');
+          if (shell) commands.push({ file: rel, line: n + 1, text: text1, source: 'md-shell' });
+          else if (allCode) commands.push({ file: rel, line: n + 1, text: text1, source: 'md-other' });
+          else otherCodeLines++;
+        }
       });
     } else if (ext === '.yml' || ext === '.yaml') {
       lines.forEach((l, n) => {
         const m = /^\s*(?:- )?run:\s*(.+)$/.exec(l);
-        if (m && m[1] !== '|') commands.push({ file: rel, line: n + 1, text: m[1].trim() });
+        if (m && m[1] !== '|') commands.push({ file: rel, line: n + 1, text: m[1].trim(), source: 'workflow' });
       });
     } else if (file.endsWith('package.json')) {
-      for (const [name, value] of Object.entries(JSON.parse(text).scripts ?? {})) commands.push({ file: rel, line: 0, text: String(value), name });
+      for (const [name, value] of Object.entries(JSON.parse(text).scripts ?? {})) commands.push({ file: rel, line: 0, text: String(value), name, source: 'package-script' });
     }
   }
+  const ratings = new Map();
+  if (ratingsFile) for (const r of JSON.parse(readFileSync(resolve(ratingsFile), 'utf-8'))) ratings.set(`${r.file}:${r.line}:${r.rule}`, r.verdict);
+  const built = { process: 0, script: 0, registry: 0, file: 0 };
   const byRule = {};
   const hits = [];
   for (const c of commands) {
@@ -103,47 +136,72 @@ const { fileEventsOf } = await mod('rulesets/file-events.js');
     const scriptEvents = scriptEventsOf(c.text, 'PowerShell');
     const registryEvents = registryEventsOf(c.text);
     const fileEvents = fileEventsOf(c.text, process.cwd());
+    if (linuxEvents.length + windowsEvents.length > 0) built.process++;
+    if (scriptEvents.length > 0) built.script++;
+    if (registryEvents.length > 0) built.registry++;
+    if (fileEvents.length > 0) built.file++;
     for (const set of sets) {
       const events = set.category === 'file' ? fileEvents : set.category === 'registry' ? registryEvents : set.category === 'ps_script' ? scriptEvents : set.platform === 'windows' ? windowsEvents : linuxEvents;
       for (const rule of set.commands) {
         if (events.some((e) => ruleMatches(rule, e))) {
           byRule[rule.title] = (byRule[rule.title] ?? 0) + 1;
-          hits.push({ ...c, title: rule.title });
+          hits.push({ ...c, title: rule.title, verdict: ratings.get(`${c.file}:${c.line}:${rule.title}`) ?? 'unrated' });
         }
       }
     }
   }
-  console.log(JSON.stringify({ files: files.length, commands: commands.length, ruleSets: sets.map((s) => `${s.name} ${s.version} (${s.commands.length} rules)`), commandsWithAMatch: new Set(hits.map((h) => h.file + ':' + h.line + ':' + h.text)).size, byRule }, null, 2));
+  const sorted = [...commands].sort((x, y) => (x.file + ':' + String(x.line).padStart(6, '0') + x.text).localeCompare(y.file + ':' + String(y.line).padStart(6, '0') + y.text));
+  const sampleId = createHash('sha256').update(JSON.stringify(sorted.map((c) => [c.file, c.line, c.text]))).digest('hex').slice(0, 12);
+  if (sampleOut) writeFileSync(resolve(sampleOut), JSON.stringify(sorted, null, 1));
+  const verdicts = { 'false-positive': 0, 'true-positive': 0, unrated: 0 };
+  for (const h of hits) verdicts[h.verdict] = (verdicts[h.verdict] ?? 0) + 1;
+  console.log(JSON.stringify({
+    measurement: MEASUREMENT.commands,
+    sample: { id: sampleId, files: files.length, commands: commands.length, bySource: commands.reduce((o, c) => ({ ...o, [c.source]: (o[c.source] ?? 0) + 1 }), {}), otherCodeLinesNotJudged: otherCodeLines },
+    commandsForWhichAnEventWasBuilt: built,
+    ruleSets: sets.map((s) => `${s.name} ${s.version} (${s.commands.length} rules)`),
+    commandsWithAMatch: new Set(hits.map((h) => h.file + ':' + h.line + ':' + h.text)).size,
+    matches: { total: hits.length, ...verdicts },
+    byRule,
+  }, null, 2));
   console.log(`\nmatches (${hits.length}${hits.length > maxList ? `, first ${maxList}` : ''}):`);
-  for (const h of hits.slice(0, maxList)) console.log(`  ${h.file}:${h.line}  [${h.title}]  ${h.text.slice(0, 110)}`);
+  for (const h of hits.slice(0, maxList)) console.log(`  ${h.file}:${h.line}  [${h.title}] (${h.source}, ${h.verdict})  ${h.text.slice(0, 110)}`);
   process.exit(0);
 }
 
 if (piiMode) {
-  // Personal data: what the presidio set finds, and whether the colony's own redaction would also take that text.
-  // A finding is judged by redacting its text on its own; positions and rule names are printed, never values.
+  // Personal data: what the presidio set finds, and whether the colony's OWN built-in patterns find the same thing.
+  // The baseline is fixed: the built-in patterns only (redactText with builtinOnly), never the redactor with the rule sets,
+  // so adding or updating a rule set cannot change the baseline. A finding is compared with the baseline's spans of the SAME
+  // text by position: "same" = the same kind on exactly the same characters, "partly" = the baseline finds something that
+  // overlaps it (another kind or other bounds), "none" = the baseline finds nothing there. Positions and rule names are
+  // printed, never values.
   const { findPii } = await mod('rulesets/pii.js');
-  const { redactText } = await mod('redact.js');
+  const { findRedactSpans } = await mod('redact.js');
   const rows = [];
   for (const file of files) {
     const text = readFileSync(file, 'utf-8');
     const rel = relative(root, file).replace(/\\/g, '/');
+    const own = findRedactSpans(text, { builtinOnly: true });
     for (const f of findPii(text, loaded).findings) {
-      const own = redactText(text.slice(f.offset, f.offset + f.length)).changed;
-      rows.push({ file: rel, line: lineOf(text, f.offset), entity: f.entity, rule: f.rule, own });
+      const end = f.offset + f.length;
+      const same = own.some((s) => s.kind === f.entity && s.start === f.offset && s.end === end);
+      const overlap = !same && own.some((s) => s.start < end && f.offset < s.end);
+      rows.push({ file: rel, line: lineOf(text, f.offset), entity: f.entity, rule: f.rule, match: same ? 'same' : overlap ? 'partly' : 'none' });
     }
   }
   const entities = {};
   for (const r of rows) {
-    const e = (entities[r.entity] ??= { findings: 0, alsoByOwnPatterns: 0, onlyByRuleSet: 0 });
+    const e = (entities[r.entity] ??= { findings: 0, sameByBuiltin: 0, partlyByBuiltin: 0, onlyByRuleSet: 0 });
     e.findings++;
-    if (r.own) e.alsoByOwnPatterns++;
+    if (r.match === 'same') e.sameByBuiltin++;
+    else if (r.match === 'partly') e.partlyByBuiltin++;
     else e.onlyByRuleSet++;
   }
-  console.log(JSON.stringify({ files: files.length, ruleSets: loaded.map((s) => `${s.name} ${s.version} (${s.kind})`), byEntity: entities }, null, 2));
-  const only = rows.filter((r) => !r.own);
-  console.log(`\nfound only by the rule set (${only.length}${only.length > maxList ? `, first ${maxList}` : ''}):`);
-  for (const r of only.slice(0, maxList)) console.log(`  ${r.file}:${r.line}  ${r.entity}  ${r.rule}`);
+  console.log(JSON.stringify({ measurement: MEASUREMENT.pii, files: files.length, ruleSets: loaded.map((s) => `${s.name} ${s.version} (${s.kind})`), byEntity: entities }, null, 2));
+  const only = rows.filter((r) => r.match !== 'same');
+  console.log(`\nnot found by the built-in patterns on the same characters (${only.length}${only.length > maxList ? `, first ${maxList}` : ''}):`);
+  for (const r of only.slice(0, maxList)) console.log(`  ${r.file}:${r.line}  ${r.entity}  ${r.rule}  [${r.match}]`);
   process.exit(0);
 }
 const perRule = new Map();
