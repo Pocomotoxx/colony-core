@@ -26,7 +26,7 @@
 
 ## 3. Mi a cél
 
-**Rövid távon (1. fázis kilépése):** a fejlesztő (te) a saját munkáján használja a Colony-t, és **értékeli** a felidézéseket. Kilépési feltétel: legalább **30 értékelt munkamenet**, és a hasznosság mérhető. 50% alatt nem bővítjük a felidézést, hanem megvizsgáljuk az okát.
+**Rövid távon (1. fázis kilépése):** a fejlesztő (te) a saját munkáján használja a Colony-t, és **értékeli** a felidézéseket. Kilépési feltétel: legalább **30 értékelt munkamenet**, és a hasznosság legalább 50% (a pontosan 50% teljesíti). 50% alatt nem bővítjük a felidézést, hanem megvizsgáljuk az okát.
 
 **Hosszabb távon:** egy fejlesztő, aki a Colony-val mérhetően kevesebb hibát vagy gyorsabb munkát ér el, és tudja, mikor bízhat a rendszer válaszában és mikor nem.
 

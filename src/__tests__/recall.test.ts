@@ -152,6 +152,25 @@ test('recalls without a session id count toward the share but never toward the s
   assert.equal(s.exit.share.met, true);
 });
 
+test('exactly half useful meets the exit; the share is also given per session, and unrated events are counted (audit E01)', () => {
+  const ev = (seq: number, session: string) => ({ seq, at: seq, session, ids: [] as string[] });
+  const rate = (seq: number, session: string, useful: 'yes' | 'partly' | 'no') => [seq, { seq, at: seq, session, useful, ratedAt: 1 }] as const;
+  // 30 sessions, each rated 'partly' once: every score is 0.5, the share is exactly 0.5
+  const events = Array.from({ length: 30 }, (_, i) => ev(i + 1, `s${i}`));
+  const ratings = new Map(events.map((e) => rate(e.seq, e.session as string, 'partly')));
+  const s = recallStats([...events, ev(99, 'unrated-one')], ratings);
+  assert.equal(s.usefulShare, 0.5);
+  assert.equal(s.exit.share.met, true, 'exactly 50% meets it');
+  assert.equal(s.exit.sessions.met, true);
+  assert.equal(s.unrated, 1);
+  assert.deepEqual(s.perSession, { sessions: 30, atLeastHalf: 30, belowHalf: 0 });
+  // one rated session with many 'yes' and one with a single 'no': the overall share is high, but one session in two is below half
+  const mixed = [ev(1, 'a'), ev(2, 'a'), ev(3, 'a'), ev(4, 'a'), ev(5, 'b')];
+  const m = recallStats(mixed, new Map([rate(1, 'a', 'yes'), rate(2, 'a', 'yes'), rate(3, 'a', 'yes'), rate(4, 'a', 'yes'), rate(5, 'b', 'no')]));
+  assert.equal(m.usefulShare, 0.8);
+  assert.deepEqual(m.perSession, { sessions: 2, atLeastHalf: 1, belowHalf: 1 });
+});
+
 test('the recall commands are in the usage text', async () => {
   const help = (await runCommand(['help'], process.cwd())).output as any;
   assert.match(help.usage, /recall rate <number> --useful yes\|partly\|no/);
