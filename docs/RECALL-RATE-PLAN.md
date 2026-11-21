@@ -18,7 +18,7 @@ A hook minden promptnál felidézést ad (a korábbi munkából), és azt `recal
 |---|---|
 | `recall list [--k N] [--unrated]` | A felidézési események sorszámmal, időponttal, munkamenettel, a felidézett minták címével (a kivonat a fejlesztőnek mutatott szöveg, nem új adat). |
 | `recall rate <sorszám> --useful yes\|partly\|no [--note TEXT]` | A fejlesztő értékelése egy eseményhez. A `--note` ugyanúgy szűrt (`scan`, `redact`), mint a többi szöveg. |
-| `recall stats` | Értékelt események száma, munkamenetek száma, a hasznos (`yes` = 1, `partly` = 0,5, `no` = 0) arány, és a két kilépési feltétel: 30 értékelt munkamenet, 50% felett. |
+| `recall stats` | Értékelt események száma, munkamenetek száma, a hasznos (`yes` = 1, `partly` = 0,5, `no` = 0) arány, és a két kilépési feltétel: 30 értékelt munkamenet, és legalább 50% (a pontosan 50% teljesíti: a kód `>=`-t használ). A kimenet munkamenetenként is megmondja, hány munkamenet legalább félig hasznos, hány alatta, és az `unrated` mező az értékeletlen események száma. |
 
 ## Adatmodell
 
@@ -36,7 +36,7 @@ A hook minden promptnál felidézést ad (a korábbi munkából), és azt `recal
 ## Kilépési feltétel és a mérés
 
 - **Kilépés:** legalább **30 értékelt munkamenet** (különböző munkamenetek), és a hasznosság a `recall stats`-ban látszik.
-- **Döntési szabály előre rögzítve:** 50% alatt a felidézést nem bővítjük, hanem megvizsgáljuk az okát (a `note` mezőkből és a `recall list`-ből). 50% felett marad a jelenlegi irány.
+- **Döntési szabály előre rögzítve:** 50% alatt a felidézést nem bővítjük, hanem megvizsgáljuk az okát (a `note` mezőkből és a `recall list`-ből). Legalább 50%-nál marad a jelenlegi irány (a pontosan 50% ide tartozik).
 - **Torzítás, amit ki kell mondani:** a fejlesztő szubjektíven értékel, és tudja, hogy méri. A `partly` és a `no` közötti határ önkényes. A mérés a munka hasznára vonatkozik, nem objektív pontosságra.
 
 ## Tesztek (tervezett)

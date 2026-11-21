@@ -91,6 +91,11 @@ export interface RecallStats {
   counts: Record<Useful, number>;
   /** Mean of the scores (yes 1, partly 0.5, no 0) over rated events, or null when none is rated. */
   usefulShare: number | null;
+  /**
+   * The same share per session (the mean of that session's rated recalls): how many sessions are at least half useful and how
+   * many are below. The overall share weighs a session by its number of rated recalls; this does not.
+   */
+  perSession: { sessions: number; atLeastHalf: number; belowHalf: number };
   exit: {
     sessions: { have: number; need: number; met: boolean };
     share: { have: number | null; need: number; met: boolean | null };
@@ -105,6 +110,7 @@ export interface RecallStats {
 export function recallStats(events: RecallEvent[], ratings: Map<number, Rating>): RecallStats {
   const counts: Record<Useful, number> = { yes: 0, partly: 0, no: 0 };
   const sessions = new Set<string>();
+  const bySession = new Map<string, { score: number; n: number }>();
   let unattributed = 0;
   let score = 0;
   let rated = 0;
@@ -114,8 +120,13 @@ export function recallStats(events: RecallEvent[], ratings: Map<number, Rating>)
     rated++;
     counts[r.useful]++;
     score += SCORE[r.useful];
-    if (e.session) sessions.add(e.session);
-    else unattributed++;
+    if (e.session) {
+      sessions.add(e.session);
+      const s = bySession.get(e.session) ?? { score: 0, n: 0 };
+      s.score += SCORE[r.useful];
+      s.n++;
+      bySession.set(e.session, s);
+    } else unattributed++;
   }
   const share = rated === 0 ? null : score / rated;
   return {
@@ -126,6 +137,11 @@ export function recallStats(events: RecallEvent[], ratings: Map<number, Rating>)
     unattributed,
     counts,
     usefulShare: share === null ? null : Math.round(share * 1000) / 1000,
+    perSession: {
+      sessions: bySession.size,
+      atLeastHalf: [...bySession.values()].filter((s) => s.score / s.n >= EXIT_SHARE).length,
+      belowHalf: [...bySession.values()].filter((s) => s.score / s.n < EXIT_SHARE).length,
+    },
     exit: {
       sessions: { have: sessions.size, need: EXIT_SESSIONS, met: sessions.size >= EXIT_SESSIONS },
       share: { have: share === null ? null : Math.round(share * 1000) / 1000, need: EXIT_SHARE, met: share === null ? null : share >= EXIT_SHARE },
